@@ -1,83 +1,105 @@
-const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
+const https = require('https');
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const MODEL = 'llama3-8b-8192';
 
-async function groq(messages, maxTokens = 1024) {
-  const res = await fetch(GROQ_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({ model: MODEL, messages, max_tokens: maxTokens }),
+function groq(messages, maxTokens = 1024) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      model: MODEL,
+      messages,
+      max_tokens: maxTokens,
+    });
+
+    const options = {
+      hostname: 'api.groq.com',
+      path: '/openai/v1/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Length': Buffer.byteLength(body),
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed.choices?.[0]?.message?.content || '');
+        } catch {
+          reject(new Error('Failed to parse Groq response'));
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.write(body);
+    req.end();
   });
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
+}
+
+function parseJSON(text) {
+  try {
+    return JSON.parse(text.replace(/```json|```/g, '').trim());
+  } catch {
+    return null;
+  }
 }
 
 async function explainHomework(question, context) {
   const content = await groq([
-    { role: 'system', content: 'You are a helpful tutor. Respond in JSON with keys: explanation (string), steps (array of strings), hint (string).' },
-    { role: 'user', content: `Question: ${question}\nContext: ${context || 'none'}\nRespond only with valid JSON.` }
+    { role: 'system', content: 'You are a helpful tutor. Respond ONLY with valid JSON, no extra text. JSON keys: explanation (string), steps (array of strings), hint (string).' },
+    { role: 'user', content: `Question: ${question}\nContext: ${context || 'none'}` }
   ]);
-  try {
-    return JSON.parse(content.replace(/```json|```/g, '').trim());
-  } catch {
-    return { explanation: content, steps: [content], hint: 'Review your notes!' };
-  }
+  const parsed = parseJSON(content);
+  if (parsed) return parsed;
+  return { explanation: content, steps: [content], hint: 'Review your notes!' };
 }
 
 async function generateFlashcardsFromNotes(notes, count = 10) {
   const content = await groq([
-    { role: 'system', content: `Generate ${count} flashcards from the notes. Respond in JSON as an array of objects with keys: question, answer.` },
-    { role: 'user', content: `Notes: ${notes}\nRespond only with valid JSON array.` }
+    { role: 'system', content: `You are a flashcard generator. Respond ONLY with a valid JSON array of ${count} objects, each with keys: question (string), answer (string). No extra text.` },
+    { role: 'user', content: `Notes: ${notes}` }
   ]);
-  try {
-    const parsed = JSON.parse(content.replace(/```json|```/g, '').trim());
-    return Array.isArray(parsed) ? parsed : parsed.flashcards || [];
-  } catch {
-    return [{ question: 'What is the main topic?', answer: 'Review your notes.' }];
-  }
+  const parsed = parseJSON(content);
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed?.flashcards) return parsed.flashcards;
+  return [{ question: 'What is the main topic?', answer: 'Review your notes.' }];
 }
 
 async function generateQuizQuestions(topic, difficulty, count = 5) {
   const content = await groq([
-    { role: 'system', content: `Generate ${count} multiple choice questions about the topic at ${difficulty} difficulty. Respond in JSON as array of objects with keys: question, options (array of 4 strings), correct (the correct option string), explanation.` },
-    { role: 'user', content: `Topic: ${topic}\nRespond only with valid JSON array.` }
+    { role: 'system', content: `You are a quiz generator. Respond ONLY with a valid JSON array of ${count} objects, each with keys: question (string), options (array of 4 strings), correct (string, must match one of the options exactly), explanation (string). No extra text.` },
+    { role: 'user', content: `Topic: ${topic}, Difficulty: ${difficulty}` }
   ]);
-  try {
-    const parsed = JSON.parse(content.replace(/```json|```/g, '').trim());
-    return Array.isArray(parsed) ? parsed : parsed.questions || [];
-  } catch {
-    return [];
-  }
+  const parsed = parseJSON(content);
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed?.questions) return parsed.questions;
+  return [];
 }
 
 async function analyzeRecall(topic, topicSummary, userResponse) {
   const content = await groq([
-    { role: 'system', content: 'You are a study coach. Analyze the student recall response. Respond in JSON with keys: score (0-1 float), feedback (string), correct (array of strings of what they got right), missed (array of strings of what they missed), encouragement (short motivational string).' },
-    { role: 'user', content: `Topic: ${topic}\nOriginal material: ${topicSummary}\nStudent wrote: ${userResponse}\nRespond only with valid JSON.` }
+    { role: 'system', content: 'You are a study coach. Respond ONLY with valid JSON, no extra text. JSON keys: score (number between 0 and 1), feedback (string), correct (array of strings), missed (array of strings), encouragement (string).' },
+    { role: 'user', content: `Topic: ${topic}\nOriginal material: ${topicSummary}\nStudent wrote: ${userResponse}` }
   ]);
-  try {
-    return JSON.parse(content.replace(/```json|```/g, '').trim());
-  } catch {
-    return { score: 0.5, feedback: 'Good effort!', correct: [], missed: [], encouragement: 'Keep going!' };
-  }
+  const parsed = parseJSON(content);
+  if (parsed) return parsed;
+  return { score: 0.5, feedback: 'Good effort!', correct: [], missed: [], encouragement: 'Keep going!' };
 }
 
 async function generateStudyPlan(subjects, dailyHours) {
   const content = await groq([
-    { role: 'system', content: 'You are a study planner. Generate a study plan for the next 14 days. Respond in JSON as an array of objects with keys: subject, date (YYYY-MM-DD), duration (minutes as number), task (string description).' },
-    { role: 'user', content: `Subjects with exam dates: ${JSON.stringify(subjects)}\nDaily available hours: ${dailyHours}\nToday is ${new Date().toISOString().split('T')[0]}\nRespond only with valid JSON array.` }
+    { role: 'system', content: 'You are a study planner. Respond ONLY with a valid JSON array of objects, each with keys: subject (string), date (YYYY-MM-DD string), duration (number in minutes), task (string). No extra text.' },
+    { role: 'user', content: `Subjects with exam dates: ${JSON.stringify(subjects)}\nDaily available hours: ${dailyHours}\nToday is ${new Date().toISOString().split('T')[0]}. Generate a 14 day plan.` }
   ]);
-  try {
-    const parsed = JSON.parse(content.replace(/```json|```/g, '').trim());
-    return Array.isArray(parsed) ? parsed : parsed.plan || [];
-  } catch {
-    return [];
-  }
+  const parsed = parseJSON(content);
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed?.plan) return parsed.plan;
+  return [];
 }
 
 module.exports = { explainHomework, generateFlashcardsFromNotes, generateQuizQuestions, analyzeRecall, generateStudyPlan };
