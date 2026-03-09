@@ -5,12 +5,7 @@ const MODEL = 'llama3-8b-8192';
 
 function groq(messages, maxTokens = 1024) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({
-      model: MODEL,
-      messages,
-      max_tokens: maxTokens,
-    });
-
+    const body = JSON.stringify({ model: MODEL, messages, max_tokens: maxTokens });
     const options = {
       hostname: 'api.groq.com',
       path: '/openai/v1/chat/completions',
@@ -21,20 +16,20 @@ function groq(messages, maxTokens = 1024) {
         'Content-Length': Buffer.byteLength(body),
       },
     };
-
     const req = https.request(options, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try {
           const parsed = JSON.parse(data);
-          resolve(parsed.choices?.[0]?.message?.content || '');
-        } catch {
+          const content = parsed.choices?.[0]?.message?.content || '';
+          console.log('Groq raw response:', content);
+          resolve(content);
+        } catch (e) {
           reject(new Error('Failed to parse Groq response'));
         }
       });
     });
-
     req.on('error', reject);
     req.write(body);
     req.end();
@@ -43,25 +38,44 @@ function groq(messages, maxTokens = 1024) {
 
 function parseJSON(text) {
   try {
-    return JSON.parse(text.replace(/```json|```/g, '').trim());
-  } catch {
+    // Strip markdown code blocks
+    let cleaned = text
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim();
+    // Find first { or [ and last } or ]
+    const firstBrace = cleaned.indexOf('{');
+    const firstBracket = cleaned.indexOf('[');
+    let start = -1;
+    if (firstBrace === -1) start = firstBracket;
+    else if (firstBracket === -1) start = firstBrace;
+    else start = Math.min(firstBrace, firstBracket);
+    const lastBrace = cleaned.lastIndexOf('}');
+    const lastBracket = cleaned.lastIndexOf(']');
+    const end = Math.max(lastBrace, lastBracket);
+    if (start !== -1 && end !== -1) {
+      cleaned = cleaned.slice(start, end + 1);
+    }
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.log('JSON parse failed:', e.message);
     return null;
   }
 }
 
 async function explainHomework(question, context) {
   const content = await groq([
-    { role: 'system', content: 'You are a helpful tutor. Respond ONLY with valid JSON, no extra text. JSON keys: explanation (string), steps (array of strings), hint (string).' },
+    { role: 'system', content: 'You are a helpful tutor. Respond ONLY with valid JSON. No markdown, no extra text. JSON format: {"explanation": "string", "steps": ["step1", "step2"], "hint": "string"}' },
     { role: 'user', content: `Question: ${question}\nContext: ${context || 'none'}` }
   ]);
   const parsed = parseJSON(content);
-  if (parsed) return parsed;
-  return { explanation: content, steps: [content], hint: 'Review your notes!' };
+  if (parsed && parsed.explanation) return parsed;
+  return { explanation: content || 'Could not generate explanation.', steps: ['Review the question carefully.'], hint: 'Try breaking the problem into smaller parts.' };
 }
 
 async function generateFlashcardsFromNotes(notes, count = 10) {
   const content = await groq([
-    { role: 'system', content: `You are a flashcard generator. Respond ONLY with a valid JSON array of ${count} objects, each with keys: question (string), answer (string). No extra text.` },
+    { role: 'system', content: `You are a flashcard generator. Respond ONLY with a valid JSON array. No markdown, no extra text. Format: [{"question": "string", "answer": "string"}]. Generate exactly ${count} flashcards.` },
     { role: 'user', content: `Notes: ${notes}` }
   ]);
   const parsed = parseJSON(content);
@@ -72,8 +86,8 @@ async function generateFlashcardsFromNotes(notes, count = 10) {
 
 async function generateQuizQuestions(topic, difficulty, count = 5) {
   const content = await groq([
-    { role: 'system', content: `You are a quiz generator. Respond ONLY with a valid JSON array of ${count} objects, each with keys: question (string), options (array of 4 strings), correct (string, must match one of the options exactly), explanation (string). No extra text.` },
-    { role: 'user', content: `Topic: ${topic}, Difficulty: ${difficulty}` }
+    { role: 'system', content: `You are a quiz generator. Respond ONLY with a valid JSON array. No markdown, no extra text. Format: [{"question": "string", "options": ["A", "B", "C", "D"], "correct": "A", "explanation": "string"}]. Generate exactly ${count} questions at ${difficulty} difficulty.` },
+    { role: 'user', content: `Topic: ${topic}` }
   ]);
   const parsed = parseJSON(content);
   if (Array.isArray(parsed)) return parsed;
@@ -83,7 +97,7 @@ async function generateQuizQuestions(topic, difficulty, count = 5) {
 
 async function analyzeRecall(topic, topicSummary, userResponse) {
   const content = await groq([
-    { role: 'system', content: 'You are a study coach. Respond ONLY with valid JSON, no extra text. JSON keys: score (number between 0 and 1), feedback (string), correct (array of strings), missed (array of strings), encouragement (string).' },
+    { role: 'system', content: 'You are a study coach. Respond ONLY with valid JSON. No markdown, no extra text. Format: {"score": 0.8, "feedback": "string", "correct": ["string"], "missed": ["string"], "encouragement": "string"}' },
     { role: 'user', content: `Topic: ${topic}\nOriginal material: ${topicSummary}\nStudent wrote: ${userResponse}` }
   ]);
   const parsed = parseJSON(content);
@@ -93,7 +107,7 @@ async function analyzeRecall(topic, topicSummary, userResponse) {
 
 async function generateStudyPlan(subjects, dailyHours) {
   const content = await groq([
-    { role: 'system', content: 'You are a study planner. Respond ONLY with a valid JSON array of objects, each with keys: subject (string), date (YYYY-MM-DD string), duration (number in minutes), task (string). No extra text.' },
+    { role: 'system', content: 'You are a study planner. Respond ONLY with a valid JSON array. No markdown, no extra text. Format: [{"subject": "string", "date": "YYYY-MM-DD", "duration": 60, "task": "string"}]' },
     { role: 'user', content: `Subjects with exam dates: ${JSON.stringify(subjects)}\nDaily available hours: ${dailyHours}\nToday is ${new Date().toISOString().split('T')[0]}. Generate a 14 day plan.` }
   ]);
   const parsed = parseJSON(content);
