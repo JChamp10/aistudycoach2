@@ -119,4 +119,35 @@ router.post('/:id/purchase', async (req, res) => {
     `, [req.user.id, mi.id, mi.price, commission, creatorPayout]);
 
     await client.query('UPDATE marketplace_items SET download_count = download_count + 1 WHERE id = $1', [mi.id]);
-    await
+    await client.query('COMMIT');
+    res.json({ purchase: purchase.rows[0], message: 'Purchase successful' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(400).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+router.post('/:id/review', async (req, res) => {
+  const { rating, comment } = req.body;
+  try {
+    const purchased = await query('SELECT id FROM purchases WHERE user_id = $1 AND item_id = $2', [req.user.id, req.params.id]);
+    if (!purchased.rows.length) return res.status(403).json({ error: 'Must purchase before reviewing' });
+
+    await query(`
+      INSERT INTO reviews (user_id, item_id, rating, comment)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (user_id, item_id) DO UPDATE SET rating = $3, comment = $4
+    `, [req.user.id, req.params.id, rating, comment]);
+
+    const avgResult = await query('SELECT AVG(rating) AS avg, COUNT(*) AS count FROM reviews WHERE item_id = $1', [req.params.id]);
+    await query('UPDATE marketplace_items SET rating_avg = $1, rating_count = $2 WHERE id = $3', [parseFloat(avgResult.rows[0].avg).toFixed(2), avgResult.rows[0].count, req.params.id]);
+
+    res.json({ message: 'Review submitted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to submit review' });
+  }
+});
+
+module.exports = router;
