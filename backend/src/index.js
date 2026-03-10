@@ -3,42 +3,71 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-
-const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
-const flashcardRoutes = require('./routes/flashcard.routes');
-const studyRoutes = require('./routes/study.routes');
-const plannerRoutes = require('./routes/planner.routes');
-const marketplaceRoutes = require('./routes/marketplace.routes');
-const leaderboardRoutes = require('./routes/leaderboard.routes');
-const homeworkRoutes = require('./routes/homework.routes');
-const quizRoutes = require('./routes/quiz.routes');
 
 const app = express();
-const PORT = process.env.PORT || 4000;
 
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-app.use('/api/', limiter);
-
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/flashcards', flashcardRoutes);
-app.use('/api/study', studyRoutes);
-app.use('/api/planner', plannerRoutes);
-app.use('/api/marketplace', marketplaceRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/homework', homeworkRoutes);
-app.use('/api/quiz', quizRoutes);
+app.use(morgan('combined'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
-app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
-app.use((err, req, res, next) => res.status(err.status || 500).json({ error: err.message || 'Internal server error' }));
 
-app.listen(PORT, () => console.log(`API running on port ${PORT}`));
-module.exports = app;
+app.get('/test-groq', async (req, res) => {
+  const https = require('https');
+  const key = process.env.GROQ_API_KEY;
+  if (!key) return res.json({ error: 'No GROQ_API_KEY found' });
+
+  const body = JSON.stringify({
+    model: 'llama3-8b-8192',
+    messages: [{ role: 'user', content: 'Say hello in one word' }],
+    max_tokens: 10,
+  });
+
+  const options = {
+    hostname: 'api.groq.com',
+    path: '/openai/v1/chat/completions',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`,
+      'Content-Length': Buffer.byteLength(body),
+    },
+  };
+
+  let data = '';
+  const req = https.request(options, (r) => {
+    r.on('data', chunk => data += chunk);
+    r.on('end', () => res.json({ raw: JSON.parse(data), keyPrefix: key.slice(0, 8) }));
+  });
+  req.on('error', e => res.json({ error: e.message }));
+  req.write(body);
+  req.end();
+});
+
+app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/api/users', require('./routes/user.routes'));
+app.use('/api/study', require('./routes/study.routes'));
+app.use('/api/flashcards', require('./routes/flashcard.routes'));
+app.use('/api/homework', require('./routes/homework.routes'));
+app.use('/api/quiz', require('./routes/quiz.routes'));
+app.use('/api/planner', require('./routes/planner.routes'));
+app.use('/api/leaderboard', require('./routes/leaderboard.routes'));
+app.use('/api/marketplace', require('./routes/marketplace.routes'));
+
+app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+```
+
+Commit, wait for Render to redeploy, then visit:
+```
+https://your-render-url.onrender.com/test-groq
