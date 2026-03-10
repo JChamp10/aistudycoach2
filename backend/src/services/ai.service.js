@@ -65,14 +65,13 @@ function parseJSON(text) {
 
 async function explainHomework(question, context) {
   const content = await groq([
-    { role: 'system', content: 'You are a helpful tutor. Respond ONLY with valid JSON. No markdown, no extra text. JSON format: {"explanation": "string", "steps": ["step1", "step2"], "hint": "string"}' },
+    { role: 'system', content: 'You are a helpful tutor. Give the direct answer first, then explain step by step how to get to that answer. Respond ONLY with valid JSON. No markdown, no extra text. JSON format: {"explanation": "Direct answer here, then brief overview", "steps": ["Step 1: ...", "Step 2: ...", "Step 3: ..."], "hint": "A tip to remember this in future"}' },
     { role: 'user', content: `Question: ${question}\nContext: ${context || 'none'}` }
   ]);
   const parsed = parseJSON(content);
   if (parsed && parsed.explanation) return parsed;
   return { explanation: content || 'Could not generate explanation.', steps: ['Review the question carefully.'], hint: 'Try breaking the problem into smaller parts.' };
 }
-
 async function generateFlashcardsFromNotes(notes, count = 10) {
   const content = await groq([
     { role: 'system', content: `You are a flashcard generator. Respond ONLY with a valid JSON array. No markdown, no extra text. Format: [{"question": "string", "answer": "string"}]. Generate exactly ${count} flashcards.` },
