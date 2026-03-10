@@ -22,7 +22,7 @@ app.get('/test-groq', (req, res) => {
   if (!key) return res.json({ error: 'No GROQ_API_KEY found' });
 
   const body = JSON.stringify({
-    model: 'llama3-8b-8192',
+    model: 'llama-3.3-70b-versatile',
     messages: [{ role: 'user', content: 'Say hello in one word' }],
     max_tokens: 10,
   });
