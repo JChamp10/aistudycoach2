@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const https = require('https');
 
 const app = express();
 
@@ -16,8 +17,7 @@ app.use(morgan('combined'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-app.get('/test-groq', async (req, res) => {
-  const https = require('https');
+app.get('/test-groq', (req, res) => {
   const key = process.env.GROQ_API_KEY;
   if (!key) return res.json({ error: 'No GROQ_API_KEY found' });
 
@@ -39,13 +39,19 @@ app.get('/test-groq', async (req, res) => {
   };
 
   let data = '';
-  const req = https.request(options, (r) => {
-    r.on('data', chunk => data += chunk);
-    r.on('end', () => res.json({ raw: JSON.parse(data), keyPrefix: key.slice(0, 8) }));
+  const groqReq = https.request(options, (groqRes) => {
+    groqRes.on('data', chunk => data += chunk);
+    groqRes.on('end', () => {
+      try {
+        res.json({ raw: JSON.parse(data), keyPrefix: key.slice(0, 8) });
+      } catch (e) {
+        res.json({ rawText: data, keyPrefix: key.slice(0, 8) });
+      }
+    });
   });
-  req.on('error', e => res.json({ error: e.message }));
-  req.write(body);
-  req.end();
+  groqReq.on('error', e => res.json({ error: e.message }));
+  groqReq.write(body);
+  groqReq.end();
 });
 
 app.use('/api/auth', require('./routes/auth.routes'));
@@ -66,8 +72,3 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-```
-
-Commit, wait for Render to redeploy, then visit:
-```
-https://your-render-url.onrender.com/test-groq
