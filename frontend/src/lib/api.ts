@@ -88,6 +88,7 @@ export const marketplaceApi = {
 export const leaderboardApi = {
   global: () => api.get('/leaderboard/global'),
   weekly: () => api.get('/leaderboard/weekly'),
+  regional: () => api.get('/leaderboard/regional'),
 };
 
 export default api;
