@@ -15,15 +15,15 @@ router.post('/register', [
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-  const { username, email, password } = req.body;
+  const { username, email, password, region } = req.body;
   try {
     const existing = await query('SELECT id FROM users WHERE email = $1 OR username = $2', [email, username]);
     if (existing.rows.length > 0) return res.status(409).json({ error: 'Email or username already registered' });
 
     const password_hash = await bcrypt.hash(password, 12);
     const result = await query(
-      'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, xp, streak, created_at',
-      [username, email, password_hash]
+      'INSERT INTO users (username, email, password_hash, region) VALUES ($1, $2, $3, $4) RETURNING id, username, email, xp, streak, region, created_at',
+      [username, email, password_hash, region || 'Global']
     );
 
     const user = result.rows[0];
