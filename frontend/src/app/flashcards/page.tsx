@@ -200,4 +200,190 @@ export default function FlashcardsPage() {
 
           <div className="flex justify-between items-center">
             <button onClick={() => { if (currentIdx > 0) { setCurrentIdx(prev => prev - 1); setFlipped(false); } }}
-              disabled={currentIdx === 0
+              disabled={currentIdx === 0}
+              className="w-10 h-10 rounded-xl border border-surface-border flex items-center justify-center text-slate-400 hover:text-white hover:border-brand-500/50 disabled:opacity-30 transition-all">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button onClick={() => setFlipped(!flipped)} className="btn-ghost text-sm px-6">
+              {flipped ? 'Show Question' : 'Reveal Answer'}
+            </button>
+            <button onClick={() => { if (currentIdx < cards.length - 1) { setCurrentIdx(prev => prev + 1); setFlipped(false); } }}
+              disabled={currentIdx === cards.length - 1}
+              className="w-10 h-10 rounded-xl border border-surface-border flex items-center justify-center text-slate-400 hover:text-white hover:border-brand-500/50 disabled:opacity-30 transition-all">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {flipped && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="space-y-3">
+                <p className="text-center text-sm text-slate-400">How well did you know this?</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: '😰 Hard', diff: 'hard' as const, color: 'border-red-500/40 hover:bg-red-500/10 text-red-400 hover:border-red-500' },
+                    { label: '🤔 Medium', diff: 'medium' as const, color: 'border-amber-500/40 hover:bg-amber-500/10 text-amber-400 hover:border-amber-500' },
+                    { label: '😊 Easy', diff: 'easy' as const, color: 'border-green-500/40 hover:bg-green-500/10 text-green-400 hover:border-green-500' },
+                  ].map(({ label, diff, color }) => (
+                    <button key={diff} onClick={() => handleRate(diff)} disabled={reviewing}
+                      className={`border rounded-xl py-3 font-semibold transition-all disabled:opacity-50 text-sm ${color}`}>
+                      {reviewing ? '...' : label}
+                    </button>
+                  ))}
+                </div>
+                <div className="card !p-4">
+                  <div className="flex justify-between text-xs text-slate-500 mb-2">
+                    <span>Memory strength</span>
+                    <span>{Math.round((card?.memory_strength || 0) * 100)}%</span>
+                  </div>
+                  <div className="xp-bar">
+                    <div className="h-full rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-green-500 transition-all"
+                      style={{ width: `${(card?.memory_strength || 0) * 100}%` }} />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (mode === 'create') return (
+    <AppLayout>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setMode('home')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+            <ChevronLeft className="w-5 h-5" /> Back
+          </button>
+          <h1 className="text-2xl font-extrabold">Create Flashcards</h1>
+        </div>
+
+        <div className="card space-y-3">
+          <h2 className="font-bold text-sm text-slate-400 uppercase tracking-widest">Select Deck</h2>
+          <div className="flex flex-wrap gap-2">
+            {decks.map(d => (
+              <button key={d.id} onClick={() => setSelectedDeck(d)}
+                className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${selectedDeck?.id === d.id ? 'bg-brand-500/20 border-brand-500/50 text-brand-400' : 'border-surface-border text-slate-400 hover:text-white'}`}>
+                {d.title} ({d.card_count})
+              </button>
+            ))}
+            <button onClick={() => setShowCreateDeck(true)} className="px-4 py-2 rounded-xl border border-dashed border-surface-border text-slate-500 hover:text-white hover:border-brand-500/40 text-sm transition-all flex items-center gap-1">
+              <Plus className="w-3 h-3" /> New Deck
+            </button>
+          </div>
+          {showCreateDeck && (
+            <div className="flex gap-2 mt-2">
+              <input value={deckTitle} onChange={e => setDeckTitle(e.target.value)} placeholder="Deck name..." className="input flex-1" onKeyDown={e => e.key === 'Enter' && createDeck()} />
+              <button onClick={createDeck} className="btn-primary px-4">Create</button>
+              <button onClick={() => setShowCreateDeck(false)} className="btn-ghost px-3"><X className="w-4 h-4" /></button>
+            </div>
+          )}
+        </div>
+
+        {selectedDeck && (
+          <>
+            <div className="card space-y-4">
+              <h2 className="font-bold">Add Card to "{selectedDeck.title}"</h2>
+              <div>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">Question</label>
+                <input value={cardQ} onChange={e => setCardQ(e.target.value)} placeholder="Front of card..." className="input" />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">Answer</label>
+                <input value={cardA} onChange={e => setCardA(e.target.value)} placeholder="Back of card..." className="input" onKeyDown={e => e.key === 'Enter' && addCard()} />
+              </div>
+              <button onClick={addCard} disabled={!cardQ.trim() || !cardA.trim()} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+                <Plus className="w-4 h-4" /> Add Card
+              </button>
+            </div>
+
+            <div className="card space-y-4 border-brand-500/20 bg-brand-500/5">
+              <h2 className="font-bold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-brand-400" /> Generate from Notes (AI)
+              </h2>
+              <textarea value={generatingNotes} onChange={e => setGeneratingNotes(e.target.value)}
+                placeholder="Paste your notes here and AI will create 10 flashcards automatically..."
+                className="input min-h-[120px] resize-none" />
+              <button onClick={generateFromNotes} disabled={generating || !generatingNotes.trim()} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+                {generating ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate 10 Cards</>}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </AppLayout>
+  );
+
+  return (
+    <AppLayout>
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-brand-400" />
+              </div>
+              Flashcards
+            </h1>
+            <p className="text-slate-400 mt-2">Spaced repetition learning system.</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setMode('create')} className="btn-ghost flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Create
+            </button>
+            <button onClick={loadDueCards} className="btn-primary flex items-center gap-2">
+              <BookOpen className="w-4 h-4" /> Study Now
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-28" />)}
+          </div>
+        ) : decks.length === 0 ? (
+          <div className="text-center py-20 card border-dashed">
+            <BookOpen className="w-12 h-12 mx-auto mb-4 text-slate-600" />
+            <h2 className="text-xl font-bold mb-2">No decks yet</h2>
+            <p className="text-slate-500 mb-6">Create your first deck to get started!</p>
+            <button onClick={() => setMode('create')} className="btn-primary flex items-center gap-2 mx-auto">
+              <Plus className="w-4 h-4" /> Create First Deck
+            </button>
+          </div>
+        ) : (
+          <div className="relative">
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-4">Your Decks</h2>
+            <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory" style={{ scrollbarWidth: 'none' }}>
+              {decks.map((deck, i) => (
+                <motion.div
+                  key={deck.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.07 }}
+                  className="card snap-start flex-shrink-0 w-52 cursor-pointer hover:border-brand-500/40 transition-all group"
+                  onClick={() => { setSelectedDeck(deck); setMode('create'); }}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center mb-3 group-hover:bg-brand-500/20 transition-colors">
+                    <BookOpen className="w-5 h-5 text-brand-400" />
+                  </div>
+                  <h3 className="font-bold truncate">{deck.title}</h3>
+                  <p className="text-sm text-slate-500 mt-1">{deck.card_count} cards</p>
+                </motion.div>
+              ))}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: decks.length * 0.07 }}
+                className="card snap-start flex-shrink-0 w-52 cursor-pointer border-dashed hover:border-brand-500/40 transition-all flex flex-col items-center justify-center gap-2 text-slate-500 hover:text-white"
+                onClick={() => setMode('create')}
+              >
+                <Plus className="w-8 h-8" />
+                <span className="text-sm font-medium">New Deck</span>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+}
