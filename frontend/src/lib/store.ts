@@ -8,6 +8,7 @@ interface User {
   xp: number;
   streak: number;
   role: string;
+  region?: string;
   avatar_url?: string;
 }
 
@@ -17,7 +18,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string, region?: string) => Promise<void>;
   logout: () => void;
   fetchMe: () => Promise<void>;
   setUser: (user: User) => void;
@@ -42,10 +43,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  register: async (username, email, password) => {
+  register: async (username, email, password, region) => {
     set({ isLoading: true });
     try {
-      const res = await authApi.register({ username, email, password });
+      const res = await authApi.register({ username, email, password, region });
       const { token, user } = res.data;
       localStorage.setItem('token', token);
       set({ token, user, isAuthenticated: true, isLoading: false });
