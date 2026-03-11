@@ -6,10 +6,25 @@ import { Brain, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 
+const REGIONS = [
+  'Global',
+  'North America',
+  'South America',
+  'Europe',
+  'UK & Ireland',
+  'Middle East & North Africa',
+  'Sub-Saharan Africa',
+  'South Asia',
+  'East Asia',
+  'Southeast Asia',
+  'Oceania',
+];
+
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [region, setRegion] = useState('');
   const [showPw, setShowPw] = useState(false);
   const { register, isLoading } = useAuthStore();
   const router = useRouter();
@@ -17,8 +32,9 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) return toast.error('Password must be at least 8 characters');
+    if (!region) return toast.error('Please select your region');
     try {
-      await register(username, email, password);
+      await register(username, email, password, region);
       toast.success('Account created! Let\'s start learning 🧠');
       router.push('/dashboard');
     } catch (err: any) {
@@ -63,6 +79,15 @@ export default function RegisterPage() {
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-300 mb-2 block">Your Region</label>
+              <select value={region} onChange={e => setRegion(e.target.value)} className="input" required>
+                <option value="">Select your region...</option>
+                {REGIONS.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
             </div>
             <button type="submit" disabled={isLoading} className="btn-primary w-full py-3 disabled:opacity-50">
               {isLoading ? 'Creating account...' : 'Create free account →'}
