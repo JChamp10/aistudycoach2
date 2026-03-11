@@ -15,9 +15,19 @@ router.get('/', async (req, res) => {
     let paramIdx = 1;
 
     if (type) { conditions.push(`mi.item_type = $${paramIdx++}`); params.push(type); }
-    if (search) { conditions.push(`(mi.title ILIKE $${paramIdx++} OR mi.description ILIKE $${paramIdx++})`); params.push(`%${search}%`, `%${search}%`); }
+    if (search) {
+      conditions.push(`(mi.title ILIKE $${paramIdx} OR mi.description ILIKE $${paramIdx + 1})`);
+      params.push(`%${search}%`, `%${search}%`);
+      paramIdx += 2;
+    }
 
-    const orderMap = { rating: 'mi.rating_avg DESC', price_asc: 'mi.price ASC', price_desc: 'mi.price DESC', newest: 'mi.created_at DESC', popular: 'mi.download_count DESC' };
+    const orderMap = {
+      rating: 'mi.rating_avg DESC',
+      price_asc: 'mi.price ASC',
+      price_desc: 'mi.price DESC',
+      newest: 'mi.created_at DESC',
+      popular: 'mi.download_count DESC'
+    };
     const orderClause = orderMap[sort] || 'mi.rating_avg DESC';
     params.push(limit, offset);
 
@@ -85,15 +95,18 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { title, description, price, item_type, subject, preview_content, deck_id } = req.body;
+  const { title, description, price, item_type, subject, preview_content, deck_id, homework_content } = req.body;
+  const validTypes = ['flashcard_pack', 'study_guide', 'exam_prep', 'homework'];
+  const finalType = validTypes.includes(item_type) ? item_type : 'flashcard_pack';
   try {
     const result = await query(`
       INSERT INTO marketplace_items (creator_id, title, description, price, item_type, subject, preview_content, deck_id)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *
-    `, [req.user.id, title, description, price || 0, item_type || 'flashcard_pack', subject, JSON.stringify(preview_content), deck_id]);
+    `, [req.user.id, title, description, price || 0, finalType, subject, JSON.stringify(preview_content || homework_content), deck_id || null]);
     await query('UPDATE users SET role = $1 WHERE id = $2 AND role = $3', ['creator', req.user.id, 'student']);
     res.status(201).json({ item: result.rows[0] });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to create listing' });
   }
 });
@@ -142,7 +155,8 @@ router.post('/:id/review', async (req, res) => {
     `, [req.user.id, req.params.id, rating, comment]);
 
     const avgResult = await query('SELECT AVG(rating) AS avg, COUNT(*) AS count FROM reviews WHERE item_id = $1', [req.params.id]);
-    await query('UPDATE marketplace_items SET rating_avg = $1, rating_count = $2 WHERE id = $3', [parseFloat(avgResult.rows[0].avg).toFixed(2), avgResult.rows[0].count, req.params.id]);
+    await query('UPDATE marketplace_items SET rating_avg = $1, rating_count = $2 WHERE id = $3',
+      [parseFloat(avgResult.rows[0].avg).toFixed(2), avgResult.rows[0].count, req.params.id]);
 
     res.json({ message: 'Review submitted' });
   } catch (err) {
