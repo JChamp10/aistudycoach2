@@ -13,15 +13,16 @@ router.post('/generate', async (req, res) => {
     const questions = await aiService.generateQuizQuestions(topic, difficulty, count || 5);
     const saved = [];
     for (const q of questions) {
+      const correctAnswer = q.correct || q.correct_answer || q.answer || '';
       const result = await query(`
         INSERT INTO quiz_questions (subject_id, deck_id, question, options, correct_answer, explanation, difficulty)
         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *
-      `, [subject_id, deck_id, q.question, JSON.stringify(q.options), q.correct, q.explanation, difficulty]);
+      `, [subject_id || null, deck_id || null, q.question, JSON.stringify(q.options), correctAnswer, q.explanation || '', difficulty]);
       saved.push(result.rows[0]);
     }
     res.json({ questions: saved });
   } catch (err) {
-    console.error(err);
+    console.error('Quiz generate error:', err);
     res.status(500).json({ error: 'Failed to generate quiz' });
   }
 });
@@ -34,27 +35,38 @@ router.post('/submit', async (req, res) => {
 
     for (const ans of answers) {
       const qResult = await query('SELECT * FROM quiz_questions WHERE id = $1', [ans.questionId]);
+      if (!qResult.rows[0]) continue;
       const q = qResult.rows[0];
       const isCorrect = q.correct_answer === ans.userAnswer;
       if (isCorrect) correct++;
 
-      await query(`
-        INSERT INTO quiz_attempts (user_id, session_id, question_id, user_answer, is_correct)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [req.user.id, sessionId, ans.questionId, ans.userAnswer, isCorrect]);
+      try {
+        await query(`
+          INSERT INTO quiz_attempts (user_id, session_id, question_id, user_answer, is_correct)
+          VALUES ($1, $2, $3, $4, $5)
+        `, [req.user.id, sessionId || null, ans.questionId, ans.userAnswer, isCorrect]);
+      } catch (e) {
+        console.log('quiz_attempts insert skipped:', e.message);
+      }
 
-      results.push({ questionId: ans.questionId, isCorrect, correctAnswer: q.correct_answer, explanation: q.explanation });
+      results.push({
+        questionId: ans.questionId,
+        isCorrect,
+        correctAnswer: q.correct_answer,
+        explanation: q.explanation,
+      });
     }
 
-    const score = correct / answers.length;
+    const total = answers.length;
+    const score = total > 0 ? correct / total : 0;
     const xpGained = correct * 5;
     const xpResult = await awardXP(req.user.id, 'quiz_complete', xpGained);
     if (score === 1.0) await awardXP(req.user.id, 'quiz_perfect_score');
     await updateStreak(req.user.id);
 
-    res.json({ score, correct, total: answers.length, results, xp: xpResult });
+    res.json({ score, correct, total, results, xp: xpResult });
   } catch (err) {
-    console.error(err);
+    console.error('Quiz submit error:', err);
     res.status(500).json({ error: 'Failed to submit quiz' });
   }
 });
