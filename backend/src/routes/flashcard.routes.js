@@ -10,12 +10,11 @@ router.use(authenticate);
 router.get('/decks', async (req, res) => {
   try {
     const result = await query(`
-      SELECT fd.*, s.name AS subject_name, s.color AS subject_color, COUNT(f.id) AS card_count
+      SELECT fd.*, COUNT(f.id) AS card_count
       FROM flashcard_decks fd
-      LEFT JOIN subjects s ON s.id = fd.subject_id
       LEFT JOIN flashcards f ON f.deck_id = fd.id
       WHERE fd.user_id = $1
-      GROUP BY fd.id, s.name, s.color ORDER BY fd.created_at DESC
+      GROUP BY fd.id ORDER BY fd.created_at DESC
     `, [req.user.id]);
     res.json({ decks: result.rows });
   } catch (err) {
@@ -39,7 +38,7 @@ router.post('/decks', async (req, res) => {
 router.get('/decks/:id/cards', async (req, res) => {
   try {
     const result = await query(
-      'SELECT * FROM flashcards WHERE deck_id = $1 AND user_id = $2 ORDER BY next_review_date ASC',
+      'SELECT * FROM flashcards WHERE deck_id = $1 AND user_id = $2 ORDER BY created_at ASC',
       [req.params.id, req.user.id]
     );
     res.json({ cards: result.rows });
