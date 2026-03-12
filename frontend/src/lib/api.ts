@@ -27,10 +27,12 @@ api.interceptors.response.use(
 );
 
 export const authApi = {
-  register: (data: { username: string; email: string; password: string }) => api.post('/auth/register', data),
-  login: (data: { email: string; password: string }) => api.post('/auth/login', data),
-  me: () => api.get('/auth/me'),
+  register: (data: { username: string; email: string; password: string; region?: string }) =>
+    api.post('/auth/register', data),
+  login: (data: { email: string; password: string }) =>
+    api.post('/auth/login', data),
   logout: () => api.post('/auth/logout'),
+  me: () => api.get('/auth/me'),
 };
 
 export const userApi = {
