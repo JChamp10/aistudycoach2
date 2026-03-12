@@ -1,12 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { leaderboardApi } from '@/lib/api';
-import { Trophy, Zap, Flame, Globe, MapPin } from 'lucide-react';
+import { Trophy, Zap, Flame, MapPin } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 
+const API = process.env.NEXT_PUBLIC_API_URL;
+
 export default function LeaderboardPage() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [tab, setTab] = useState<'global' | 'weekly' | 'regional'>('global');
   const [data, setData] = useState<any[]>([]);
   const [region, setRegion] = useState('');
@@ -14,22 +15,23 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     setLoading(true);
-    const fn =
-      tab === 'global' ? leaderboardApi.global :
-      tab === 'weekly' ? leaderboardApi.weekly :
-      leaderboardApi.regional;
-    fn().then(r => {
-      setData(r.data.leaderboard);
-      if (r.data.region) setRegion(r.data.region);
-    }).finally(() => setLoading(false));
-  }, [tab]);
+    fetch(`${API}/leaderboard/${tab}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(d => {
+        setData(d.leaderboard || []);
+        if (d.region) setRegion(d.region);
+      })
+      .finally(() => setLoading(false));
+  }, [tab, token]);
 
   const medals = ['🥇', '🥈', '🥉'];
 
   const tabs = [
-    { key: 'global',   label: '🌍 All Time',   icon: Globe },
-    { key: 'weekly',   label: '📅 This Week',  icon: Zap },
-    { key: 'regional', label: '📍 My Region',  icon: MapPin },
+    { key: 'global', label: '🌍 All Time' },
+    { key: 'weekly', label: '📅 This Week' },
+    { key: 'regional', label: '📍 My Region' },
   ];
 
   return (
@@ -48,7 +50,7 @@ export default function LeaderboardPage() {
         {user?.region && (
           <div className="flex items-center gap-2 text-sm text-slate-400 bg-surface-muted px-4 py-2 rounded-xl border border-surface-border w-fit">
             <MapPin className="w-4 h-4 text-brand-400" />
-            Your region: <span className="text-white font-medium">{user.region}</span>
+            Your region: <span className="text-white font-medium ml-1">{user.region}</span>
           </div>
         )}
 
@@ -57,7 +59,9 @@ export default function LeaderboardPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key as any)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.key ? 'bg-brand-500 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                tab === t.key ? 'bg-brand-500 text-white' : 'text-slate-400 hover:text-white'
+              }`}
             >
               {t.label}
             </button>
@@ -65,24 +69,37 @@ export default function LeaderboardPage() {
         </div>
 
         {tab === 'regional' && region && (
-          <div className="card border-brand-500/20 bg-brand-500/5 flex items-center gap-3 !py-3">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-brand-500/20 bg-brand-500/5">
             <MapPin className="w-5 h-5 text-brand-400 flex-shrink-0" />
             <div>
               <div className="font-semibold text-sm">Regional Rankings</div>
-              <div className="text-xs text-slate-400">Showing top students in <span className="text-brand-400">{region}</span></div>
+              <div className="text-xs text-slate-400">
+                Showing top students in <span className="text-brand-400">{region}</span>
+              </div>
             </div>
           </div>
         )}
 
         {loading ? (
-          <div className="space-y-3">{[...Array(10)].map((_, i) => <div key={i} className="skeleton h-16 w-full" />)}</div>
+          <div className="space-y-3">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="skeleton h-16 w-full" />
+            ))}
+          </div>
         ) : (
           <div className="space-y-2">
-            {data.map((entry: any, i) => {
+            {data.map((entry: any, i: number) => {
               const isMe = entry.id === user?.id;
               const xp = tab === 'weekly' ? entry.weekly_xp : entry.xp;
               return (
-                <div key={entry.id} className={`card !p-4 flex items-center gap-4 transition-colors ${isMe ? 'border-brand-500/40 bg-brand-500/5' : ''}`}>
+                <div
+                  key={entry.id}
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl border transition-colors ${
+                    isMe
+                      ? 'border-brand-500/40 bg-brand-500/5'
+                      : 'border-surface-border bg-surface-card'
+                  }`}
+                >
                   <div className="w-10 text-center flex-shrink-0">
                     {i < 3
                       ? <span className="text-2xl">{medals[i]}</span>
@@ -95,15 +112,21 @@ export default function LeaderboardPage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold flex items-center gap-2 flex-wrap">
                       {entry.username}
-                      {isMe && <span className="badge bg-brand-500/20 text-brand-400 border-brand-500/30 text-xs">You</span>}
+                      {isMe && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
+                          You
+                        </span>
+                      )}
                     </div>
-                    <div className="text-xs text-slate-500 flex items-center gap-3 mt-0.5 flex-wrap">
+                    <div className="text-xs text-slate-500 flex items-center gap-3 mt-0.5">
                       <span className="flex items-center gap-1">
-                        <Flame className="w-3 h-3 text-amber-400" /> {entry.streak || 0} day streak
+                        <Flame className="w-3 h-3 text-amber-400" />
+                        {entry.streak || 0} day streak
                       </span>
                       {entry.region && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-brand-400" /> {entry.region}
+                          <MapPin className="w-3 h-3 text-brand-400" />
+                          {entry.region}
                         </span>
                       )}
                     </div>
@@ -116,3 +139,18 @@ export default function LeaderboardPage() {
                     <div className="text-xs text-slate-500">XP</div>
                   </div>
                 </div>
+              );
+            })}
+            {data.length === 0 && (
+              <div className="text-center py-12 text-slate-500">
+                {tab === 'regional'
+                  ? 'No one in your region yet. Be the first!'
+                  : 'No data yet. Start studying to appear here!'}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+}
