@@ -1,5 +1,5 @@
 'use client';
-import { usePathname, useRouter } = from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, HelpCircle, BookOpen, Brain, Shuffle,
   Calendar, BarChart2, Trophy, Gamepad2, User, LogOut, Zap
