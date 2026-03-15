@@ -1,37 +1,68 @@
 const express = require('express');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
 const { query } = require('../db/pool');
 const { authenticate } = require('../middleware/auth.middleware');
-const { awardXP } = require('../services/gamification.service');
 const aiService = require('../services/ai.service');
 
 const router = express.Router();
 router.use(authenticate);
 
-router.post('/', async (req, res) => {
-  const { question, context, subject_id, image_url } = req.body;
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files allowed'));
+  },
+});
+
+router.post('/ask', async (req, res) => {
+  const { question, subject } = req.body;
+  if (!question?.trim()) return res.status(400).json({ error: 'Question is required' });
   try {
-    const aiResult = await aiService.explainHomework(question, context);
-
-    const result = await query(`
-      INSERT INTO homework_questions (user_id, subject_id, question, image_url, ai_explanation, ai_steps)
-      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
-    `, [req.user.id, subject_id, question, image_url, aiResult.explanation, JSON.stringify(aiResult.steps)]);
-
-    await awardXP(req.user.id, 'homework_question');
-    res.json({ question: result.rows[0], explanation: aiResult });
+    const result = await aiService.explainHomework(question, subject);
+    try {
+      await query(
+        'INSERT INTO homework_help (user_id, question, answer, subject) VALUES ($1, $2, $3, $4)',
+        [req.user.id, question, result.explanation, subject || null]
+      );
+    } catch {}
+    res.json({ answer: result.explanation, steps: result.steps });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to process question' });
+    res.status(500).json({ error: 'Failed to get answer' });
   }
 });
 
-router.get('/', async (req, res) => {
+router.post('/ask-pdf', upload.single('pdf'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No PDF uploaded' });
+  const question = req.body.question || 'Please explain and help me understand this document';
+  try {
+    const pdfData = await pdfParse(req.file.buffer);
+    const text = pdfData.text.slice(0, 6000);
+    const combined = `The student uploaded a PDF document. Here is its content:\n\n${text}\n\nStudent's question: ${question}`;
+    const result = await aiService.explainHomework(combined, null);
+    try {
+      await query(
+        'INSERT INTO homework_help (user_id, question, answer, subject) VALUES ($1, $2, $3, $4)',
+        [req.user.id, `[PDF] ${req.file.originalname}: ${question}`, result.explanation, 'PDF Upload']
+      );
+    } catch {}
+    res.json({ answer: result.explanation, steps: result.steps });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to process PDF' });
+  }
+});
+
+router.get('/history', async (req, res) => {
   try {
     const result = await query(
-      'SELECT * FROM homework_questions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20',
+      'SELECT * FROM homework_help WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20',
       [req.user.id]
     );
-    res.json({ questions: result.rows });
+    res.json({ history: result.rows });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch history' });
   }
