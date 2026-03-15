@@ -1,4 +1,6 @@
 const express = require('express');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
 const { query } = require('../db/pool');
 const { authenticate } = require('../middleware/auth.middleware');
 const { awardXP, updateStreak } = require('../services/gamification.service');
@@ -6,6 +8,15 @@ const aiService = require('../services/ai.service');
 
 const router = express.Router();
 router.use(authenticate);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files allowed'));
+  },
+});
 
 router.get('/decks', async (req, res) => {
   try {
@@ -65,8 +76,8 @@ router.post('/', async (req, res) => {
   const { deck_id, question, answer } = req.body;
   try {
     const result = await query(
-      'INSERT INTO flashcards (deck_id, user_id, question, answer) VALUES ($1, $2, $3, $4) RETURNING *',
-      [deck_id, req.user.id, question, answer]
+      'INSERT INTO flashcards (deck_id, user_id, question, answer, source) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [deck_id, req.user.id, question, answer, 'manual']
     );
     await query('UPDATE flashcard_decks SET card_count = card_count + 1 WHERE id = $1', [deck_id]);
     res.status(201).json({ card: result.rows[0] });
@@ -82,8 +93,8 @@ router.post('/generate', async (req, res) => {
     const insertedCards = [];
     for (const card of generated) {
       const result = await query(
-        'INSERT INTO flashcards (deck_id, user_id, question, answer) VALUES ($1, $2, $3, $4) RETURNING *',
-        [deck_id, req.user.id, card.question, card.answer]
+        'INSERT INTO flashcards (deck_id, user_id, question, answer, source) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [deck_id, req.user.id, card.question, card.answer, 'ai_notes']
       );
       insertedCards.push(result.rows[0]);
     }
@@ -91,6 +102,32 @@ router.post('/generate', async (req, res) => {
     res.json({ cards: insertedCards, generated: insertedCards.length });
   } catch (err) {
     res.status(500).json({ error: 'Failed to generate flashcards' });
+  }
+});
+
+router.post('/generate-pdf', upload.single('pdf'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No PDF uploaded' });
+  const { deck_id, count } = req.body;
+  if (!deck_id) return res.status(400).json({ error: 'deck_id is required' });
+  try {
+    const pdfData = await pdfParse(req.file.buffer);
+    const text = pdfData.text.slice(0, 6000);
+    if (!text.trim()) return res.status(400).json({ error: 'Could not extract text from PDF' });
+
+    const generated = await aiService.generateFlashcardsFromNotes(text, parseInt(count) || 10);
+    const insertedCards = [];
+    for (const card of generated) {
+      const result = await query(
+        'INSERT INTO flashcards (deck_id, user_id, question, answer, source) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [deck_id, req.user.id, card.question, card.answer, 'ai_pdf']
+      );
+      insertedCards.push(result.rows[0]);
+    }
+    await query('UPDATE flashcard_decks SET card_count = card_count + $1 WHERE id = $2', [insertedCards.length, deck_id]);
+    res.json({ cards: insertedCards, generated: insertedCards.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to generate flashcards from PDF' });
   }
 });
 
