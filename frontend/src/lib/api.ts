@@ -83,3 +83,8 @@ export const userApi = {
   stats: () => api.get('/users/stats'),
   achievements: () => api.get('/users/achievements'),
 };
+export const studyApi = {
+  start: (data: any) => api.post('/study/start', data),
+  end: (id: string, data: any) => api.put(`/study/${id}/end`, data),
+  sessions: () => api.get('/study/sessions'),
+};
