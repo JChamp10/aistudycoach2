@@ -1,13 +1,12 @@
 'use client';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter } = from 'next/navigation';
 import {
   LayoutDashboard, HelpCircle, BookOpen, Brain, Shuffle,
-  Calendar, BarChart2, Trophy, ShoppingBag, User, LogOut, Zap
+  Calendar, BarChart2, Trophy, Gamepad2, User, LogOut, Zap
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { getLevelFromXP } from '@/lib/utils';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const navItems = [
   { href: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
@@ -18,12 +17,11 @@ const navItems = [
   { href: '/planner',     icon: Calendar,         label: 'Planner' },
   { href: '/progress',    icon: BarChart2,        label: 'Progress' },
   { href: '/leaderboard', icon: Trophy,           label: 'Leaderboard' },
-  { href: '/marketplace', icon: ShoppingBag,      label: 'Market' },
+  { href: '/kahoot',      icon: Gamepad2,         label: 'Kahoot' },
   { href: '/profile',     icon: User,             label: 'Profile' },
 ];
 
-const ITEM_HEIGHT = 56;
-const VISIBLE = 5;
+const TOTAL = navItems.length;
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -33,58 +31,79 @@ export default function Sidebar() {
 
   const activeIdx = navItems.findIndex(n => pathname.startsWith(n.href));
   const [centerIdx, setCenterIdx] = useState(activeIdx >= 0 ? activeIdx : 0);
+  const [rotation, setRotation] = useState(0); // total degrees rotated
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartY = useRef<number | null>(null);
-  const dragStartIdx = useRef<number>(centerIdx);
+  const wheelRef = useRef<HTMLDivElement>(null);
+  const lastAngleRef = useRef<number | null>(null);
+  const accumulatedRef = useRef(0);
+  const clickProtect = useRef(false);
 
-  const onMouseDown = (e: React.MouseEvent) => {
+  const getAngle = (e: MouseEvent | TouchEvent, rect: DOMRect) => {
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    return Math.atan2(clientY - cy, clientX - cx) * (180 / Math.PI);
+  };
+
+  const onPointerDown = (e: React.MouseEvent | React.TouchEvent) => {
     setIsDragging(true);
-    dragStartY.current = e.clientY;
-    dragStartIdx.current = centerIdx;
+    clickProtect.current = false;
+    accumulatedRef.current = 0;
+    const rect = wheelRef.current!.getBoundingClientRect();
+    const native = 'touches' in e ? e.nativeEvent : e.nativeEvent;
+    lastAngleRef.current = getAngle(native as any, rect);
   };
 
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || dragStartY.current === null) return;
-    const delta = Math.round((dragStartY.current - e.clientY) / ITEM_HEIGHT);
-    const next = Math.max(0, Math.min(navItems.length - 1, dragStartIdx.current + delta));
-    setCenterIdx(next);
-  };
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!isDragging || lastAngleRef.current === null || !wheelRef.current) return;
+      const rect = wheelRef.current.getBoundingClientRect();
+      const angle = getAngle(e, rect);
+      let delta = angle - lastAngleRef.current;
+      if (delta > 180) delta -= 360;
+      if (delta < -180) delta += 360;
+      lastAngleRef.current = angle;
+      accumulatedRef.current += delta;
+      if (Math.abs(accumulatedRef.current) > 5) clickProtect.current = true;
+      setRotation(r => r + delta);
 
-  const onMouseUp = () => {
-    setIsDragging(false);
-    dragStartY.current = null;
-  };
+      // Every 36deg = 1 item (360 / 10 items)
+      const degsPerItem = 360 / TOTAL;
+      const steps = Math.round(accumulatedRef.current / degsPerItem);
+      if (steps !== 0) {
+        setCenterIdx(prev => {
+          let next = (prev + steps) % TOTAL;
+          if (next < 0) next += TOTAL;
+          return next;
+        });
+        accumulatedRef.current -= steps * degsPerItem;
+      }
+    };
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    dragStartY.current = e.touches[0].clientY;
-    dragStartIdx.current = centerIdx;
-  };
+    const onUp = () => {
+      setIsDragging(false);
+      lastAngleRef.current = null;
+    };
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (dragStartY.current === null) return;
-    const delta = Math.round((dragStartY.current - e.touches[0].clientY) / ITEM_HEIGHT);
-    const next = Math.max(0, Math.min(navItems.length - 1, dragStartIdx.current + delta));
-    setCenterIdx(next);
-  };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: true });
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, [isDragging]);
 
-  const getItemStyle = (idx: number) => {
-    const offset = idx - centerIdx;
-    const absOffset = Math.abs(offset);
-    if (absOffset > Math.floor(VISIBLE / 2) + 1) return null;
-
-    const rotateX = offset * -18;
-    const translateY = offset * (ITEM_HEIGHT * 0.75);
-    const translateZ = -Math.abs(offset) * 40;
-    const opacity = Math.max(0, 1 - absOffset * 0.3);
-    const scale = Math.max(0.7, 1 - absOffset * 0.08);
-    const isCenter = offset === 0;
-
-    return { rotateX, translateY, translateZ, opacity, scale, isCenter };
-  };
+  const RADIUS = 88;
+  const ITEM_SIZE = 44;
 
   return (
-    <aside className="w-64 h-screen fixed left-0 top-0 bg-surface-card border-r border-surface-border flex flex-col z-40"
-      style={{ background: 'linear-gradient(180deg, #0f1117 0%, #181d2a 50%, #0f1117 100%)' }}>
+    <aside className="w-64 h-screen fixed left-0 top-0 border-r border-surface-border flex flex-col z-40"
+      style={{ background: 'linear-gradient(180deg, #0d0f18 0%, #131520 50%, #0d0f18 100%)' }}>
 
       {/* Logo */}
       <div className="h-16 px-6 flex items-center gap-2 border-b border-surface-border flex-shrink-0">
@@ -95,101 +114,116 @@ export default function Sidebar() {
       </div>
 
       {/* Rotary wheel */}
-      <div className="flex-1 flex items-center justify-center overflow-hidden relative"
-        style={{ perspective: '600px' }}>
+      <div className="flex-1 flex items-center justify-center overflow-hidden relative select-none">
 
-        {/* Center highlight band */}
-        <div className="absolute left-0 right-0 pointer-events-none z-10"
+        {/* Outer ring decoration */}
+        <div className="absolute rounded-full border border-surface-border/40 pointer-events-none"
+          style={{ width: RADIUS * 2 + ITEM_SIZE + 24, height: RADIUS * 2 + ITEM_SIZE + 24 }} />
+        <div className="absolute rounded-full border border-brand-500/10 pointer-events-none"
+          style={{ width: RADIUS * 2 + ITEM_SIZE - 8, height: RADIUS * 2 + ITEM_SIZE - 8 }} />
+
+        {/* Center hub */}
+        <div
+          ref={wheelRef}
+          className="relative rounded-full flex items-center justify-center"
           style={{
-            top: '50%',
-            transform: 'translateY(-50%)',
-            height: `${ITEM_HEIGHT}px`,
-            background: 'linear-gradient(90deg, rgba(85,88,255,0.08) 0%, rgba(85,88,255,0.15) 50%, rgba(85,88,255,0.08) 100%)',
-            borderTop: '1px solid rgba(85,88,255,0.25)',
-            borderBottom: '1px solid rgba(85,88,255,0.25)',
-          }} />
+            width: RADIUS * 2 + ITEM_SIZE + 8,
+            height: RADIUS * 2 + ITEM_SIZE + 8,
+            cursor: isDragging ? 'grabbing' : 'grab',
+          }}
+          onMouseDown={onPointerDown}
+          onTouchStart={onPointerDown}
+        >
+          {/* Center circle */}
+          <div className="absolute w-16 h-16 rounded-full border border-brand-500/30 bg-brand-500/5 flex items-center justify-center z-10 pointer-events-none">
+            <div className="w-2 h-2 rounded-full bg-brand-500" />
+          </div>
 
-        {/* Top fade */}
-        <div className="absolute top-0 left-0 right-0 h-24 pointer-events-none z-10"
-          style={{ background: 'linear-gradient(180deg, #0f1117 0%, transparent 100%)' }} />
+          {/* Tick marks */}
+          {navItems.map((_, i) => {
+            const angleDeg = (i / TOTAL) * 360 + rotation;
+            const angleRad = (angleDeg * Math.PI) / 180;
+            const x = Math.cos(angleRad) * (RADIUS + ITEM_SIZE / 2 + 10);
+            const y = Math.sin(angleRad) * (RADIUS + ITEM_SIZE / 2 + 10);
+            return (
+              <div key={`tick-${i}`} className="absolute w-0.5 h-2 bg-surface-border/50 rounded-full pointer-events-none"
+                style={{ transform: `translate(${x}px, ${y}px) rotate(${angleDeg + 90}deg)` }} />
+            );
+          })}
 
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-10"
-          style={{ background: 'linear-gradient(0deg, #0f1117 0%, transparent 100%)' }} />
-
-        {/* Wheel items */}
-        <div className="relative w-full select-none"
-          style={{ height: `${ITEM_HEIGHT * VISIBLE}px`, cursor: isDragging ? 'grabbing' : 'grab', transformStyle: 'preserve-3d' }}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={() => { dragStartY.current = null; }}>
-
-          {navItems.map((item, idx) => {
-            const style = getItemStyle(idx);
-            if (!style) return null;
-            const { rotateX, translateY, translateZ, opacity, scale, isCenter } = style;
+          {/* Nav items on the wheel */}
+          {navItems.map((item, i) => {
+            const angleDeg = (i / TOTAL) * 360 + rotation;
+            const angleRad = (angleDeg * Math.PI) / 180;
+            const x = Math.cos(angleRad) * RADIUS;
+            const y = Math.sin(angleRad) * RADIUS;
+            const isCenter = i === centerIdx;
+            const distFromCenter = Math.min(
+              Math.abs(i - centerIdx),
+              TOTAL - Math.abs(i - centerIdx)
+            );
+            const opacity = Math.max(0.25, 1 - distFromCenter * 0.2);
 
             return (
               <div
                 key={item.href}
                 onClick={() => {
-                  if (!isDragging) {
-                    if (isCenter) router.push(item.href);
-                    else setCenterIdx(idx);
+                  if (clickProtect.current) return;
+                  if (isCenter) router.push(item.href);
+                  else {
+                    // Spin to this item
+                    const forward = (i - centerIdx + TOTAL) % TOTAL;
+                    const backward = (centerIdx - i + TOTAL) % TOTAL;
+                    const steps = forward <= backward ? forward : -backward;
+                    setRotation(r => r - steps * (360 / TOTAL));
+                    setCenterIdx(i);
                   }
                 }}
                 style={{
                   position: 'absolute',
-                  top: '50%',
-                  left: 0,
-                  right: 0,
-                  height: `${ITEM_HEIGHT}px`,
-                  marginTop: `-${ITEM_HEIGHT / 2}px`,
-                  transform: `translateY(${translateY}px) translateZ(${translateZ}px) rotateX(${rotateX}deg) scale(${scale})`,
+                  width: ITEM_SIZE,
+                  height: ITEM_SIZE,
+                  transform: `translate(${x}px, ${y}px)`,
                   opacity,
-                  transition: isDragging ? 'none' : 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  transformStyle: 'preserve-3d',
-                  cursor: isCenter ? 'pointer' : 'pointer',
-                  zIndex: isCenter ? 5 : 1,
+                  transition: isDragging ? 'none' : 'opacity 0.2s',
+                  zIndex: isCenter ? 10 : 1,
+                  cursor: 'pointer',
                 }}
               >
-                <div className={`flex items-center gap-3 px-5 h-full mx-2 rounded-xl transition-colors ${
+                <div className={`w-full h-full rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all ${
                   isCenter
-                    ? 'text-white'
-                    : 'text-slate-500'
+                    ? 'bg-brand-500 shadow-lg shadow-brand-500/50 scale-110'
+                    : pathname.startsWith(item.href)
+                    ? 'bg-brand-500/20 border border-brand-500/40'
+                    : 'bg-surface-muted border border-surface-border/50 hover:bg-surface-card'
                 }`}>
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-                    isCenter
-                      ? 'bg-brand-500 shadow-lg shadow-brand-500/40'
-                      : 'bg-surface-muted'
-                  }`}>
-                    <item.icon className={`w-4 h-4 ${isCenter ? 'text-white' : 'text-slate-500'}`} />
-                  </div>
-                  <span className={`font-semibold text-sm transition-all ${isCenter ? 'text-white' : 'text-slate-500'}`}>
-                    {item.label}
-                  </span>
-                  {isCenter && (
-                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-400" />
-                  )}
+                  <item.icon className={`w-4 h-4 ${isCenter ? 'text-white' : 'text-slate-400'}`} />
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Scroll hint */}
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20">
-          <div className="text-xs text-slate-600 flex items-center gap-1">
-            <span>↕</span> scroll to navigate
+        {/* Active item label */}
+        <div className="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
+          <div className="text-xs font-semibold text-brand-400 tracking-widest uppercase">
+            {navItems[centerIdx].label}
           </div>
+          <div className="text-xs text-slate-600 mt-0.5">click to navigate</div>
+        </div>
+
+        {/* Pointer indicator at top */}
+        <div className="absolute pointer-events-none"
+          style={{ top: `calc(50% - ${RADIUS + ITEM_SIZE / 2 + 16}px)`, left: '50%', transform: 'translateX(-50%)' }}>
+          <div className="w-0 h-0" style={{
+            borderLeft: '5px solid transparent',
+            borderRight: '5px solid transparent',
+            borderTop: '8px solid rgba(85,88,255,0.6)',
+          }} />
         </div>
       </div>
 
-      {/* User info + XP */}
+      {/* User info */}
       {user && (
         <div className="p-4 border-t border-surface-border flex-shrink-0">
           {level && (
@@ -213,7 +247,7 @@ export default function Sidebar() {
               <div className="text-sm font-semibold truncate">{user.username}</div>
               <div className="text-xs text-slate-500 truncate">{user.region || 'Global'}</div>
             </div>
-            <button onClick={logout} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="Log out">
+            <button onClick={logout} className="text-slate-500 hover:text-red-400 transition-colors p-1">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
