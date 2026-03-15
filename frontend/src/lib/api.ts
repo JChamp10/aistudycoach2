@@ -64,6 +64,14 @@ export const kahootApi = {
   saveResults: (data: any) => api.post('/kahoot/results', data),
 };
 
+export const studyApi = {
+  start: (data: any) => api.post('/study/start', data),
+  end: (id: string, data: any) => api.put(`/study/${id}/end`, data),
+  sessions: () => api.get('/study/sessions'),
+  recordSession: (data: any) => api.post('/study/start', data),
+  submitRecall: (data: any) => api.post('/study/recall', data),
+};
+
 export const plannerApi = {
   list: (params?: any) => api.get('/planner', { params }),
   get: (params?: any) => api.get('/planner', { params }),
@@ -84,11 +92,4 @@ export const userApi = {
   updateProfile: (data: any) => api.put('/users/profile', data),
   stats: () => api.get('/users/stats'),
   achievements: () => api.get('/users/achievements'),
-};
-export const studyApi = {
-  start: (data: any) => api.post('/study/start', data),
-  end: (id: string, data: any) => api.put(`/study/${id}/end`, data),
-  sessions: () => api.get('/study/sessions'),
-  recordSession: (data: any) => api.post('/study/start', data),
-  submitRecall: (data: any) => api.post('/study/recall', data),
 };
