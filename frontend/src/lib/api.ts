@@ -65,7 +65,8 @@ export const kahootApi = {
 };
 
 export const plannerApi = {
-  get: () => api.get('/planner'),
+  list: (params?: any) => api.get('/planner', { params }),
+  get: (params?: any) => api.get('/planner', { params }),
   create: (data: any) => api.post('/planner', data),
   update: (id: string, data: any) => api.put(`/planner/${id}`, data),
   delete: (id: string) => api.delete(`/planner/${id}`),
