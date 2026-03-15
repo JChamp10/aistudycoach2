@@ -90,4 +90,5 @@ export const studyApi = {
   end: (id: string, data: any) => api.put(`/study/${id}/end`, data),
   sessions: () => api.get('/study/sessions'),
   recordSession: (data: any) => api.post('/study/start', data),
+  submitRecall: (data: any) => api.post('/study/recall', data),
 };
