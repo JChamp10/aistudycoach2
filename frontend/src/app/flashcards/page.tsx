@@ -2,13 +2,16 @@
 import { useEffect, useState, useRef } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { flashcardApi } from '@/lib/api';
-import { BookOpen, Plus, X, ChevronLeft, Sparkles, Zap, RotateCcw, Upload, FileText } from 'lucide-react';
+import {
+  BookOpen, Plus, X, ChevronLeft, Sparkles, Zap, RotateCcw,
+  Upload, FileText, Pencil, Trash2, Check, Eye
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 
 interface Card { id: string; question: string; answer: string; memory_strength: number; }
 interface Deck { id: string; title: string; card_count: number; }
-type Screen = 'home' | 'study' | 'create' | 'result';
+type Screen = 'home' | 'study' | 'create' | 'result' | 'view-cards';
 
 // ─── Swipe Card ───────────────────────────────────────────────────────────────
 function SwipeCard({ card, onSwipe, isTop }: {
@@ -60,7 +63,6 @@ function SwipeCard({ card, onSwipe, isTop }: {
           </motion.div>
         </>
       )}
-
       <div className="flashcard-container select-none" style={{ height: '320px' }}
         onClick={() => isTop && setFlipped(f => !f)}>
         <div className={`flashcard-inner w-full h-full ${flipped ? 'flipped' : ''}`}>
@@ -76,7 +78,6 @@ function SwipeCard({ card, onSwipe, isTop }: {
           </div>
         </div>
       </div>
-
       {isTop && (
         <div className="flex justify-center gap-6 mt-5">
           <button onClick={() => triggerSwipe('left')}
@@ -97,13 +98,86 @@ function SwipeCard({ card, onSwipe, isTop }: {
   );
 }
 
+// ─── Editable Card Row ────────────────────────────────────────────────────────
+function CardRow({ card, onSave, onDelete }: {
+  card: Card;
+  onSave: (id: string, q: string, a: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [q, setQ] = useState(card.question);
+  const [a, setA] = useState(card.answer);
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    await onSave(card.id, q, a);
+    setEditing(false);
+    setSaving(false);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="card !p-4 space-y-2">
+      {editing ? (
+        <>
+          <div>
+            <label className="text-xs text-slate-500 mb-1 block">Question</label>
+            <input value={q} onChange={e => setQ(e.target.value)} className="input text-sm" />
+          </div>
+          <div>
+            <label className="text-xs text-slate-500 mb-1 block">Answer</label>
+            <input value={a} onChange={e => setA(e.target.value)} className="input text-sm"
+              onKeyDown={e => e.key === 'Enter' && save()} />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={save} disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/20 border border-green-500/40 text-green-400 text-xs font-medium hover:bg-green-500/30 transition-all disabled:opacity-50">
+              <Check className="w-3 h-3" /> {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button onClick={() => { setEditing(false); setQ(card.question); setA(card.answer); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-muted border border-surface-border text-slate-400 text-xs font-medium hover:text-white transition-all">
+              <X className="w-3 h-3" /> Cancel
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold">{card.question}</div>
+            <div className="text-sm text-slate-400 mt-1">{card.answer}</div>
+            <div className="mt-1.5">
+              <div className="h-1 w-24 bg-surface-border rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-green-500"
+                  style={{ width: `${(card.memory_strength || 0) * 100}%` }} />
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-1.5 flex-shrink-0">
+            <button onClick={() => setEditing(true)}
+              className="w-7 h-7 rounded-lg bg-surface-muted hover:bg-brand-500/20 border border-surface-border hover:border-brand-500/40 text-slate-500 hover:text-brand-400 flex items-center justify-center transition-all">
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onDelete(card.id)}
+              className="w-7 h-7 rounded-lg bg-surface-muted hover:bg-red-500/20 border border-surface-border hover:border-red-500/40 text-slate-500 hover:text-red-400 flex items-center justify-center transition-all">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function FlashcardsPage() {
   const [screen, setScreen] = useState<Screen>('home');
   const [decks, setDecks] = useState<Deck[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
+  const [deckCards, setDeckCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cardsLoading, setCardsLoading] = useState(false);
 
   // Create
   const [deckTitle, setDeckTitle] = useState('');
@@ -111,8 +185,11 @@ export default function FlashcardsPage() {
   const [cardA, setCardA] = useState('');
   const [genNotes, setGenNotes] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [generatedCards, setGeneratedCards] = useState<Card[]>([]);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState('');
+  const [pdfCards, setPdfCards] = useState<Card[]>([]);
   const pdfRef = useRef<HTMLInputElement>(null);
 
   // Study
@@ -156,6 +233,17 @@ export default function FlashcardsPage() {
     finally { setLoading(false); }
   };
 
+  const openViewCards = async (deck: Deck) => {
+    setSelectedDeck(deck);
+    setCardsLoading(true);
+    setScreen('view-cards');
+    try {
+      const res = await flashcardApi.deckCards(deck.id);
+      setDeckCards(res.data.cards || []);
+    } catch { toast.error('Failed to load cards'); }
+    finally { setCardsLoading(false); }
+  };
+
   const handleSwipe = async (dir: 'left' | 'right') => {
     const card = swipeStack[swipeStack.length - 1];
     const difficulty = dir === 'right' ? 'easy' : 'hard';
@@ -177,6 +265,8 @@ export default function FlashcardsPage() {
       toast.success('Deck created!');
       setDeckTitle('');
       setSelectedDeck(res.data.deck);
+      setGeneratedCards([]);
+      setPdfCards([]);
       loadDecks();
     } catch { toast.error('Failed to create deck'); }
   };
@@ -184,19 +274,42 @@ export default function FlashcardsPage() {
   const addCard = async () => {
     if (!selectedDeck || !cardQ.trim() || !cardA.trim()) return;
     try {
-      await flashcardApi.createCard({ deck_id: selectedDeck.id, question: cardQ, answer: cardA });
+      const res = await flashcardApi.createCard({ deck_id: selectedDeck.id, question: cardQ, answer: cardA });
       toast.success('Card added!');
-      setCardQ('');
-      setCardA('');
+      setCardQ(''); setCardA('');
+      setDeckCards(prev => [...prev, res.data.card]);
       loadDecks();
     } catch { toast.error('Failed to add card'); }
+  };
+
+  const saveCard = async (id: string, question: string, answer: string) => {
+    try {
+      await flashcardApi.updateCard(id, { question, answer });
+      setDeckCards(prev => prev.map(c => c.id === id ? { ...c, question, answer } : c));
+      setGeneratedCards(prev => prev.map(c => c.id === id ? { ...c, question, answer } : c));
+      setPdfCards(prev => prev.map(c => c.id === id ? { ...c, question, answer } : c));
+      toast.success('Card updated!');
+    } catch { toast.error('Failed to update card'); }
+  };
+
+  const deleteCard = async (id: string) => {
+    try {
+      await flashcardApi.deleteCard(id);
+      setDeckCards(prev => prev.filter(c => c.id !== id));
+      setGeneratedCards(prev => prev.filter(c => c.id !== id));
+      setPdfCards(prev => prev.filter(c => c.id !== id));
+      toast.success('Card deleted');
+      loadDecks();
+    } catch { toast.error('Failed to delete card'); }
   };
 
   const generateFromNotes = async () => {
     if (!selectedDeck || !genNotes.trim()) return;
     setGenerating(true);
+    setGeneratedCards([]);
     try {
       const res = await flashcardApi.generateFromNotes({ deck_id: selectedDeck.id, notes: genNotes, count: 10 });
+      setGeneratedCards(res.data.cards || []);
       toast.success(`Generated ${res.data.generated} cards!`);
       setGenNotes('');
       loadDecks();
@@ -210,23 +323,31 @@ export default function FlashcardsPage() {
     if (f.type !== 'application/pdf') return toast.error('Only PDF files supported');
     if (f.size > 10 * 1024 * 1024) return toast.error('Max 10MB');
     setPdfFile(f);
+    setPdfCards([]);
     toast.success(`${f.name} ready!`);
   };
 
   const generateFromPdf = async () => {
     if (!selectedDeck || !pdfFile) return;
     setGeneratingPdf(true);
+    setPdfCards([]);
+    setPdfProgress('Reading PDF...');
     try {
+      setPdfProgress('Extracting text from PDF...');
+      await new Promise(r => setTimeout(r, 600));
+      setPdfProgress('AI is generating flashcards...');
       const formData = new FormData();
       formData.append('pdf', pdfFile);
       formData.append('deck_id', selectedDeck.id);
       formData.append('count', '10');
       const res = await flashcardApi.generateFromPdf(formData);
+      setPdfProgress('Done!');
+      setPdfCards(res.data.cards || []);
       toast.success(`Generated ${res.data.generated} cards from PDF!`);
       setPdfFile(null);
       if (pdfRef.current) pdfRef.current.value = '';
       loadDecks();
-    } catch { toast.error('Failed to generate from PDF'); }
+    } catch { toast.error('Failed to generate from PDF'); setPdfProgress(''); }
     finally { setGeneratingPdf(false); }
   };
 
@@ -244,8 +365,7 @@ export default function FlashcardsPage() {
             </h1>
             <p className="text-slate-400 mt-2">Pick a deck to study or create new cards.</p>
           </div>
-          <button
-            onClick={() => { setSelectedDeck(null); setScreen('create'); }}
+          <button onClick={() => { setSelectedDeck(null); setGeneratedCards([]); setPdfCards([]); setScreen('create'); }}
             className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" /> New Deck
           </button>
@@ -253,7 +373,7 @@ export default function FlashcardsPage() {
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-32" />)}
+            {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-36" />)}
           </div>
         ) : decks.length === 0 ? (
           <div className="text-center py-20 card border-dashed">
@@ -268,28 +388,76 @@ export default function FlashcardsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {decks.map((deck, i) => (
-              <motion.div key={deck.id}
-                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              <motion.div key={deck.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
                 className="card hover:border-brand-500/40 transition-all group">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
                     <BookOpen className="w-5 h-5 text-brand-400" />
                   </div>
-                  <button
-                    onClick={() => { setSelectedDeck(deck); setScreen('create'); }}
-                    className="text-xs text-slate-500 hover:text-brand-400 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10">
-                    + Add cards
-                  </button>
+                  <div className="flex gap-1">
+                    <button onClick={() => openViewCards(deck)}
+                      className="text-xs text-slate-500 hover:text-brand-400 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10 flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> View
+                    </button>
+                    <button onClick={() => { setSelectedDeck(deck); setGeneratedCards([]); setPdfCards([]); setScreen('create'); }}
+                      className="text-xs text-slate-500 hover:text-brand-400 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10">
+                      + Add
+                    </button>
+                  </div>
                 </div>
                 <h3 className="font-bold text-lg group-hover:text-brand-400 transition-colors">{deck.title}</h3>
                 <p className="text-sm text-slate-500 mt-1">{deck.card_count} cards</p>
-                <button
-                  onClick={() => loadDeckCards(deck)}
-                  className="mt-4 w-full btn-primary text-sm py-2">
+                <button onClick={() => loadDeckCards(deck)} className="mt-4 w-full btn-primary text-sm py-2">
                   Study this deck →
                 </button>
               </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+
+  // ── VIEW CARDS ────────────────────────────────────────────────────────────
+  if (screen === 'view-cards') return (
+    <AppLayout>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setScreen('home')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+            <ChevronLeft className="w-5 h-5" /> Back
+          </button>
+          <div className="flex-1">
+            <h1 className="text-2xl font-extrabold">{selectedDeck?.title}</h1>
+            <p className="text-sm text-slate-500">{deckCards.length} cards · click any card to edit</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => { setGeneratedCards([]); setPdfCards([]); setScreen('create'); }}
+              className="btn-ghost flex items-center gap-2 text-sm">
+              <Plus className="w-4 h-4" /> Add Cards
+            </button>
+            <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary text-sm">
+              Study →
+            </button>
+          </div>
+        </div>
+
+        {cardsLoading ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => <div key={i} className="skeleton h-16" />)}
+          </div>
+        ) : deckCards.length === 0 ? (
+          <div className="text-center py-16 card border-dashed">
+            <p className="text-slate-500">No cards yet.</p>
+            <button onClick={() => setScreen('create')} className="btn-primary mt-4 mx-auto flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Add Cards
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {deckCards.map(card => (
+              <CardRow key={card.id} card={card} onSave={saveCard} onDelete={deleteCard} />
             ))}
           </div>
         )}
@@ -312,12 +480,10 @@ export default function FlashcardsPage() {
           </div>
           <div className="text-sm text-slate-400">{swipeStack.length} left</div>
         </div>
-
         <div className="h-1.5 bg-surface-border rounded-full overflow-hidden">
           <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-purple-500 transition-all"
             style={{ width: `${((cards.length - swipeStack.length) / cards.length) * 100}%` }} />
         </div>
-
         <div className="relative" style={{ height: '420px' }}>
           {swipeStack.slice(-3).map((card, i, arr) => {
             const isTop = i === arr.length - 1;
@@ -328,11 +494,7 @@ export default function FlashcardsPage() {
                 transform: `scale(${1 - offset * 0.04}) translateY(${offset * 12}px)`,
                 zIndex: i,
               }}>
-                <SwipeCard
-                  card={card}
-                  onSwipe={isTop ? handleSwipe : undefined}
-                  isTop={isTop}
-                />
+                <SwipeCard card={card} onSwipe={isTop ? handleSwipe : undefined} isTop={isTop} />
               </div>
             );
           })}
@@ -403,9 +565,7 @@ export default function FlashcardsPage() {
                 placeholder="Deck name..." className="input flex-1"
                 onKeyDown={e => e.key === 'Enter' && createDeck()} />
               <button onClick={createDeck} disabled={!deckTitle.trim()}
-                className="btn-primary px-4 disabled:opacity-50">
-                Create
-              </button>
+                className="btn-primary px-4 disabled:opacity-50">Create</button>
             </div>
             {decks.length > 0 && (
               <div>
@@ -425,20 +585,14 @@ export default function FlashcardsPage() {
 
         {selectedDeck && (
           <>
-            {/* Manual card */}
+            {/* Manual */}
             <div className="card space-y-4">
               <h2 className="font-bold">Add a Card Manually</h2>
-              <div>
-                <label className="text-sm font-medium text-slate-300 mb-2 block">Question</label>
-                <input value={cardQ} onChange={e => setCardQ(e.target.value)}
-                  placeholder="Front of card..." className="input" />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-slate-300 mb-2 block">Answer</label>
-                <input value={cardA} onChange={e => setCardA(e.target.value)}
-                  placeholder="Back of card..." className="input"
-                  onKeyDown={e => e.key === 'Enter' && addCard()} />
-              </div>
+              <input value={cardQ} onChange={e => setCardQ(e.target.value)}
+                placeholder="Question / front of card..." className="input" />
+              <input value={cardA} onChange={e => setCardA(e.target.value)}
+                placeholder="Answer / back of card..." className="input"
+                onKeyDown={e => e.key === 'Enter' && addCard()} />
               <button onClick={addCard} disabled={!cardQ.trim() || !cardA.trim()}
                 className="btn-primary flex items-center gap-2 disabled:opacity-50">
                 <Plus className="w-4 h-4" /> Add Card
@@ -453,13 +607,32 @@ export default function FlashcardsPage() {
               <textarea value={genNotes} onChange={e => setGenNotes(e.target.value)}
                 placeholder="Paste your notes and AI will create 10 flashcards..."
                 className="input min-h-[100px] resize-none" />
-              <button onClick={generateFromNotes}
-                disabled={generating || !genNotes.trim()}
+              <button onClick={generateFromNotes} disabled={generating || !genNotes.trim()}
                 className="btn-primary flex items-center gap-2 disabled:opacity-50">
                 {generating
                   ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Generating...</>
                   : <><Sparkles className="w-4 h-4" /> Generate 10 Cards</>}
               </button>
+
+              {/* Live preview of generated cards */}
+              <AnimatePresence>
+                {generatedCards.length > 0 && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 pt-2 border-t border-brand-500/20">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-brand-400 font-semibold uppercase tracking-widest">
+                        {generatedCards.length} cards generated
+                      </p>
+                      <button onClick={() => openViewCards(selectedDeck)}
+                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> View all
+                      </button>
+                    </div>
+                    {generatedCards.map(card => (
+                      <CardRow key={card.id} card={card} onSave={saveCard} onDelete={deleteCard} />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* PDF upload */}
@@ -469,6 +642,7 @@ export default function FlashcardsPage() {
               </h2>
               <p className="text-sm text-slate-400">Upload a PDF and AI will extract 10 flashcards automatically.</p>
               <input ref={pdfRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfFile} />
+
               {pdfFile ? (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-sm">
                   <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
@@ -487,13 +661,44 @@ export default function FlashcardsPage() {
                   <span className="text-xs text-slate-500">Max 10MB</span>
                 </button>
               )}
-              <button onClick={generateFromPdf}
-                disabled={generatingPdf || !pdfFile}
+
+              {/* Progress indicator */}
+              <AnimatePresence>
+                {generatingPdf && pdfProgress && (
+                  <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                    <div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin flex-shrink-0" />
+                    <span className="text-sm text-blue-300">{pdfProgress}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <button onClick={generateFromPdf} disabled={generatingPdf || !pdfFile}
                 className="w-full border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl py-2.5 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
                 {generatingPdf
-                  ? <><div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin" /> Processing PDF...</>
+                  ? <><div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin" /> Processing...</>
                   : <><Sparkles className="w-4 h-4" /> Generate from PDF</>}
               </button>
+
+              {/* Live preview of PDF generated cards */}
+              <AnimatePresence>
+                {pdfCards.length > 0 && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 pt-2 border-t border-blue-500/20">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-blue-400 font-semibold uppercase tracking-widest">
+                        {pdfCards.length} cards from PDF
+                      </p>
+                      <button onClick={() => openViewCards(selectedDeck)}
+                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> View all
+                      </button>
+                    </div>
+                    {pdfCards.map(card => (
+                      <CardRow key={card.id} card={card} onSave={saveCard} onDelete={deleteCard} />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </>
         )}
