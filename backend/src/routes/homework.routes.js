@@ -20,10 +20,14 @@ const upload = multer({
 
 // Ask a text question
 router.post('/ask', async (req, res) => {
-  const { question, subject } = req.body;
+  const { question, subject, history } = req.body;
   if (!question?.trim()) return res.status(400).json({ error: 'Question is required' });
   try {
-    const result = await aiService.explainHomework(question, subject);
+    const messages = [
+      ...(history || []).map((m: any) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: question }
+    ];
+    const result = await aiService.explainHomework(question, subject, messages);
     try {
       await query(
         'INSERT INTO homework_help (user_id, question, answer, subject) VALUES ($1, $2, $3, $4)',
@@ -39,7 +43,6 @@ router.post('/ask', async (req, res) => {
     res.status(500).json({ error: 'Failed to get answer' });
   }
 });
-
 // Ask with PDF
 router.post('/ask-pdf', upload.single('pdf'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No PDF uploaded' });
