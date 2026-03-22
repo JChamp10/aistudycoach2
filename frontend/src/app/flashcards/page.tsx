@@ -269,7 +269,8 @@ function RecallMode({ deck, onDone }: {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [recall, setRecall] = useState('');
-  const [generatedCards, setGeneratedCards] = useState<Card[]>([]);
+  const [gapResults, setGapResults] = useState<{ question: string; answer: string; source: string; }[]>([]);
+  const [savedCards, setSavedCards] = useState<Card[]>([]);
   const [timeLeft, setTimeLeft] = useState(120);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const pdfRef = useRef<HTMLInputElement>(null);
@@ -315,7 +316,7 @@ function RecallMode({ deck, onDone }: {
     if (timerRef.current) clearInterval(timerRef.current);
     setPhase('generating');
     try {
-      const notes = `You are a study gap analyzer.
+      const prompt = `You are a study gap analyzer.
 
 STUDY MATERIAL:
 ---
@@ -327,14 +328,42 @@ STUDENT'S FREE RECALL:
 ${recall}
 ---
 
-Compare the student's recall against the study material. Find concepts, facts, and details from the material that the student MISSED or got WRONG. Generate 5-8 flashcards that specifically target those gaps. Only create cards for things they missed, not what they already wrote correctly.`;
+Compare the student's recall against the study material. Find concepts, facts, and details from the material that the student MISSED or got WRONG.
 
-      const res = await flashcardApi.generateFromNotes({
-        deck_id: deck.id,
-        notes,
-        count: 8,
-      });
-      setGeneratedCards(res.data.cards || []);
+For each gap, return:
+- question: a flashcard question targeting that gap
+- answer: the correct answer
+- source: the EXACT sentence or phrase from the study material above that contains this information (copy it word for word)
+
+Return ONLY a valid JSON array, no other text:
+[{"question": "...", "answer": "...", "source": "..."}, ...]
+
+Generate 5-8 items maximum. Only include things the student actually missed.`;
+
+      const res = await homeworkApi.ask({ question: prompt });
+      const raw = res.data.answer || '[]';
+      let parsed: { question: string; answer: string; source: string; }[] = [];
+      try {
+        const clean = raw.replace(/```json|```/g, '').trim();
+        const start = clean.indexOf('[');
+        const end = clean.lastIndexOf(']');
+        parsed = JSON.parse(clean.slice(start, end + 1));
+      } catch {
+        toast.error('Could not parse gap analysis');
+        setPhase('recall');
+        return;
+      }
+
+      setGapResults(parsed);
+
+      const saved: Card[] = [];
+      for (const gap of parsed) {
+        try {
+          const r = await flashcardApi.createCard({ deck_id: deck.id, question: gap.question, answer: gap.answer });
+          saved.push(r.data.card);
+        } catch {}
+      }
+      setSavedCards(saved);
       setPhase('done');
     } catch {
       toast.error('Failed to generate gap cards');
@@ -352,16 +381,14 @@ Compare the student's recall against the study material. Find concepts, facts, a
         <div className="text-5xl mb-3">📚</div>
         <h2 className="text-2xl font-extrabold">Free Recall</h2>
         <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto">
-          Upload your study material, write what you remember, and AI will generate flashcards for your gaps.
+          Upload your study material, write what you remember, and AI will find your gaps and show exactly where in the source they came from.
         </p>
       </div>
-
       <div className="card space-y-4 border-brand-500/20 bg-brand-500/5">
         <h3 className="font-bold flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-brand-500 text-white text-xs flex items-center justify-center font-bold">1</span>
           Add your study material
         </h3>
-
         <input ref={pdfRef} type="file" accept=".pdf" className="hidden" onChange={handlePdf} />
         {pdfFile ? (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-500/10 border border-brand-500/30 text-sm">
@@ -383,27 +410,23 @@ Compare the student's recall against the study material. Find concepts, facts, a
             <span className="text-xs text-slate-500">Max 10MB</span>
           </button>
         )}
-
         <div className="flex items-center gap-3 text-xs text-slate-500">
           <div className="flex-1 h-px bg-surface-border" />
           or paste notes below
           <div className="flex-1 h-px bg-surface-border" />
         </div>
-
         <textarea
           value={materialText}
           onChange={e => setMaterialText(e.target.value)}
           placeholder="Paste your notes, textbook excerpt, lecture slides, or study guide here..."
           className="input min-h-[140px] resize-none text-sm"
         />
-
         {materialText.length > 0 && (
           <div className="flex items-center gap-2 text-xs text-green-400">
             <Check className="w-3 h-3" /> {materialText.length} characters loaded
           </div>
         )}
       </div>
-
       <button onClick={startRecall} disabled={!materialText.trim() || pdfLoading}
         className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
         <Brain className="w-5 h-5" /> Start Free Recall →
@@ -425,13 +448,11 @@ Compare the student's recall against the study material. Find concepts, facts, a
           {mins}:{secs.toString().padStart(2, '0')}
         </div>
       </div>
-
       <div className="h-1.5 bg-surface-border rounded-full overflow-hidden">
         <motion.div className="h-full rounded-full bg-brand-500"
           animate={{ width: `${(timeLeft / 120) * 100}%` }}
           transition={{ duration: 0.9, ease: 'linear' }} />
       </div>
-
       <textarea
         value={recall}
         onChange={e => setRecall(e.target.value)}
@@ -442,17 +463,15 @@ Compare the student's recall against the study material. Find concepts, facts, a
 - Formulas or processes
 - Anything else you recall
 
-The AI will compare this against your material and generate flashcards for what you missed."
+The AI will compare this against your material and show you exactly what you missed and where it came from."
         className="input resize-none text-sm leading-relaxed"
         style={{ minHeight: '260px' }}
         autoFocus
       />
-
       <div className="flex items-center justify-between text-xs text-slate-500">
         <span>{recall.length} characters written</span>
         {timeLeft === 0 && <span className="text-amber-400 font-medium animate-pulse">⏰ Time's up — submit when ready!</span>}
       </div>
-
       <button onClick={submit} disabled={!recall.trim()}
         className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
         <Sparkles className="w-5 h-5" /> Find My Gaps & Generate Cards
@@ -471,32 +490,46 @@ The AI will compare this against your material and generate flashcards for what 
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <div className="text-5xl mb-3">{generatedCards.length > 0 ? '🧠' : '🎉'}</div>
+        <div className="text-5xl mb-3">{gapResults.length > 0 ? '🧠' : '🎉'}</div>
         <h2 className="text-2xl font-extrabold">
-          {generatedCards.length > 0 ? 'Gap Cards Generated!' : 'Perfect Recall!'}
+          {gapResults.length > 0 ? "Here's what you missed" : 'Perfect Recall!'}
         </h2>
         <p className="text-slate-400 text-sm mt-2">
-          {generatedCards.length > 0
-            ? `${generatedCards.length} flashcards created for what you missed`
+          {gapResults.length > 0
+            ? `${gapResults.length} gaps found · ${savedCards.length} cards added to "${deck.title}"`
             : 'You remembered everything! No gaps found.'}
         </p>
       </div>
-
-      {generatedCards.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs text-brand-400 font-semibold uppercase tracking-widest">
-            Added to "{deck.title}"
-          </p>
-          {generatedCards.map(card => (
-            <div key={card.id} className="card !p-4 border-brand-500/20 bg-brand-500/5">
-              <div className="text-sm font-semibold">{card.question}</div>
-              <div className="text-sm text-slate-400 mt-1.5 border-t border-surface-border pt-1.5">{card.answer}</div>
-            </div>
+      {gapResults.length > 0 && (
+        <div className="space-y-3">
+          {gapResults.map((gap, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+              className="card border-brand-500/20 space-y-3">
+              <div className="flex items-start gap-2">
+                <div className="w-5 h-5 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs text-red-400 font-bold">{i + 1}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold">{gap.question}</div>
+                  <div className="text-sm text-green-400 mt-1 font-medium">{gap.answer}</div>
+                </div>
+              </div>
+              {gap.source && (
+                <div className="ml-7 flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                  <div className="text-xs text-amber-400 font-semibold uppercase tracking-widest flex-shrink-0 mt-0.5">
+                    Source
+                  </div>
+                  <div className="text-xs text-amber-300/80 italic leading-relaxed">
+                    "{gap.source}"
+                  </div>
+                </div>
+              )}
+            </motion.div>
           ))}
         </div>
       )}
-
-      <button onClick={() => onDone(generatedCards)} className="btn-primary w-full py-3 font-bold">
+      <button onClick={() => onDone(savedCards)} className="btn-primary w-full py-3 font-bold">
         Done
       </button>
     </div>
@@ -513,6 +546,7 @@ export default function FlashcardsPage() {
   const [loading, setLoading] = useState(true);
   const [cardsLoading, setCardsLoading] = useState(false);
   const [deletingDeck, setDeletingDeck] = useState<string | null>(null);
+  const [recallDeck, setRecallDeck] = useState<Deck | null>(null);
 
   // Create
   const [deckTitle, setDeckTitle] = useState('');
@@ -533,9 +567,6 @@ export default function FlashcardsPage() {
   const [easyCount, setEasyCount] = useState(0);
   const [hardCount, setHardCount] = useState(0);
   const [sessionXP, setSessionXP] = useState(0);
-
-  // Recall deck picker
-  const [recallDeck, setRecallDeck] = useState<Deck | null>(null);
 
   useEffect(() => { loadDecks(); }, []);
 
@@ -730,13 +761,11 @@ export default function FlashcardsPage() {
             <p className="text-slate-400 mt-2">Pick a deck to study or create new cards.</p>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => {
-                if (decks.length === 0) { toast('Create a deck first!'); return; }
-                setRecallDeck(decks[0]);
-                setScreen('recall');
-              }}
-              className="btn-ghost flex items-center gap-2">
+            <button onClick={() => {
+              if (decks.length === 0) { toast('Create a deck first!'); return; }
+              setRecallDeck(decks[0]);
+              setScreen('recall');
+            }} className="btn-ghost flex items-center gap-2">
               <Brain className="w-4 h-4" /> Free Recall
             </button>
             <button onClick={() => { setSelectedDeck(null); setGeneratedCards([]); setPdfCards([]); setScreen('create'); }}
@@ -823,8 +852,7 @@ export default function FlashcardsPage() {
             <ChevronLeft className="w-5 h-5" /> Back
           </button>
           {decks.length > 1 && (
-            <select
-              value={recallDeck?.id || ''}
+            <select value={recallDeck?.id || ''}
               onChange={e => setRecallDeck(decks.find(d => d.id === e.target.value) || null)}
               className="input text-sm flex-1">
               {decks.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
@@ -832,14 +860,11 @@ export default function FlashcardsPage() {
           )}
         </div>
         {recallDeck && (
-          <RecallMode
-            deck={recallDeck}
-            onDone={(newCards) => {
-              if (newCards.length > 0) toast.success(`${newCards.length} gap cards added to "${recallDeck.title}"!`);
-              setScreen('home');
-              loadDecks();
-            }}
-          />
+          <RecallMode deck={recallDeck} onDone={(newCards) => {
+            if (newCards.length > 0) toast.success(`${newCards.length} gap cards added to "${recallDeck.title}"!`);
+            setScreen('home');
+            loadDecks();
+          }} />
         )}
       </div>
     </AppLayout>
@@ -970,7 +995,6 @@ export default function FlashcardsPage() {
               </div>
             )}
           </div>
-
           <div className="space-y-3">
             {hardCards.length > 0 && (
               <button onClick={() => setScreen('hard-quiz')}
@@ -987,11 +1011,10 @@ export default function FlashcardsPage() {
               <div className="text-2xl">🧠</div>
               <div>
                 <div className="font-bold text-brand-400">Free Recall</div>
-                <div className="text-xs text-slate-500">Upload material · write recall · AI finds your gaps</div>
+                <div className="text-xs text-slate-500">Upload material · write recall · AI finds your gaps with sources</div>
               </div>
             </button>
           </div>
-
           <div className="flex gap-3 justify-center">
             <button onClick={() => setScreen('home')} className="btn-ghost">All Decks</button>
             <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary">Study Again</button>
