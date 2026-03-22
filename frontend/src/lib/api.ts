@@ -48,6 +48,9 @@ export const flashcardApi = {
   reviewCard: (id: string, difficulty: string) =>
     api.post(`/flashcards/${id}/review`, { difficulty }),
   deleteDeck: (id: string) => api.delete(`/flashcards/decks/${id}`),
+  shareDeck: (id: string) => api.post(`/flashcards/decks/${id}/share`),
+  unshareDeck: (id: string) => api.post(`/flashcards/decks/${id}/unshare`),
+  getPublicDeck: (token: string) => api.get(`/flashcards/public/${token}`),
 };
 
 export const homeworkApi = {
