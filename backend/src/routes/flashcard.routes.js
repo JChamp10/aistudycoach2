@@ -8,7 +8,24 @@ const aiService = require('../services/ai.service');
 
 const router = express.Router();
 router.use(authenticate);
-
+// Public route — no auth needed
+router.get('/public/:token', async (req, res) => {
+  try {
+    const deck = await query(
+      'SELECT fd.*, u.username AS creator_name FROM flashcard_decks fd JOIN users u ON u.id = fd.user_id WHERE fd.share_token = $1 AND fd.is_public = true',
+      [req.params.token]
+    );
+    if (!deck.rows[0]) return res.status(404).json({ error: 'Deck not found or not public' });
+    const cards = await query(
+      'SELECT id, question, answer, image_url FROM flashcards WHERE deck_id = $1 ORDER BY created_at ASC',
+      [deck.rows[0].id]
+    );
+    res.json({ deck: deck.rows[0], cards: cards.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch deck' });
+  }
+});
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
