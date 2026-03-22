@@ -1,57 +1,89 @@
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-surface text-white antialiased;
+    @apply antialiased;
     font-family: 'Syne', system-ui, sans-serif;
-    background-color: #0f1117;
+    background-color: #fdf8f3;
+    color: #2d1f0e;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Syne', system-ui, sans-serif;
     font-weight: 700;
+    color: #2d1f0e;
   }
 }
 
 @layer components {
   .card {
     @apply bg-surface-card border border-surface-border rounded-2xl p-6;
+    box-shadow: 0 2px 12px rgba(139, 90, 60, 0.08);
   }
   .btn-primary {
-    @apply bg-brand-500 hover:bg-brand-600 text-white font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/20;
+    @apply font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98];
+    background: linear-gradient(135deg, #ff6b1a, #e85500);
+    color: white;
+    box-shadow: 0 4px 14px rgba(255, 107, 26, 0.35);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(255, 107, 26, 0.45);
   }
   .btn-ghost {
-    @apply border border-surface-border hover:border-brand-500/50 text-slate-300 hover:text-white font-medium px-5 py-2.5 rounded-xl transition-all duration-200 hover:bg-surface-muted;
+    @apply border font-medium px-5 py-2.5 rounded-xl transition-all duration-200;
+    border-color: #e8ddd0;
+    color: #5c4030;
+    background: transparent;
+  }
+  .btn-ghost:hover {
+    background: #f5ede3;
+    border-color: #ff6b1a;
+    color: #2d1f0e;
   }
   .input {
-    @apply bg-surface-muted border border-surface-border rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all w-full;
+    @apply rounded-xl px-4 py-3 transition-all w-full;
+    background: #fffcf9;
+    border: 1.5px solid #e8ddd0;
+    color: #2d1f0e;
+    outline: none;
+  }
+  .input::placeholder {
+    color: #b8a090;
+  }
+  .input:focus {
+    border-color: #ff6b1a;
+    box-shadow: 0 0 0 3px rgba(255, 107, 26, 0.12);
   }
   .badge {
     @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
   }
   .xp-bar {
-    @apply h-2 rounded-full bg-surface-border overflow-hidden;
+    @apply h-2 rounded-full overflow-hidden;
+    background: #e8ddd0;
   }
   .xp-bar-fill {
-    @apply h-full rounded-full bg-gradient-to-r from-brand-500 to-purple-500 transition-all duration-500;
+    @apply h-full rounded-full transition-all duration-500;
+    background: linear-gradient(90deg, #ff6b1a, #ffb570);
   }
   .skeleton {
-    @apply bg-surface-muted rounded-xl animate-pulse;
+    @apply rounded-xl animate-pulse;
+    background: #eedcc8;
   }
   .glow-text {
-    @apply text-brand-400;
-    text-shadow: 0 0 30px rgba(85, 88, 255, 0.5);
+    color: #ff6b1a;
+    text-shadow: 0 0 30px rgba(255, 107, 26, 0.4);
   }
 }
 
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0f1117; }
-::-webkit-scrollbar-thumb { background: #252b3b; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #5558ff; }
+::-webkit-scrollbar-track { background: #f5ede3; }
+::-webkit-scrollbar-thumb { background: #e0c4a0; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #ff6b1a; }
 
+/* Flashcards */
 .flashcard-container { perspective: 1000px; }
 .flashcard-inner {
   position: relative;
@@ -67,3 +99,14 @@
   -webkit-backface-visibility: hidden;
 }
 .flashcard-back { transform: rotateY(180deg); }
+
+/* Warm paper texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.4;
+}
