@@ -52,7 +52,7 @@ export default function RegisterPage() {
             <Brain className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-3xl font-extrabold">Create your account</h1>
-          <p className="text-slate-400 mt-2">Join 50,000+ students learning smarter</p>
+          <p className="text-slate-400 mt-2">Join students learning smarter</p>
         </div>
         <div className="flex flex-wrap justify-center gap-3 mb-6">
           {perks.map(p => (
@@ -65,17 +65,22 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm font-medium text-slate-300 mb-2 block">Username</label>
-              <input value={username} onChange={e => setUsername(e.target.value)} placeholder="studymaster99" className="input" minLength={3} maxLength={50} required />
+              <input value={username} onChange={e => setUsername(e.target.value)}
+                placeholder="studymaster99" className="input" minLength={3} maxLength={50} required />
             </div>
             <div>
               <label className="text-sm font-medium text-slate-300 mb-2 block">Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="input" required />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com" className="input" required />
             </div>
             <div>
               <label className="text-sm font-medium text-slate-300 mb-2 block">Password</label>
               <div className="relative">
-                <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" className="input pr-12" minLength={8} required />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                <input type={showPw ? 'text' : 'password'} value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="At least 8 characters" className="input pr-12" minLength={8} required />
+                <button type="button" onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
                   {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -89,7 +94,8 @@ export default function RegisterPage() {
                 ))}
               </select>
             </div>
-            <button type="submit" disabled={isLoading} className="btn-primary w-full py-3 disabled:opacity-50">
+            <button type="submit" disabled={isLoading}
+              className="btn-primary w-full py-3 disabled:opacity-50">
               {isLoading ? 'Creating account...' : 'Create free account →'}
             </button>
             <p className="text-xs text-slate-500 text-center">By signing up you agree to our Terms of Service</p>
