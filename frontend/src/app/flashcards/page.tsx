@@ -517,21 +517,15 @@ The AI will compare this against your material and show you exactly what you mis
               </div>
               {gap.source && (
                 <div className="ml-7 flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                  <div className="text-xs text-amber-400 font-semibold uppercase tracking-widest flex-shrink-0 mt-0.5">
-                    Source
-                  </div>
-                  <div className="text-xs text-amber-300/80 italic leading-relaxed">
-                    "{gap.source}"
-                  </div>
+                  <div className="text-xs text-amber-400 font-semibold uppercase tracking-widest flex-shrink-0 mt-0.5">Source</div>
+                  <div className="text-xs text-amber-300/80 italic leading-relaxed">"{gap.source}"</div>
                 </div>
               )}
             </motion.div>
           ))}
         </div>
       )}
-      <button onClick={() => onDone(savedCards)} className="btn-primary w-full py-3 font-bold">
-        Done
-      </button>
+      <button onClick={() => onDone(savedCards)} className="btn-primary w-full py-3 font-bold">Done</button>
     </div>
   );
 }
@@ -636,6 +630,48 @@ export default function FlashcardsPage() {
       toast.success('Share link copied! 🔗');
       loadDecks();
     } catch { toast.error('Failed to share deck'); }
+  };
+
+  const exportToQuizlet = (deck: Deck) => {
+    flashcardApi.deckCards(deck.id).then(res => {
+      const c = res.data.cards || [];
+      if (c.length === 0) return toast.error('No cards to export');
+      const content = c.map((card: Card) => `${card.question}\t${card.answer}`).join('\n');
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${deck.title.replace(/\s+/g, '_')}_quizlet.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Downloaded! Import this file into Quizlet 🎉');
+    }).catch(() => toast.error('Failed to export'));
+  };
+
+  const importFromQuizlet = async (e: React.ChangeEvent<HTMLInputElement>, deck: Deck) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const text = await f.text();
+    const lines = text.split('\n').filter(l => l.trim());
+    const pairs = lines.map(l => {
+      const parts = l.split('\t');
+      return parts.length >= 2
+        ? { question: parts[0].trim(), answer: parts.slice(1).join('\t').trim() }
+        : null;
+    }).filter(Boolean) as { question: string; answer: string }[];
+    if (pairs.length === 0) return toast.error('No valid cards found. Make sure the file uses tab-separated format.');
+    const toastId = toast.loading(`Importing ${pairs.length} cards...`);
+    let imported = 0;
+    for (const pair of pairs) {
+      try {
+        await flashcardApi.createCard({ deck_id: deck.id, question: pair.question, answer: pair.answer });
+        imported++;
+      } catch {}
+    }
+    toast.dismiss(toastId);
+    toast.success(`Imported ${imported} cards from Quizlet!`);
+    loadDecks();
+    if (e.target) e.target.value = '';
   };
 
   const handleSwipe = async (dir: 'left' | 'right') => {
@@ -799,7 +835,7 @@ export default function FlashcardsPage() {
                   <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
                     <BookOpen className="w-5 h-5 text-brand-400" />
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap justify-end">
                     <button onClick={() => openViewCards(deck)}
                       className="text-xs text-slate-500 hover:text-brand-400 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10 flex items-center gap-1">
                       <Eye className="w-3 h-3" /> View
@@ -818,6 +854,17 @@ export default function FlashcardsPage() {
                       title="Copy share link">
                       <Share2 className="w-3 h-3" />
                     </button>
+                    <button onClick={() => exportToQuizlet(deck)}
+                      className="text-xs text-slate-500 hover:text-amber-400 transition-colors px-2 py-1 rounded-lg hover:bg-amber-500/10"
+                      title="Export to Quizlet">
+                      ↓
+                    </button>
+                    <label className="text-xs text-slate-500 hover:text-amber-400 transition-colors px-2 py-1 rounded-lg hover:bg-amber-500/10 cursor-pointer"
+                      title="Import from Quizlet">
+                      ↑
+                      <input type="file" accept=".txt" className="hidden"
+                        onChange={e => importFromQuizlet(e, deck)} />
+                    </label>
                     <button onClick={() => deleteDeck(deck)} disabled={deletingDeck === deck.id}
                       className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10 flex items-center gap-1 disabled:opacity-50">
                       <Trash2 className="w-3 h-3" />
@@ -1077,6 +1124,29 @@ export default function FlashcardsPage() {
                 className="btn-primary flex items-center gap-2 disabled:opacity-50">
                 <Plus className="w-4 h-4" /> Add Card
               </button>
+            </div>
+
+            <div className="card space-y-3 border-amber-500/20 bg-amber-500/5">
+              <h2 className="font-bold flex items-center gap-2">
+                <span className="text-amber-400 text-lg">⇄</span> Quizlet Import / Export
+              </h2>
+              <p className="text-xs text-slate-400">
+                Export your deck as a .txt file to import into Quizlet, or import a Quizlet export here.
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => exportToQuizlet(selectedDeck)}
+                  className="flex-1 border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl py-2 text-sm font-semibold transition-all flex items-center justify-center gap-2">
+                  ↓ Export for Quizlet
+                </button>
+                <label className="flex-1 border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl py-2 text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer">
+                  ↑ Import from Quizlet
+                  <input type="file" accept=".txt" className="hidden"
+                    onChange={e => importFromQuizlet(e, selectedDeck)} />
+                </label>
+              </div>
+              <p className="text-xs text-slate-500">
+                In Quizlet: Create set → Import → paste file contents. Tab separates term/definition.
+              </p>
             </div>
 
             <div className="card space-y-4 border-brand-500/20 bg-brand-500/5">
