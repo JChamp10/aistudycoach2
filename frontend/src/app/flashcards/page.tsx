@@ -8,11 +8,11 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation } f
 
 interface Card { id: string; question: string; answer: string; memory_strength: number; }
 interface Deck { id: string; title: string; card_count: number; }
-type Screen = 'home' | 'pick-mode' | 'swipe' | 'create' | 'result';
+type Screen = 'home' | 'study' | 'create' | 'result';
 
-// ─── Tinder Swipe Card ────────────────────────────────────────────────────────
-function SwipeCard({ card, onSwipe, isTop, stackIndex }: {
-  card: Card; onSwipe?: (dir: 'left' | 'right') => void; isTop: boolean; stackIndex: number;
+// ─── Swipe Card ───────────────────────────────────────────────────────────────
+function SwipeCard({ card, onSwipe, isTop }: {
+  card: Card; onSwipe?: (dir: 'left' | 'right') => void; isTop: boolean;
 }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
@@ -40,13 +40,14 @@ function SwipeCard({ card, onSwipe, isTop, stackIndex }: {
   };
 
   return (
-    <motion.div style={{ x, rotate, opacity, position: 'absolute', width: '100%' }}
+    <motion.div
+      style={{ x, rotate, opacity, position: 'absolute', width: '100%' }}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
       animate={controls}
-      className={isTop ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}>
-
+      className={isTop ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}
+    >
       {isTop && (
         <>
           <motion.div style={{ opacity: hardOpacity }}
@@ -66,12 +67,12 @@ function SwipeCard({ card, onSwipe, isTop, stackIndex }: {
           <div className="flashcard-front card h-full flex flex-col items-center justify-center text-center gap-4 border-brand-500/20 bg-gradient-to-br from-brand-500/5 to-purple-500/5">
             <div className="text-xs text-brand-400/60 uppercase tracking-widest font-semibold">Question</div>
             <p className="text-xl font-bold px-6 leading-relaxed">{card.question}</p>
-            <div className="text-xs text-slate-600 mt-1">Tap to flip · Drag to rate</div>
+            <div className="text-xs text-slate-600">Tap to flip · Drag to rate</div>
           </div>
           <div className="flashcard-back card h-full flex flex-col items-center justify-center text-center gap-4 border-green-500/20 bg-gradient-to-br from-green-500/5 to-emerald-500/5">
             <div className="text-xs text-green-400/60 uppercase tracking-widest font-semibold">Answer</div>
             <p className="text-xl font-bold text-green-300 px-6 leading-relaxed">{card.answer}</p>
-            <div className="text-xs text-slate-600 mt-1">← Hard · Easy →</div>
+            <div className="text-xs text-slate-600">← Hard · Easy →</div>
           </div>
         </div>
       </div>
@@ -114,7 +115,7 @@ export default function FlashcardsPage() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const pdfRef = useRef<HTMLInputElement>(null);
 
-  // Swipe
+  // Study
   const [swipeStack, setSwipeStack] = useState<Card[]>([]);
   const [easyCount, setEasyCount] = useState(0);
   const [hardCount, setHardCount] = useState(0);
@@ -136,27 +137,30 @@ export default function FlashcardsPage() {
     try {
       const res = await flashcardApi.deckCards(deck.id);
       const c = res.data.cards || [];
-      if (c.length === 0) { toast('No cards in this deck yet!'); setLoading(false); return; }
+      if (c.length === 0) {
+        toast('No cards in this deck yet! Add some first.');
+        setSelectedDeck(deck);
+        setScreen('create');
+        setLoading(false);
+        return;
+      }
       setCards(c);
       setSelectedDeck(deck);
-      setScreen('pick-mode');
+      const shuffled = [...c].sort(() => Math.random() - 0.5);
+      setSwipeStack(shuffled);
+      setEasyCount(0);
+      setHardCount(0);
+      setSessionXP(0);
+      setScreen('study');
     } catch { toast.error('Failed to load cards'); }
     finally { setLoading(false); }
-  };
-
-  const startSwipe = () => {
-    const shuffled = [...cards].sort(() => Math.random() - 0.5);
-    setSwipeStack(shuffled);
-    setEasyCount(0);
-    setHardCount(0);
-    setSessionXP(0);
-    setScreen('swipe');
   };
 
   const handleSwipe = async (dir: 'left' | 'right') => {
     const card = swipeStack[swipeStack.length - 1];
     const difficulty = dir === 'right' ? 'easy' : 'hard';
-    if (dir === 'right') setEasyCount(e => e + 1); else setHardCount(h => h + 1);
+    if (dir === 'right') setEasyCount(e => e + 1);
+    else setHardCount(h => h + 1);
     try {
       const res = await flashcardApi.reviewCard(card.id, difficulty);
       setSessionXP(prev => prev + (res.data.xp?.xpGained || 0));
@@ -169,9 +173,10 @@ export default function FlashcardsPage() {
   const createDeck = async () => {
     if (!deckTitle.trim()) return;
     try {
-      await flashcardApi.createDeck({ title: deckTitle });
+      const res = await flashcardApi.createDeck({ title: deckTitle });
       toast.success('Deck created!');
       setDeckTitle('');
+      setSelectedDeck(res.data.deck);
       loadDecks();
     } catch { toast.error('Failed to create deck'); }
   };
@@ -181,7 +186,9 @@ export default function FlashcardsPage() {
     try {
       await flashcardApi.createCard({ deck_id: selectedDeck.id, question: cardQ, answer: cardA });
       toast.success('Card added!');
-      setCardQ(''); setCardA('');
+      setCardQ('');
+      setCardA('');
+      loadDecks();
     } catch { toast.error('Failed to add card'); }
   };
 
@@ -201,7 +208,7 @@ export default function FlashcardsPage() {
     const f = e.target.files?.[0];
     if (!f) return;
     if (f.type !== 'application/pdf') return toast.error('Only PDF files supported');
-    if (f.size > 10 * 1024 * 1024) return toast.error('File must be under 10MB');
+    if (f.size > 10 * 1024 * 1024) return toast.error('Max 10MB');
     setPdfFile(f);
     toast.success(`${f.name} ready!`);
   };
@@ -237,7 +244,9 @@ export default function FlashcardsPage() {
             </h1>
             <p className="text-slate-400 mt-2">Pick a deck to study or create new cards.</p>
           </div>
-          <button onClick={() => { setSelectedDeck(null); setScreen('create'); }} className="btn-primary flex items-center gap-2">
+          <button
+            onClick={() => { setSelectedDeck(null); setScreen('create'); }}
+            className="btn-primary flex items-center gap-2">
             <Plus className="w-4 h-4" /> New Deck
           </button>
         </div>
@@ -251,30 +260,35 @@ export default function FlashcardsPage() {
             <BookOpen className="w-12 h-12 mx-auto mb-4 text-slate-600" />
             <h2 className="text-xl font-bold mb-2">No decks yet</h2>
             <p className="text-slate-500 mb-6">Create your first deck to get started!</p>
-            <button onClick={() => { setSelectedDeck(null); setScreen('create'); }} className="btn-primary flex items-center gap-2 mx-auto">
+            <button onClick={() => { setSelectedDeck(null); setScreen('create'); }}
+              className="btn-primary flex items-center gap-2 mx-auto">
               <Plus className="w-4 h-4" /> Create First Deck
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {decks.map((deck, i) => (
-              <motion.div key={deck.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                className="card hover:border-brand-500/40 transition-all group cursor-pointer"
-                onClick={() => loadDeckCards(deck)}>
+              <motion.div key={deck.id}
+                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.06 }}
+                className="card hover:border-brand-500/40 transition-all group">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center group-hover:bg-brand-500/20 transition-colors">
                     <BookOpen className="w-5 h-5 text-brand-400" />
                   </div>
-                  <button onClick={e => { e.stopPropagation(); setSelectedDeck(deck); setScreen('create'); }}
+                  <button
+                    onClick={() => { setSelectedDeck(deck); setScreen('create'); }}
                     className="text-xs text-slate-500 hover:text-brand-400 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10">
                     + Add cards
                   </button>
                 </div>
                 <h3 className="font-bold text-lg group-hover:text-brand-400 transition-colors">{deck.title}</h3>
                 <p className="text-sm text-slate-500 mt-1">{deck.card_count} cards</p>
-                <div className="flex gap-2 mt-4">
-                  <div className="badge bg-brand-500/10 text-brand-400 border-brand-500/20 text-xs">🃏 Swipe</div>
-                </div>
+                <button
+                  onClick={() => loadDeckCards(deck)}
+                  className="mt-4 w-full btn-primary text-sm py-2">
+                  Study this deck →
+                </button>
               </motion.div>
             ))}
           </div>
@@ -283,45 +297,14 @@ export default function FlashcardsPage() {
     </AppLayout>
   );
 
-  // ── PICK MODE ─────────────────────────────────────────────────────────────
-  if (screen === 'pick-mode') return (
-    <AppLayout>
-      <div className="max-w-xl mx-auto space-y-6">
-        <button onClick={() => setScreen('home')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
-          <ChevronLeft className="w-5 h-5" /> Back
-        </button>
-        <div className="text-center">
-          <h1 className="text-3xl font-extrabold mb-2">{selectedDeck?.title}</h1>
-          <p className="text-slate-400">{cards.length} cards ready</p>
-        </div>
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-          onClick={startSwipe}
-          className="card border-brand-500/30 hover:border-brand-500 text-left w-full group bg-gradient-to-br from-brand-500/5 to-purple-500/5">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-brand-500/20 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
-              🃏
-            </div>
-            <div>
-              <h2 className="text-xl font-extrabold group-hover:text-brand-400 transition-colors">Swipe Mode</h2>
-              <p className="text-slate-400 text-sm mt-1">Tinder-style flashcards. Swipe right if you knew it, left if you didn't.</p>
-              <div className="flex gap-2 mt-2">
-                <span className="badge bg-red-500/10 text-red-400 border-red-500/20 text-xs">← Hard</span>
-                <span className="badge bg-green-500/10 text-green-400 border-green-500/20 text-xs">Easy →</span>
-              </div>
-            </div>
-          </div>
-        </motion.button>
-      </div>
-    </AppLayout>
-  );
-
-  // ── SWIPE MODE ────────────────────────────────────────────────────────────
-  if (screen === 'swipe') return (
+  // ── STUDY ─────────────────────────────────────────────────────────────────
+  if (screen === 'study') return (
     <AppLayout>
       <div className="max-w-md mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <button onClick={() => setScreen('pick-mode')} className="flex items-center gap-2 text-slate-400 hover:text-white">
-            <ChevronLeft className="w-5 h-5" /> Quit
+          <button onClick={() => setScreen('home')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white">
+            <ChevronLeft className="w-5 h-5" /> {selectedDeck?.title}
           </button>
           <div className="flex gap-4 text-sm">
             <span className="text-red-400 font-bold">😰 {hardCount}</span>
@@ -330,8 +313,9 @@ export default function FlashcardsPage() {
           <div className="text-sm text-slate-400">{swipeStack.length} left</div>
         </div>
 
-        <div className="xp-bar h-1.5">
-          <div className="xp-bar-fill" style={{ width: `${((cards.length - swipeStack.length) / cards.length) * 100}%` }} />
+        <div className="h-1.5 bg-surface-border rounded-full overflow-hidden">
+          <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-purple-500 transition-all"
+            style={{ width: `${((cards.length - swipeStack.length) / cards.length) * 100}%` }} />
         </div>
 
         <div className="relative" style={{ height: '420px' }}>
@@ -344,7 +328,11 @@ export default function FlashcardsPage() {
                 transform: `scale(${1 - offset * 0.04}) translateY(${offset * 12}px)`,
                 zIndex: i,
               }}>
-                <SwipeCard card={card} onSwipe={isTop ? handleSwipe : undefined} isTop={isTop} stackIndex={offset} />
+                <SwipeCard
+                  card={card}
+                  onSwipe={isTop ? handleSwipe : undefined}
+                  isTop={isTop}
+                />
               </div>
             );
           })}
@@ -355,7 +343,8 @@ export default function FlashcardsPage() {
 
   // ── RESULT ────────────────────────────────────────────────────────────────
   if (screen === 'result') {
-    const pct = Math.round((easyCount / (easyCount + hardCount || 1)) * 100);
+    const total = easyCount + hardCount || 1;
+    const pct = Math.round((easyCount / total) * 100);
     return (
       <AppLayout>
         <div className="max-w-md mx-auto text-center py-12 space-y-6">
@@ -372,6 +361,11 @@ export default function FlashcardsPage() {
                 <div className="text-xs text-slate-500 mt-1">😰 Hard</div>
               </div>
             </div>
+            <div className="h-2 bg-surface-border rounded-full overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-green-500"
+                style={{ width: `${pct}%` }} />
+            </div>
+            <div className="text-sm text-slate-400">{pct}% accuracy</div>
             {sessionXP > 0 && (
               <div className="flex items-center justify-center gap-2 text-brand-400 font-bold">
                 <Zap className="w-5 h-5" /> +{sessionXP} XP earned
@@ -380,7 +374,7 @@ export default function FlashcardsPage() {
           </div>
           <div className="flex gap-3 justify-center">
             <button onClick={() => setScreen('home')} className="btn-ghost">All Decks</button>
-            <button onClick={() => setScreen('pick-mode')} className="btn-primary">Study Again</button>
+            <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary">Study Again</button>
           </div>
         </div>
       </AppLayout>
@@ -392,7 +386,8 @@ export default function FlashcardsPage() {
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
-          <button onClick={() => setScreen('home')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+          <button onClick={() => setScreen('home')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
             <ChevronLeft className="w-5 h-5" /> Back
           </button>
           <h1 className="text-2xl font-extrabold">
@@ -404,9 +399,13 @@ export default function FlashcardsPage() {
           <div className="card space-y-3">
             <h2 className="font-bold">New Deck</h2>
             <div className="flex gap-2">
-              <input value={deckTitle} onChange={e => setDeckTitle(e.target.value)} placeholder="Deck name..." className="input flex-1"
+              <input value={deckTitle} onChange={e => setDeckTitle(e.target.value)}
+                placeholder="Deck name..." className="input flex-1"
                 onKeyDown={e => e.key === 'Enter' && createDeck()} />
-              <button onClick={createDeck} disabled={!deckTitle.trim()} className="btn-primary px-4 disabled:opacity-50">Create</button>
+              <button onClick={createDeck} disabled={!deckTitle.trim()}
+                className="btn-primary px-4 disabled:opacity-50">
+                Create
+              </button>
             </div>
             {decks.length > 0 && (
               <div>
@@ -428,17 +427,20 @@ export default function FlashcardsPage() {
           <>
             {/* Manual card */}
             <div className="card space-y-4">
-              <h2 className="font-bold">Add a Card</h2>
+              <h2 className="font-bold">Add a Card Manually</h2>
               <div>
                 <label className="text-sm font-medium text-slate-300 mb-2 block">Question</label>
-                <input value={cardQ} onChange={e => setCardQ(e.target.value)} placeholder="Front of card..." className="input" />
+                <input value={cardQ} onChange={e => setCardQ(e.target.value)}
+                  placeholder="Front of card..." className="input" />
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-300 mb-2 block">Answer</label>
-                <input value={cardA} onChange={e => setCardA(e.target.value)} placeholder="Back of card..." className="input"
+                <input value={cardA} onChange={e => setCardA(e.target.value)}
+                  placeholder="Back of card..." className="input"
                   onKeyDown={e => e.key === 'Enter' && addCard()} />
               </div>
-              <button onClick={addCard} disabled={!cardQ.trim() || !cardA.trim()} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+              <button onClick={addCard} disabled={!cardQ.trim() || !cardA.trim()}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50">
                 <Plus className="w-4 h-4" /> Add Card
               </button>
             </div>
@@ -446,27 +448,27 @@ export default function FlashcardsPage() {
             {/* AI from notes */}
             <div className="card space-y-4 border-brand-500/20 bg-brand-500/5">
               <h2 className="font-bold flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-brand-400" /> AI Generate from Notes
+                <Sparkles className="w-5 h-5 text-brand-400" /> Generate from Notes
               </h2>
               <textarea value={genNotes} onChange={e => setGenNotes(e.target.value)}
-                placeholder="Paste notes here and AI will generate 10 cards..."
+                placeholder="Paste your notes and AI will create 10 flashcards..."
                 className="input min-h-[100px] resize-none" />
-              <button onClick={generateFromNotes} disabled={generating || !genNotes.trim()} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+              <button onClick={generateFromNotes}
+                disabled={generating || !genNotes.trim()}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50">
                 {generating
                   ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Generating...</>
                   : <><Sparkles className="w-4 h-4" /> Generate 10 Cards</>}
               </button>
             </div>
 
-            {/* AI from PDF */}
+            {/* PDF upload */}
             <div className="card space-y-4 border-blue-500/20 bg-blue-500/5">
               <h2 className="font-bold flex items-center gap-2">
                 <Upload className="w-5 h-5 text-blue-400" /> Generate from PDF
               </h2>
-              <p className="text-sm text-slate-400">Upload a PDF and AI will extract 10 flashcards from it automatically.</p>
-
+              <p className="text-sm text-slate-400">Upload a PDF and AI will extract 10 flashcards automatically.</p>
               <input ref={pdfRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfFile} />
-
               {pdfFile ? (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-sm">
                   <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
@@ -479,14 +481,15 @@ export default function FlashcardsPage() {
                 </div>
               ) : (
                 <button onClick={() => pdfRef.current?.click()}
-                  className="w-full border-2 border-dashed border-blue-500/30 rounded-xl py-6 text-blue-400 hover:border-blue-500/60 hover:bg-blue-500/5 transition-all flex flex-col items-center gap-2">
+                  className="w-full border-2 border-dashed border-blue-500/30 rounded-xl py-8 text-blue-400 hover:border-blue-500/60 hover:bg-blue-500/5 transition-all flex flex-col items-center gap-2">
                   <Upload className="w-6 h-6" />
                   <span className="text-sm font-medium">Click to upload PDF</span>
                   <span className="text-xs text-slate-500">Max 10MB</span>
                 </button>
               )}
-
-              <button onClick={generateFromPdf} disabled={generatingPdf || !pdfFile} className="w-full border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl py-2.5 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
+              <button onClick={generateFromPdf}
+                disabled={generatingPdf || !pdfFile}
+                className="w-full border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl py-2.5 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
                 {generatingPdf
                   ? <><div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin" /> Processing PDF...</>
                   : <><Sparkles className="w-4 h-4" /> Generate from PDF</>}
