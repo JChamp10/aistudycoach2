@@ -179,7 +179,39 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete card' });
   }
 });
+router.post('/decks/:id/share', async (req, res) => {
+  try {
+    const existing = await query(
+      'SELECT share_token FROM flashcard_decks WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    if (!existing.rows[0]) return res.status(404).json({ error: 'Deck not found' });
+    let token = existing.rows[0].share_token;
+    if (!token) {
+      token = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+    }
+    await query(
+      'UPDATE flashcard_decks SET is_public = true, share_token = $1 WHERE id = $2 AND user_id = $3',
+      [token, req.params.id, req.user.id]
+    );
+    res.json({ token, url: `${process.env.FRONTEND_URL}/study/${token}` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to share deck' });
+  }
+});
 
+router.post('/decks/:id/unshare', async (req, res) => {
+  try {
+    await query(
+      'UPDATE flashcard_decks SET is_public = false WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to unshare deck' });
+  }
+});
 router.post('/generate', async (req, res) => {
   const { notes, deck_id, count } = req.body;
   try {
