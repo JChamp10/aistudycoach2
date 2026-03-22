@@ -38,6 +38,8 @@ export const flashcardApi = {
   deckCards: (id: string) => api.get(`/flashcards/decks/${id}/cards`),
   dueCards: () => api.get('/flashcards/due'),
   createCard: (data: any) => api.post('/flashcards', data),
+  updateCard: (id: string, data: any) => api.put(`/flashcards/${id}`, data),
+  deleteCard: (id: string) => api.delete(`/flashcards/${id}`),
   generateFromNotes: (data: any) => api.post('/flashcards/generate', data),
   generateFromPdf: (formData: FormData) =>
     api.post('/flashcards/generate-pdf', formData, {
