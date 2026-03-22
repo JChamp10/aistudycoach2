@@ -76,8 +76,8 @@ router.post('/', async (req, res) => {
   const { deck_id, question, answer } = req.body;
   try {
     const result = await query(
-      'INSERT INTO flashcards (deck_id, user_id, question, answer, source) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [deck_id, req.user.id, question, answer, 'manual']
+      'INSERT INTO flashcards (deck_id, user_id, question, answer) VALUES ($1, $2, $3, $4) RETURNING *',
+      [deck_id, req.user.id, question, answer]
     );
     await query('UPDATE flashcard_decks SET card_count = card_count + 1 WHERE id = $1', [deck_id]);
     res.status(201).json({ card: result.rows[0] });
@@ -93,8 +93,8 @@ router.post('/generate', async (req, res) => {
     const insertedCards = [];
     for (const card of generated) {
       const result = await query(
-        'INSERT INTO flashcards (deck_id, user_id, question, answer, source) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [deck_id, req.user.id, card.question, card.answer, 'ai_notes']
+        'INSERT INTO flashcards (deck_id, user_id, question, answer) VALUES ($1, $2, $3, $4) RETURNING *',
+        [deck_id, req.user.id, card.question, card.answer]
       );
       insertedCards.push(result.rows[0]);
     }
@@ -113,13 +113,12 @@ router.post('/generate-pdf', upload.single('pdf'), async (req, res) => {
     const pdfData = await pdfParse(req.file.buffer);
     const text = pdfData.text.slice(0, 6000);
     if (!text.trim()) return res.status(400).json({ error: 'Could not extract text from PDF' });
-
     const generated = await aiService.generateFlashcardsFromNotes(text, parseInt(count) || 10);
     const insertedCards = [];
     for (const card of generated) {
       const result = await query(
-        'INSERT INTO flashcards (deck_id, user_id, question, answer, source) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [deck_id, req.user.id, card.question, card.answer, 'ai_pdf']
+        'INSERT INTO flashcards (deck_id, user_id, question, answer) VALUES ($1, $2, $3, $4) RETURNING *',
+        [deck_id, req.user.id, card.question, card.answer]
       );
       insertedCards.push(result.rows[0]);
     }
@@ -134,14 +133,16 @@ router.post('/generate-pdf', upload.single('pdf'), async (req, res) => {
 router.post('/:id/review', async (req, res) => {
   const { difficulty } = req.body;
   try {
-    const cardResult = await query('SELECT * FROM flashcards WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    const cardResult = await query(
+      'SELECT * FROM flashcards WHERE id = $1 AND user_id = $2',
+      [req.params.id, req.user.id]
+    );
     if (!cardResult.rows[0]) return res.status(404).json({ error: 'Card not found' });
-
     const card = cardResult.rows[0];
     const qualityMap = { easy: 5, medium: 3, hard: 1 };
     const q = qualityMap[difficulty] || 3;
-    let ef = card.ease_factor;
-    let interval = card.interval_days;
+    let ef = parseFloat(card.ease_factor) || 2.5;
+    let interval = parseInt(card.interval_days) || 1;
 
     ef = ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
     ef = Math.max(1.3, ef);
@@ -149,21 +150,29 @@ router.post('/:id/review', async (req, res) => {
     else if (interval === 1) interval = 6;
     else interval = Math.round(interval * ef);
 
-    const memoryStrength = Math.min(1.0, card.memory_strength + (q / 20));
+    const memoryStrength = Math.min(1.0, (parseFloat(card.memory_strength) || 0) + (q / 20));
     const nextReview = new Date();
     nextReview.setDate(nextReview.getDate() + interval);
 
     await query(`
-      UPDATE flashcards SET ease_factor = $1, interval_days = $2, memory_strength = $3,
-      next_review_date = $4, times_reviewed = times_reviewed + 1 WHERE id = $5
+      UPDATE flashcards SET
+        ease_factor = $1, interval_days = $2, memory_strength = $3,
+        next_review_date = $4, times_reviewed = times_reviewed + 1
+      WHERE id = $5
     `, [ef, interval, memoryStrength, nextReview.toISOString().split('T')[0], card.id]);
 
     const xpAction = memoryStrength >= 0.9 ? 'flashcard_mastered' : 'flashcard_review';
     const xpResult = await awardXP(req.user.id, xpAction);
     await updateStreak(req.user.id);
 
-    res.json({ nextReviewDate: nextReview.toISOString().split('T')[0], interval, memoryStrength, xp: xpResult });
+    res.json({
+      nextReviewDate: nextReview.toISOString().split('T')[0],
+      interval,
+      memoryStrength,
+      xp: xpResult,
+    });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to record review' });
   }
 });
