@@ -464,4 +464,321 @@ export default function FlashcardsPage() {
                       className="text-xs text-slate-500 hover:text-brand-400 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10 flex items-center gap-1">
                       <Eye className="w-3 h-3" /> View
                     </button>
-                    <button onClick={() => { setSelectedDeck(deck); setGeneratedCards([]); setPdfCards([]); setScreen('create'); }
+                    <button onClick={() => { setSelectedDeck(deck); setGeneratedCards([]); setPdfCards([]); setScreen('create'); }}
+                      className="text-xs text-slate-500 hover:text-brand-400 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10">
+                      + Add
+                    </button>
+                    <button onClick={() => handleShare(deck)}
+                      className="text-xs text-slate-500 hover:text-green-400 transition-colors px-2 py-1 rounded-lg hover:bg-green-500/10 flex items-center gap-1">
+                      <Share2 className="w-3 h-3" />
+                    </button>
+                    <button onClick={() => deleteDeck(deck)}
+                      disabled={deletingDeck === deck.id}
+                      className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10 flex items-center gap-1 disabled:opacity-50">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                <h3 className="font-bold text-lg group-hover:text-brand-400 transition-colors">{deck.title}</h3>
+                <p className="text-sm text-slate-500 mt-1">{deck.card_count} cards</p>
+                {deck.is_public && (
+                  <div className="mt-1 flex items-center gap-1 text-xs text-green-400">
+                    <Share2 className="w-3 h-3" /> Shared publicly
+                  </div>
+                )}
+                <button onClick={() => loadDeckCards(deck)} className="mt-4 w-full btn-primary text-sm py-2">
+                  Study this deck →
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+
+  // ── VIEW CARDS ────────────────────────────────────────────────────────────
+  if (screen === 'view-cards') return (
+    <AppLayout>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setScreen('home')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+            <ChevronLeft className="w-5 h-5" /> Back
+          </button>
+          <div className="flex-1">
+            <h1 className="text-2xl font-extrabold">{selectedDeck?.title}</h1>
+            <p className="text-sm text-slate-500">{deckCards.length} cards · click ✏️ to edit</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => { setGeneratedCards([]); setPdfCards([]); setScreen('create'); }}
+              className="btn-ghost flex items-center gap-2 text-sm">
+              <Plus className="w-4 h-4" /> Add
+            </button>
+            <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary text-sm">
+              Study →
+            </button>
+          </div>
+        </div>
+        {cardsLoading ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => <div key={i} className="skeleton h-16" />)}
+          </div>
+        ) : deckCards.length === 0 ? (
+          <div className="text-center py-16 card border-dashed">
+            <p className="text-slate-500 mb-4">No cards yet.</p>
+            <button onClick={() => setScreen('create')} className="btn-primary mx-auto flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Add Cards
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {deckCards.map(card => (
+              <CardRow key={card.id} card={card} onSave={saveCard} onDelete={deleteCard} />
+            ))}
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+
+  // ── STUDY ─────────────────────────────────────────────────────────────────
+  if (screen === 'study') return (
+    <AppLayout>
+      <div className="max-w-md mx-auto space-y-4">
+        <div className="flex items-center justify-between">
+          <button onClick={() => setScreen('home')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white">
+            <ChevronLeft className="w-5 h-5" /> {selectedDeck?.title}
+          </button>
+          <div className="flex gap-4 text-sm">
+            <span className="text-red-400 font-bold">😰 {hardCount}</span>
+            <span className="text-green-400 font-bold">😊 {easyCount}</span>
+          </div>
+          <div className="text-sm text-slate-400">{swipeStack.length} left</div>
+        </div>
+        <div className="h-1.5 bg-surface-border rounded-full overflow-hidden">
+          <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-purple-500 transition-all"
+            style={{ width: `${((cards.length - swipeStack.length) / cards.length) * 100}%` }} />
+        </div>
+        <div className="relative" style={{ height: '420px' }}>
+          {swipeStack.slice(-3).map((card, i, arr) => {
+            const isTop = i === arr.length - 1;
+            const offset = arr.length - 1 - i;
+            return (
+              <div key={card.id} style={{
+                position: 'absolute', width: '100%',
+                transform: `scale(${1 - offset * 0.04}) translateY(${offset * 12}px)`,
+                zIndex: i,
+              }}>
+                <SwipeCard card={card} onSwipe={isTop ? handleSwipe : undefined} isTop={isTop} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </AppLayout>
+  );
+
+  // ── RESULT ────────────────────────────────────────────────────────────────
+  if (screen === 'result') {
+    const total = easyCount + hardCount || 1;
+    const pct = Math.round((easyCount / total) * 100);
+    return (
+      <AppLayout>
+        <div className="max-w-md mx-auto text-center py-10 space-y-6">
+          <div className="text-7xl">{pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '💪'}</div>
+          <h1 className="text-3xl font-extrabold">Session Complete!</h1>
+          <div className="card space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-green-500/10 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-green-400">{easyCount}</div>
+                <div className="text-xs text-slate-500 mt-1">😊 Easy</div>
+              </div>
+              <div className="bg-red-500/10 rounded-xl p-4 text-center">
+                <div className="text-3xl font-bold text-red-400">{hardCount}</div>
+                <div className="text-xs text-slate-500 mt-1">😰 Hard</div>
+              </div>
+            </div>
+            <div className="h-2 bg-surface-border rounded-full overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-green-500"
+                style={{ width: `${pct}%` }} />
+            </div>
+            <div className="text-sm text-slate-400">{pct}% accuracy</div>
+            {sessionXP > 0 && (
+              <div className="flex items-center justify-center gap-2 text-brand-400 font-bold">
+                <Zap className="w-5 h-5" /> +{sessionXP} XP earned
+              </div>
+            )}
+          </div>
+          {hardCards.length > 0 && (
+            <div className="card border-red-500/20 bg-red-500/5 text-left space-y-4">
+              <h2 className="font-bold text-red-400 flex items-center gap-2">
+                😰 Review your {hardCards.length} hard {hardCards.length === 1 ? 'card' : 'cards'}
+              </h2>
+              <HardCardReview cards={hardCards} onDone={() => setHardCards([])} />
+            </div>
+          )}
+          <div className="flex gap-3 justify-center">
+            <button onClick={() => setScreen('home')} className="btn-ghost">All Decks</button>
+            <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary">Study Again</button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // ── CREATE ────────────────────────────────────────────────────────────────
+  return (
+    <AppLayout>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setScreen('home')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+            <ChevronLeft className="w-5 h-5" /> Back
+          </button>
+          <h1 className="text-2xl font-extrabold">
+            {selectedDeck ? `Add to "${selectedDeck.title}"` : 'Create New Deck'}
+          </h1>
+        </div>
+
+        {!selectedDeck && (
+          <div className="card space-y-3">
+            <h2 className="font-bold">New Deck</h2>
+            <div className="flex gap-2">
+              <input value={deckTitle} onChange={e => setDeckTitle(e.target.value)}
+                placeholder="Deck name..." className="input flex-1"
+                onKeyDown={e => e.key === 'Enter' && createDeck()} />
+              <button onClick={createDeck} disabled={!deckTitle.trim()}
+                className="btn-primary px-4 disabled:opacity-50">Create</button>
+            </div>
+            {decks.length > 0 && (
+              <div>
+                <p className="text-xs text-slate-500 mb-2">Or add to existing deck:</p>
+                <div className="flex flex-wrap gap-2">
+                  {decks.map(d => (
+                    <button key={d.id} onClick={() => setSelectedDeck(d)}
+                      className="px-3 py-1.5 rounded-xl border border-surface-border text-sm text-slate-400 hover:text-white hover:border-brand-500/40 transition-all">
+                      {d.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {selectedDeck && (
+          <>
+            <div className="card space-y-4">
+              <h2 className="font-bold">Add a Card Manually</h2>
+              <input value={cardQ} onChange={e => setCardQ(e.target.value)}
+                placeholder="Question / front of card..." className="input" />
+              <input value={cardA} onChange={e => setCardA(e.target.value)}
+                placeholder="Answer / back of card..." className="input"
+                onKeyDown={e => e.key === 'Enter' && addCard()} />
+              <button onClick={addCard} disabled={!cardQ.trim() || !cardA.trim()}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50">
+                <Plus className="w-4 h-4" /> Add Card
+              </button>
+            </div>
+
+            <div className="card space-y-4 border-brand-500/20 bg-brand-500/5">
+              <h2 className="font-bold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-brand-400" /> Generate from Notes
+              </h2>
+              <textarea value={genNotes} onChange={e => setGenNotes(e.target.value)}
+                placeholder="Paste your notes and AI will create 10 flashcards..."
+                className="input min-h-[100px] resize-none" />
+              <button onClick={generateFromNotes} disabled={generating || !genNotes.trim()}
+                className="btn-primary flex items-center gap-2 disabled:opacity-50">
+                {generating
+                  ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Generating...</>
+                  : <><Sparkles className="w-4 h-4" /> Generate 10 Cards</>}
+              </button>
+              <AnimatePresence>
+                {generatedCards.length > 0 && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="space-y-2 pt-2 border-t border-brand-500/20">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-brand-400 font-semibold uppercase tracking-widest">
+                        {generatedCards.length} cards generated — edit below
+                      </p>
+                      <button onClick={() => openViewCards(selectedDeck)}
+                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> View all
+                      </button>
+                    </div>
+                    {generatedCards.map(card => (
+                      <CardRow key={card.id} card={card} onSave={saveCard} onDelete={deleteCard} />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="card space-y-4 border-blue-500/20 bg-blue-500/5">
+              <h2 className="font-bold flex items-center gap-2">
+                <Upload className="w-5 h-5 text-blue-400" /> Generate from PDF
+              </h2>
+              <p className="text-sm text-slate-400">Upload a PDF and AI will extract 10 flashcards automatically.</p>
+              <input ref={pdfRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfFile} />
+              {pdfFile ? (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-sm">
+                  <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                  <span className="text-blue-300 truncate flex-1">{pdfFile.name}</span>
+                  <span className="text-slate-500 text-xs">{(pdfFile.size / 1024).toFixed(0)}KB</span>
+                  <button onClick={() => { setPdfFile(null); if (pdfRef.current) pdfRef.current.value = ''; }}
+                    className="text-slate-500 hover:text-red-400 transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => pdfRef.current?.click()}
+                  className="w-full border-2 border-dashed border-blue-500/30 rounded-xl py-8 text-blue-400 hover:border-blue-500/60 hover:bg-blue-500/5 transition-all flex flex-col items-center gap-2">
+                  <Upload className="w-6 h-6" />
+                  <span className="text-sm font-medium">Click to upload PDF</span>
+                  <span className="text-xs text-slate-500">Max 10MB</span>
+                </button>
+              )}
+              <AnimatePresence>
+                {generatingPdf && pdfProgress && (
+                  <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                    <div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin flex-shrink-0" />
+                    <span className="text-sm text-blue-300">{pdfProgress}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <button onClick={generateFromPdf} disabled={generatingPdf || !pdfFile}
+                className="w-full border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl py-2.5 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
+                {generatingPdf
+                  ? <><div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin" /> Processing...</>
+                  : <><Sparkles className="w-4 h-4" /> Generate from PDF</>}
+              </button>
+              <AnimatePresence>
+                {pdfCards.length > 0 && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="space-y-2 pt-2 border-t border-blue-500/20">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-blue-400 font-semibold uppercase tracking-widest">
+                        {pdfCards.length} cards from PDF — edit below
+                      </p>
+                      <button onClick={() => openViewCards(selectedDeck)}
+                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> View all
+                      </button>
+                    </div>
+                    {pdfCards.map(card => (
+                      <CardRow key={card.id} card={card} onSave={saveCard} onDelete={deleteCard} />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </>
+        )}
+      </div>
+    </AppLayout>
+  );
+}
