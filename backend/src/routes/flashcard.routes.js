@@ -176,5 +176,25 @@ router.post('/:id/review', async (req, res) => {
     res.status(500).json({ error: 'Failed to record review' });
   }
 });
+router.put('/:id', async (req, res) => {
+  const { question, answer } = req.body;
+  try {
+    const result = await query(
+      'UPDATE flashcards SET question = $1, answer = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
+      [question, answer, req.params.id, req.user.id]
+    );
+    res.json({ card: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update card' });
+  }
+});
 
+router.delete('/:id', async (req, res) => {
+  try {
+    await query('DELETE FROM flashcards WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    res.json({ deleted: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete card' });
+  }
+});
 module.exports = router;
