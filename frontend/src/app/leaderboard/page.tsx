@@ -27,7 +27,6 @@ export default function LeaderboardPage() {
   }, [tab, token]);
 
   const medals = ['🥇', '🥈', '🥉'];
-
   const tabs = [
     { key: 'global', label: '🌍 All Time' },
     { key: 'weekly', label: '📅 This Week' },
@@ -56,13 +55,10 @@ export default function LeaderboardPage() {
 
         <div className="flex gap-2 p-1 bg-surface-muted rounded-xl">
           {tabs.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key as any)}
+            <button key={t.key} onClick={() => setTab(t.key as any)}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
                 tab === t.key ? 'bg-brand-500 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-            >
+              }`}>
               {t.label}
             </button>
           ))}
@@ -82,9 +78,7 @@ export default function LeaderboardPage() {
 
         {loading ? (
           <div className="space-y-3">
-            {[...Array(10)].map((_, i) => (
-              <div key={i} className="skeleton h-16 w-full" />
-            ))}
+            {[...Array(10)].map((_, i) => <div key={i} className="skeleton h-16 w-full" />)}
           </div>
         ) : (
           <div className="space-y-2">
@@ -92,14 +86,10 @@ export default function LeaderboardPage() {
               const isMe = entry.id === user?.id;
               const xp = tab === 'weekly' ? entry.weekly_xp : entry.xp;
               return (
-                <div
-                  key={entry.id}
+                <div key={entry.id}
                   className={`flex items-center gap-4 px-4 py-3 rounded-xl border transition-colors ${
-                    isMe
-                      ? 'border-brand-500/40 bg-brand-500/5'
-                      : 'border-surface-border bg-surface-card'
-                  }`}
-                >
+                    isMe ? 'border-brand-500/40 bg-brand-500/5' : 'border-surface-border bg-surface-card'
+                  }`}>
                   <div className="w-10 text-center flex-shrink-0">
                     {i < 3
                       ? <span className="text-2xl">{medals[i]}</span>
@@ -107,7 +97,7 @@ export default function LeaderboardPage() {
                     }
                   </div>
                   <div className="w-10 h-10 rounded-full bg-brand-500/20 border border-brand-500/30 flex items-center justify-center text-brand-400 font-bold flex-shrink-0">
-                    {entry.username[0].toUpperCase()}
+                    {entry.username?.[0]?.toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold flex items-center gap-2 flex-wrap">
