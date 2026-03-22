@@ -1,17 +1,17 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { flashcardApi } from '@/lib/api';
+import { flashcardApi, homeworkApi } from '@/lib/api';
 import {
   BookOpen, Plus, X, ChevronLeft, Sparkles, Zap, RotateCcw,
-  Upload, FileText, Pencil, Trash2, Check, Eye, Share2
+  Upload, FileText, Pencil, Trash2, Check, Eye, Share2, Brain
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 
 interface Card { id: string; question: string; answer: string; memory_strength: number; }
 interface Deck { id: string; title: string; card_count: number; is_public?: boolean; share_token?: string; }
-type Screen = 'home' | 'study' | 'create' | 'result' | 'view-cards' | 'hard-review';
+type Screen = 'home' | 'study' | 'create' | 'result' | 'view-cards' | 'hard-quiz' | 'recall';
 
 // ─── Swipe Card ───────────────────────────────────────────────────────────────
 function SwipeCard({ card, onSwipe, isTop }: {
@@ -170,39 +170,335 @@ function CardRow({ card, onSave, onDelete }: {
   );
 }
 
-// ─── Hard Card Review ─────────────────────────────────────────────────────────
-function HardCardReview({ cards, onDone }: { cards: Card[]; onDone: () => void }) {
+// ─── Hard Quiz ────────────────────────────────────────────────────────────────
+function HardQuiz({ cards, onDone }: { cards: Card[]; onDone: () => void }) {
   const [idx, setIdx] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  if (cards.length === 0) return null;
+  const [selected, setSelected] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [score, setScore] = useState(0);
+  const [finished, setFinished] = useState(false);
+  const [options] = useState(() => cards.map(card => {
+    const wrong = cards.filter(c => c.id !== card.id).sort(() => Math.random() - 0.5).slice(0, 3).map(c => c.answer);
+    return [...wrong, card.answer].sort(() => Math.random() - 0.5);
+  }));
+
   const card = cards[idx];
-  const isLast = idx === cards.length - 1;
+  const colors = [
+    'border-red-500/40 hover:bg-red-500/10 text-red-400',
+    'border-blue-500/40 hover:bg-blue-500/10 text-blue-400',
+    'border-amber-500/40 hover:bg-amber-500/10 text-amber-400',
+    'border-green-500/40 hover:bg-green-500/10 text-green-400',
+  ];
+
+  const handleAnswer = (ans: string) => {
+    if (confirmed) return;
+    setSelected(ans);
+    setConfirmed(true);
+    if (ans === card.answer) setScore(s => s + 1);
+  };
+
+  const next = () => {
+    if (idx + 1 >= cards.length) { setFinished(true); return; }
+    setIdx(i => i + 1);
+    setSelected(null);
+    setConfirmed(false);
+  };
+
+  if (finished) return (
+    <div className="text-center space-y-4 py-6">
+      <div className="text-5xl">{score === cards.length ? '🎉' : score >= cards.length / 2 ? '👍' : '💪'}</div>
+      <h3 className="text-2xl font-extrabold">Quiz Complete!</h3>
+      <div className="card">
+        <div className="text-3xl font-bold text-brand-400">{score}/{cards.length}</div>
+        <div className="text-slate-400 text-sm mt-1">correct on your hard cards</div>
+      </div>
+      <button onClick={onDone} className="btn-primary px-10">Done</button>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-red-400 font-bold">😰 Hard cards</span>
+        <span className="text-red-400 font-bold">😰 Hard card quiz</span>
         <span className="text-slate-400">{idx + 1} / {cards.length}</span>
       </div>
-      <div className="flashcard-container select-none cursor-pointer" style={{ height: '240px' }}
-        onClick={() => setFlipped(f => !f)}>
-        <div className={`flashcard-inner w-full h-full ${flipped ? 'flipped' : ''}`}>
-          <div className="flashcard-front card h-full flex flex-col items-center justify-center text-center gap-3 border-red-500/20 bg-gradient-to-br from-red-500/5 to-transparent">
-            <div className="text-xs text-red-400/60 uppercase tracking-widest font-semibold">Question</div>
-            <p className="text-lg font-bold px-4 leading-relaxed">{card.question}</p>
-            <div className="text-xs text-slate-600">Tap to reveal</div>
+      <div className="h-1.5 bg-surface-border rounded-full overflow-hidden">
+        <div className="h-full rounded-full bg-red-500 transition-all"
+          style={{ width: `${(idx / cards.length) * 100}%` }} />
+      </div>
+      <div className="card border-red-500/20 bg-red-500/5 text-center py-6 px-4">
+        <p className="font-bold text-lg">{card.question}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {options[idx]?.map((opt, i) => {
+          let cls = `border ${colors[i % 4]} rounded-xl p-3 text-sm font-medium text-left transition-all`;
+          if (confirmed) {
+            if (opt === card.answer) cls = 'border border-green-500 bg-green-500/20 text-green-400 rounded-xl p-3 text-sm font-medium text-left';
+            else if (opt === selected) cls = 'border border-red-500 bg-red-500/20 text-red-400 rounded-xl p-3 text-sm font-medium text-left opacity-60';
+            else cls = 'border border-surface-border text-slate-600 rounded-xl p-3 text-sm font-medium text-left opacity-30';
+          }
+          return (
+            <button key={opt} onClick={() => handleAnswer(opt)} disabled={confirmed} className={cls}>
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+      {confirmed && (
+        <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-3">
+          <div className={`font-bold ${selected === card.answer ? 'text-green-400' : 'text-red-400'}`}>
+            {selected === card.answer ? '✅ Correct!' : `❌ Answer: ${card.answer}`}
           </div>
-          <div className="flashcard-back card h-full flex flex-col items-center justify-center text-center gap-3 border-green-500/20 bg-gradient-to-br from-green-500/5 to-transparent">
-            <div className="text-xs text-green-400/60 uppercase tracking-widest font-semibold">Answer</div>
-            <p className="text-lg font-bold text-green-300 px-4 leading-relaxed">{card.answer}</p>
+          <button onClick={next} className="btn-primary px-8">
+            {idx + 1 >= cards.length ? 'Finish →' : 'Next →'}
+          </button>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+// ─── Free Recall Mode ─────────────────────────────────────────────────────────
+function RecallMode({ deck, onDone }: {
+  deck: Deck;
+  onDone: (generatedCards: Card[]) => void;
+}) {
+  const [phase, setPhase] = useState<'upload' | 'recall' | 'generating' | 'done'>('upload');
+  const [materialText, setMaterialText] = useState('');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [recall, setRecall] = useState('');
+  const [generatedCards, setGeneratedCards] = useState<Card[]>([]);
+  const [timeLeft, setTimeLeft] = useState(120);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const pdfRef = useRef<HTMLInputElement>(null);
+
+  const handlePdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.type !== 'application/pdf') return toast.error('Only PDF files supported');
+    setPdfFile(f);
+    setPdfLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('pdf', f);
+      formData.append('question', 'Extract and return all the text content from this document as plain text.');
+      const res = await homeworkApi.askPdf(formData);
+      setMaterialText(res.data.answer || '');
+      toast.success(`${f.name} loaded!`);
+    } catch {
+      toast.error('Failed to read PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const startRecall = () => {
+    if (!materialText.trim()) return toast.error('Add your study material first!');
+    setPhase('recall');
+    setTimeLeft(120);
+    timerRef.current = setInterval(() => {
+      setTimeLeft(t => {
+        if (t <= 1) { clearInterval(timerRef.current!); return 0; }
+        return t - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  const submit = async () => {
+    if (!recall.trim()) return toast.error('Write something first!');
+    if (timerRef.current) clearInterval(timerRef.current);
+    setPhase('generating');
+    try {
+      const notes = `You are a study gap analyzer.
+
+STUDY MATERIAL:
+---
+${materialText.slice(0, 4000)}
+---
+
+STUDENT'S FREE RECALL:
+---
+${recall}
+---
+
+Compare the student's recall against the study material. Find concepts, facts, and details from the material that the student MISSED or got WRONG. Generate 5-8 flashcards that specifically target those gaps. Only create cards for things they missed, not what they already wrote correctly.`;
+
+      const res = await flashcardApi.generateFromNotes({
+        deck_id: deck.id,
+        notes,
+        count: 8,
+      });
+      setGeneratedCards(res.data.cards || []);
+      setPhase('done');
+    } catch {
+      toast.error('Failed to generate gap cards');
+      setPhase('recall');
+    }
+  };
+
+  const mins = Math.floor(timeLeft / 60);
+  const secs = timeLeft % 60;
+  const timerColor = timeLeft > 60 ? 'text-green-400' : timeLeft > 30 ? 'text-amber-400' : 'text-red-400';
+
+  if (phase === 'upload') return (
+    <div className="space-y-5">
+      <div className="text-center">
+        <div className="text-5xl mb-3">📚</div>
+        <h2 className="text-2xl font-extrabold">Free Recall</h2>
+        <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto">
+          Upload your study material, write what you remember, and AI will generate flashcards for your gaps.
+        </p>
+      </div>
+
+      <div className="card space-y-4 border-brand-500/20 bg-brand-500/5">
+        <h3 className="font-bold flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-brand-500 text-white text-xs flex items-center justify-center font-bold">1</span>
+          Add your study material
+        </h3>
+
+        <input ref={pdfRef} type="file" accept=".pdf" className="hidden" onChange={handlePdf} />
+        {pdfFile ? (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-500/10 border border-brand-500/30 text-sm">
+            <FileText className="w-4 h-4 text-brand-400 flex-shrink-0" />
+            <span className="text-brand-300 truncate flex-1">{pdfFile.name}</span>
+            {pdfLoading
+              ? <div className="w-4 h-4 rounded-full border-2 border-brand-400/30 border-t-brand-400 animate-spin flex-shrink-0" />
+              : <button onClick={() => { setPdfFile(null); setMaterialText(''); if (pdfRef.current) pdfRef.current.value = ''; }}
+                  className="text-slate-500 hover:text-red-400 transition-colors flex-shrink-0">
+                  <X className="w-4 h-4" />
+                </button>
+            }
           </div>
+        ) : (
+          <button onClick={() => pdfRef.current?.click()} disabled={pdfLoading}
+            className="w-full border-2 border-dashed border-brand-500/30 rounded-xl py-5 text-brand-400 hover:border-brand-500/60 hover:bg-brand-500/5 transition-all flex flex-col items-center gap-2 disabled:opacity-50">
+            <Upload className="w-5 h-5" />
+            <span className="text-sm font-medium">Upload PDF study material</span>
+            <span className="text-xs text-slate-500">Max 10MB</span>
+          </button>
+        )}
+
+        <div className="flex items-center gap-3 text-xs text-slate-500">
+          <div className="flex-1 h-px bg-surface-border" />
+          or paste notes below
+          <div className="flex-1 h-px bg-surface-border" />
+        </div>
+
+        <textarea
+          value={materialText}
+          onChange={e => setMaterialText(e.target.value)}
+          placeholder="Paste your notes, textbook excerpt, lecture slides, or study guide here..."
+          className="input min-h-[140px] resize-none text-sm"
+        />
+
+        {materialText.length > 0 && (
+          <div className="flex items-center gap-2 text-xs text-green-400">
+            <Check className="w-3 h-3" /> {materialText.length} characters loaded
+          </div>
+        )}
+      </div>
+
+      <button onClick={startRecall} disabled={!materialText.trim() || pdfLoading}
+        className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
+        <Brain className="w-5 h-5" /> Start Free Recall →
+      </button>
+    </div>
+  );
+
+  if (phase === 'recall') return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-bold flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-brand-500 text-white text-xs flex items-center justify-center font-bold">2</span>
+            Write what you remember
+          </h3>
+          <p className="text-xs text-slate-400 ml-8">Don't look at your notes!</p>
+        </div>
+        <div className={`font-mono font-bold text-2xl ${timerColor}`}>
+          {mins}:{secs.toString().padStart(2, '0')}
         </div>
       </div>
-      <div className="flex gap-3 justify-center">
-        {isLast
-          ? <button onClick={onDone} className="btn-primary px-8">Done ✓</button>
-          : <button onClick={() => { setIdx(i => i + 1); setFlipped(false); }} className="btn-primary px-8">Next →</button>
-        }
+
+      <div className="h-1.5 bg-surface-border rounded-full overflow-hidden">
+        <motion.div className="h-full rounded-full bg-brand-500"
+          animate={{ width: `${(timeLeft / 120) * 100}%` }}
+          transition={{ duration: 0.9, ease: 'linear' }} />
       </div>
+
+      <textarea
+        value={recall}
+        onChange={e => setRecall(e.target.value)}
+        placeholder="Write everything you can remember from your study material...
+
+- Key concepts and definitions
+- Important facts and dates
+- Formulas or processes
+- Anything else you recall
+
+The AI will compare this against your material and generate flashcards for what you missed."
+        className="input resize-none text-sm leading-relaxed"
+        style={{ minHeight: '260px' }}
+        autoFocus
+      />
+
+      <div className="flex items-center justify-between text-xs text-slate-500">
+        <span>{recall.length} characters written</span>
+        {timeLeft === 0 && <span className="text-amber-400 font-medium animate-pulse">⏰ Time's up — submit when ready!</span>}
+      </div>
+
+      <button onClick={submit} disabled={!recall.trim()}
+        className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-50 text-base font-bold">
+        <Sparkles className="w-5 h-5" /> Find My Gaps & Generate Cards
+      </button>
+    </div>
+  );
+
+  if (phase === 'generating') return (
+    <div className="text-center py-20 space-y-5">
+      <div className="w-14 h-14 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
+      <div className="font-bold text-xl">Analyzing your recall...</div>
+      <div className="text-slate-400 text-sm">Comparing against your material and finding gaps</div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="text-center">
+        <div className="text-5xl mb-3">{generatedCards.length > 0 ? '🧠' : '🎉'}</div>
+        <h2 className="text-2xl font-extrabold">
+          {generatedCards.length > 0 ? 'Gap Cards Generated!' : 'Perfect Recall!'}
+        </h2>
+        <p className="text-slate-400 text-sm mt-2">
+          {generatedCards.length > 0
+            ? `${generatedCards.length} flashcards created for what you missed`
+            : 'You remembered everything! No gaps found.'}
+        </p>
+      </div>
+
+      {generatedCards.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs text-brand-400 font-semibold uppercase tracking-widest">
+            Added to "{deck.title}"
+          </p>
+          {generatedCards.map(card => (
+            <div key={card.id} className="card !p-4 border-brand-500/20 bg-brand-500/5">
+              <div className="text-sm font-semibold">{card.question}</div>
+              <div className="text-sm text-slate-400 mt-1.5 border-t border-surface-border pt-1.5">{card.answer}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button onClick={() => onDone(generatedCards)} className="btn-primary w-full py-3 font-bold">
+        Done
+      </button>
     </div>
   );
 }
@@ -237,6 +533,9 @@ export default function FlashcardsPage() {
   const [easyCount, setEasyCount] = useState(0);
   const [hardCount, setHardCount] = useState(0);
   const [sessionXP, setSessionXP] = useState(0);
+
+  // Recall deck picker
+  const [recallDeck, setRecallDeck] = useState<Deck | null>(null);
 
   useEffect(() => { loadDecks(); }, []);
 
@@ -304,6 +603,7 @@ export default function FlashcardsPage() {
       const url = `${window.location.origin}/study/${res.data.token}`;
       await navigator.clipboard.writeText(url);
       toast.success('Share link copied! 🔗');
+      loadDecks();
     } catch { toast.error('Failed to share deck'); }
   };
 
@@ -429,10 +729,21 @@ export default function FlashcardsPage() {
             </h1>
             <p className="text-slate-400 mt-2">Pick a deck to study or create new cards.</p>
           </div>
-          <button onClick={() => { setSelectedDeck(null); setGeneratedCards([]); setPdfCards([]); setScreen('create'); }}
-            className="btn-primary flex items-center gap-2">
-            <Plus className="w-4 h-4" /> New Deck
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (decks.length === 0) { toast('Create a deck first!'); return; }
+                setRecallDeck(decks[0]);
+                setScreen('recall');
+              }}
+              className="btn-ghost flex items-center gap-2">
+              <Brain className="w-4 h-4" /> Free Recall
+            </button>
+            <button onClick={() => { setSelectedDeck(null); setGeneratedCards([]); setPdfCards([]); setScreen('create'); }}
+              className="btn-primary flex items-center gap-2">
+              <Plus className="w-4 h-4" /> New Deck
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -468,12 +779,17 @@ export default function FlashcardsPage() {
                       className="text-xs text-slate-500 hover:text-brand-400 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10">
                       + Add
                     </button>
+                    <button onClick={() => { setRecallDeck(deck); setScreen('recall'); }}
+                      className="text-xs text-slate-500 hover:text-purple-400 transition-colors px-2 py-1 rounded-lg hover:bg-purple-500/10 flex items-center gap-1"
+                      title="Free Recall">
+                      <Brain className="w-3 h-3" />
+                    </button>
                     <button onClick={() => handleShare(deck)}
-                      className="text-xs text-slate-500 hover:text-green-400 transition-colors px-2 py-1 rounded-lg hover:bg-green-500/10 flex items-center gap-1">
+                      className="text-xs text-slate-500 hover:text-green-400 transition-colors px-2 py-1 rounded-lg hover:bg-green-500/10 flex items-center gap-1"
+                      title="Copy share link">
                       <Share2 className="w-3 h-3" />
                     </button>
-                    <button onClick={() => deleteDeck(deck)}
-                      disabled={deletingDeck === deck.id}
+                    <button onClick={() => deleteDeck(deck)} disabled={deletingDeck === deck.id}
                       className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10 flex items-center gap-1 disabled:opacity-50">
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -492,6 +808,38 @@ export default function FlashcardsPage() {
               </motion.div>
             ))}
           </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+
+  // ── FREE RECALL ───────────────────────────────────────────────────────────
+  if (screen === 'recall') return (
+    <AppLayout>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setScreen('home')}
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+            <ChevronLeft className="w-5 h-5" /> Back
+          </button>
+          {decks.length > 1 && (
+            <select
+              value={recallDeck?.id || ''}
+              onChange={e => setRecallDeck(decks.find(d => d.id === e.target.value) || null)}
+              className="input text-sm flex-1">
+              {decks.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
+            </select>
+          )}
+        </div>
+        {recallDeck && (
+          <RecallMode
+            deck={recallDeck}
+            onDone={(newCards) => {
+              if (newCards.length > 0) toast.success(`${newCards.length} gap cards added to "${recallDeck.title}"!`);
+              setScreen('home');
+              loadDecks();
+            }}
+          />
         )}
       </div>
     </AppLayout>
@@ -521,9 +869,7 @@ export default function FlashcardsPage() {
           </div>
         </div>
         {cardsLoading ? (
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => <div key={i} className="skeleton h-16" />)}
-          </div>
+          <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="skeleton h-16" />)}</div>
         ) : deckCards.length === 0 ? (
           <div className="text-center py-16 card border-dashed">
             <p className="text-slate-500 mb-4">No cards yet.</p>
@@ -580,6 +926,19 @@ export default function FlashcardsPage() {
     </AppLayout>
   );
 
+  // ── HARD QUIZ ─────────────────────────────────────────────────────────────
+  if (screen === 'hard-quiz') return (
+    <AppLayout>
+      <div className="max-w-md mx-auto space-y-6">
+        <button onClick={() => setScreen('result')}
+          className="flex items-center gap-2 text-slate-400 hover:text-white">
+          <ChevronLeft className="w-5 h-5" /> Back to results
+        </button>
+        <HardQuiz cards={hardCards} onDone={() => setScreen('result')} />
+      </div>
+    </AppLayout>
+  );
+
   // ── RESULT ────────────────────────────────────────────────────────────────
   if (screen === 'result') {
     const total = easyCount + hardCount || 1;
@@ -611,14 +970,28 @@ export default function FlashcardsPage() {
               </div>
             )}
           </div>
-          {hardCards.length > 0 && (
-            <div className="card border-red-500/20 bg-red-500/5 text-left space-y-4">
-              <h2 className="font-bold text-red-400 flex items-center gap-2">
-                😰 Review your {hardCards.length} hard {hardCards.length === 1 ? 'card' : 'cards'}
-              </h2>
-              <HardCardReview cards={hardCards} onDone={() => setHardCards([])} />
-            </div>
-          )}
+
+          <div className="space-y-3">
+            {hardCards.length > 0 && (
+              <button onClick={() => setScreen('hard-quiz')}
+                className="w-full card border-red-500/20 bg-red-500/5 hover:border-red-500/40 transition-all text-left flex items-center gap-3 !py-3 !px-4">
+                <div className="text-2xl">😰</div>
+                <div>
+                  <div className="font-bold text-red-400">Quiz your {hardCards.length} hard cards</div>
+                  <div className="text-xs text-slate-500">Multiple choice on what you struggled with</div>
+                </div>
+              </button>
+            )}
+            <button onClick={() => { setRecallDeck(selectedDeck); setScreen('recall'); }}
+              className="w-full card border-brand-500/20 bg-brand-500/5 hover:border-brand-500/40 transition-all text-left flex items-center gap-3 !py-3 !px-4">
+              <div className="text-2xl">🧠</div>
+              <div>
+                <div className="font-bold text-brand-400">Free Recall</div>
+                <div className="text-xs text-slate-500">Upload material · write recall · AI finds your gaps</div>
+              </div>
+            </button>
+          </div>
+
           <div className="flex gap-3 justify-center">
             <button onClick={() => setScreen('home')} className="btn-ghost">All Decks</button>
             <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary">Study Again</button>
@@ -700,15 +1073,9 @@ export default function FlashcardsPage() {
                 {generatedCards.length > 0 && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     className="space-y-2 pt-2 border-t border-brand-500/20">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-brand-400 font-semibold uppercase tracking-widest">
-                        {generatedCards.length} cards generated — edit below
-                      </p>
-                      <button onClick={() => openViewCards(selectedDeck)}
-                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-                        <Eye className="w-3 h-3" /> View all
-                      </button>
-                    </div>
+                    <p className="text-xs text-brand-400 font-semibold uppercase tracking-widest">
+                      {generatedCards.length} cards generated — edit below
+                    </p>
                     {generatedCards.map(card => (
                       <CardRow key={card.id} card={card} onSave={saveCard} onDelete={deleteCard} />
                     ))}
@@ -760,15 +1127,9 @@ export default function FlashcardsPage() {
                 {pdfCards.length > 0 && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                     className="space-y-2 pt-2 border-t border-blue-500/20">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-blue-400 font-semibold uppercase tracking-widest">
-                        {pdfCards.length} cards from PDF — edit below
-                      </p>
-                      <button onClick={() => openViewCards(selectedDeck)}
-                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-                        <Eye className="w-3 h-3" /> View all
-                      </button>
-                    </div>
+                    <p className="text-xs text-blue-400 font-semibold uppercase tracking-widest">
+                      {pdfCards.length} cards from PDF — edit below
+                    </p>
                     {pdfCards.map(card => (
                       <CardRow key={card.id} card={card} onSave={saveCard} onDelete={deleteCard} />
                     ))}
