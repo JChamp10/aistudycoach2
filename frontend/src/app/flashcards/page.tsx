@@ -11,7 +11,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation } f
 
 interface Card { id: string; question: string; answer: string; memory_strength: number; }
 interface Deck { id: string; title: string; card_count: number; }
-type Screen = 'home' | 'study' | 'create' | 'result' | 'view-cards';
+type Screen = 'home' | 'study' | 'create' | 'result' | 'view-cards' | 'hard-review';
 
 // ─── Swipe Card ───────────────────────────────────────────────────────────────
 function SwipeCard({ card, onSwipe, isTop }: {
@@ -110,6 +110,7 @@ function CardRow({ card, onSave, onDelete }: {
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
+    if (!q.trim() || !a.trim()) return;
     setSaving(true);
     await onSave(card.id, q, a);
     setEditing(false);
@@ -118,7 +119,7 @@ function CardRow({ card, onSave, onDelete }: {
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="card !p-4 space-y-2">
+      className={`card !p-4 space-y-2 ${editing ? 'border-brand-500/40' : ''}`}>
       {editing ? (
         <>
           <div>
@@ -146,8 +147,8 @@ function CardRow({ card, onSave, onDelete }: {
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold">{card.question}</div>
             <div className="text-sm text-slate-400 mt-1">{card.answer}</div>
-            <div className="mt-1.5">
-              <div className="h-1 w-24 bg-surface-border rounded-full overflow-hidden">
+            <div className="mt-2">
+              <div className="h-1 w-20 bg-surface-border rounded-full overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-green-500"
                   style={{ width: `${(card.memory_strength || 0) * 100}%` }} />
               </div>
@@ -169,6 +170,51 @@ function CardRow({ card, onSave, onDelete }: {
   );
 }
 
+// ─── Hard Card Review ─────────────────────────────────────────────────────────
+function HardCardReview({ cards, onDone }: { cards: Card[]; onDone: () => void }) {
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+
+  if (cards.length === 0) return null;
+  const card = cards[idx];
+  const isLast = idx === cards.length - 1;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-red-400 font-bold">😰 Hard cards review</span>
+        <span className="text-slate-400">{idx + 1} / {cards.length}</span>
+      </div>
+      <div className="h-1.5 bg-surface-border rounded-full overflow-hidden">
+        <div className="h-full rounded-full bg-red-500 transition-all"
+          style={{ width: `${((idx) / cards.length) * 100}%` }} />
+      </div>
+      <div className="flashcard-container select-none cursor-pointer" style={{ height: '260px' }}
+        onClick={() => setFlipped(f => !f)}>
+        <div className={`flashcard-inner w-full h-full ${flipped ? 'flipped' : ''}`}>
+          <div className="flashcard-front card h-full flex flex-col items-center justify-center text-center gap-4 border-red-500/20 bg-gradient-to-br from-red-500/5 to-transparent">
+            <div className="text-xs text-red-400/60 uppercase tracking-widest font-semibold">Question</div>
+            <p className="text-lg font-bold px-6 leading-relaxed">{card.question}</p>
+            <div className="text-xs text-slate-600">Tap to reveal answer</div>
+          </div>
+          <div className="flashcard-back card h-full flex flex-col items-center justify-center text-center gap-4 border-green-500/20 bg-gradient-to-br from-green-500/5 to-transparent">
+            <div className="text-xs text-green-400/60 uppercase tracking-widest font-semibold">Answer</div>
+            <p className="text-lg font-bold text-green-300 px-6 leading-relaxed">{card.answer}</p>
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-3 justify-center">
+        {isLast ? (
+          <button onClick={onDone} className="btn-primary px-8">Done ✓</button>
+        ) : (
+          <button onClick={() => { setIdx(i => i + 1); setFlipped(false); }}
+            className="btn-primary px-8">Next →</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function FlashcardsPage() {
   const [screen, setScreen] = useState<Screen>('home');
@@ -178,6 +224,7 @@ export default function FlashcardsPage() {
   const [deckCards, setDeckCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [cardsLoading, setCardsLoading] = useState(false);
+  const [deletingDeck, setDeletingDeck] = useState<string | null>(null);
 
   // Create
   const [deckTitle, setDeckTitle] = useState('');
@@ -194,6 +241,7 @@ export default function FlashcardsPage() {
 
   // Study
   const [swipeStack, setSwipeStack] = useState<Card[]>([]);
+  const [hardCards, setHardCards] = useState<Card[]>([]);
   const [easyCount, setEasyCount] = useState(0);
   const [hardCount, setHardCount] = useState(0);
   const [sessionXP, setSessionXP] = useState(0);
@@ -217,6 +265,8 @@ export default function FlashcardsPage() {
       if (c.length === 0) {
         toast('No cards in this deck yet! Add some first.');
         setSelectedDeck(deck);
+        setGeneratedCards([]);
+        setPdfCards([]);
         setScreen('create');
         setLoading(false);
         return;
@@ -225,6 +275,7 @@ export default function FlashcardsPage() {
       setSelectedDeck(deck);
       const shuffled = [...c].sort(() => Math.random() - 0.5);
       setSwipeStack(shuffled);
+      setHardCards([]);
       setEasyCount(0);
       setHardCount(0);
       setSessionXP(0);
@@ -244,11 +295,25 @@ export default function FlashcardsPage() {
     finally { setCardsLoading(false); }
   };
 
+  const deleteDeck = async (deck: Deck) => {
+    if (!confirm(`Delete "${deck.title}" and all its cards? This cannot be undone.`)) return;
+    setDeletingDeck(deck.id);
+    try {
+      await flashcardApi.deleteDeck(deck.id);
+      toast.success('Deck deleted');
+      loadDecks();
+    } catch { toast.error('Failed to delete deck'); }
+    finally { setDeletingDeck(null); }
+  };
+
   const handleSwipe = async (dir: 'left' | 'right') => {
     const card = swipeStack[swipeStack.length - 1];
     const difficulty = dir === 'right' ? 'easy' : 'hard';
     if (dir === 'right') setEasyCount(e => e + 1);
-    else setHardCount(h => h + 1);
+    else {
+      setHardCount(h => h + 1);
+      setHardCards(prev => [...prev, card]);
+    }
     try {
       const res = await flashcardApi.reviewCard(card.id, difficulty);
       setSessionXP(prev => prev + (res.data.xp?.xpGained || 0));
@@ -256,6 +321,27 @@ export default function FlashcardsPage() {
     const newStack = swipeStack.slice(0, -1);
     setSwipeStack(newStack);
     if (newStack.length === 0) setScreen('result');
+  };
+
+  const saveCard = async (id: string, question: string, answer: string) => {
+    try {
+      await flashcardApi.updateCard(id, { question, answer });
+      setDeckCards(prev => prev.map(c => c.id === id ? { ...c, question, answer } : c));
+      setGeneratedCards(prev => prev.map(c => c.id === id ? { ...c, question, answer } : c));
+      setPdfCards(prev => prev.map(c => c.id === id ? { ...c, question, answer } : c));
+      toast.success('Card updated!');
+    } catch { toast.error('Failed to update card'); }
+  };
+
+  const deleteCard = async (id: string) => {
+    try {
+      await flashcardApi.deleteCard(id);
+      setDeckCards(prev => prev.filter(c => c.id !== id));
+      setGeneratedCards(prev => prev.filter(c => c.id !== id));
+      setPdfCards(prev => prev.filter(c => c.id !== id));
+      toast.success('Card deleted');
+      loadDecks();
+    } catch { toast.error('Failed to delete card'); }
   };
 
   const createDeck = async () => {
@@ -280,27 +366,6 @@ export default function FlashcardsPage() {
       setDeckCards(prev => [...prev, res.data.card]);
       loadDecks();
     } catch { toast.error('Failed to add card'); }
-  };
-
-  const saveCard = async (id: string, question: string, answer: string) => {
-    try {
-      await flashcardApi.updateCard(id, { question, answer });
-      setDeckCards(prev => prev.map(c => c.id === id ? { ...c, question, answer } : c));
-      setGeneratedCards(prev => prev.map(c => c.id === id ? { ...c, question, answer } : c));
-      setPdfCards(prev => prev.map(c => c.id === id ? { ...c, question, answer } : c));
-      toast.success('Card updated!');
-    } catch { toast.error('Failed to update card'); }
-  };
-
-  const deleteCard = async (id: string) => {
-    try {
-      await flashcardApi.deleteCard(id);
-      setDeckCards(prev => prev.filter(c => c.id !== id));
-      setGeneratedCards(prev => prev.filter(c => c.id !== id));
-      setPdfCards(prev => prev.filter(c => c.id !== id));
-      toast.success('Card deleted');
-      loadDecks();
-    } catch { toast.error('Failed to delete card'); }
   };
 
   const generateFromNotes = async () => {
@@ -333,15 +398,16 @@ export default function FlashcardsPage() {
     setPdfCards([]);
     setPdfProgress('Reading PDF...');
     try {
-      setPdfProgress('Extracting text from PDF...');
-      await new Promise(r => setTimeout(r, 600));
-      setPdfProgress('AI is generating flashcards...');
+      await new Promise(r => setTimeout(r, 500));
+      setPdfProgress('Extracting text...');
+      await new Promise(r => setTimeout(r, 500));
+      setPdfProgress('AI generating cards...');
       const formData = new FormData();
       formData.append('pdf', pdfFile);
       formData.append('deck_id', selectedDeck.id);
       formData.append('count', '10');
       const res = await flashcardApi.generateFromPdf(formData);
-      setPdfProgress('Done!');
+      setPdfProgress('');
       setPdfCards(res.data.cards || []);
       toast.success(`Generated ${res.data.generated} cards from PDF!`);
       setPdfFile(null);
@@ -373,7 +439,7 @@ export default function FlashcardsPage() {
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-36" />)}
+            {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-40" />)}
           </div>
         ) : decks.length === 0 ? (
           <div className="text-center py-20 card border-dashed">
@@ -404,6 +470,11 @@ export default function FlashcardsPage() {
                       className="text-xs text-slate-500 hover:text-brand-400 transition-colors px-2 py-1 rounded-lg hover:bg-brand-500/10">
                       + Add
                     </button>
+                    <button onClick={() => deleteDeck(deck)}
+                      disabled={deletingDeck === deck.id}
+                      className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10 flex items-center gap-1 disabled:opacity-50">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
                 <h3 className="font-bold text-lg group-hover:text-brand-400 transition-colors">{deck.title}</h3>
@@ -430,12 +501,12 @@ export default function FlashcardsPage() {
           </button>
           <div className="flex-1">
             <h1 className="text-2xl font-extrabold">{selectedDeck?.title}</h1>
-            <p className="text-sm text-slate-500">{deckCards.length} cards · click any card to edit</p>
+            <p className="text-sm text-slate-500">{deckCards.length} cards · click ✏️ to edit</p>
           </div>
           <div className="flex gap-2">
             <button onClick={() => { setGeneratedCards([]); setPdfCards([]); setScreen('create'); }}
               className="btn-ghost flex items-center gap-2 text-sm">
-              <Plus className="w-4 h-4" /> Add Cards
+              <Plus className="w-4 h-4" /> Add
             </button>
             <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary text-sm">
               Study →
@@ -449,8 +520,8 @@ export default function FlashcardsPage() {
           </div>
         ) : deckCards.length === 0 ? (
           <div className="text-center py-16 card border-dashed">
-            <p className="text-slate-500">No cards yet.</p>
-            <button onClick={() => setScreen('create')} className="btn-primary mt-4 mx-auto flex items-center gap-2">
+            <p className="text-slate-500 mb-4">No cards yet.</p>
+            <button onClick={() => setScreen('create')} className="btn-primary mx-auto flex items-center gap-2">
               <Plus className="w-4 h-4" /> Add Cards
             </button>
           </div>
@@ -509,9 +580,10 @@ export default function FlashcardsPage() {
     const pct = Math.round((easyCount / total) * 100);
     return (
       <AppLayout>
-        <div className="max-w-md mx-auto text-center py-12 space-y-6">
+        <div className="max-w-md mx-auto text-center py-10 space-y-6">
           <div className="text-7xl">{pct >= 80 ? '🎉' : pct >= 50 ? '👍' : '💪'}</div>
           <h1 className="text-3xl font-extrabold">Session Complete!</h1>
+
           <div className="card space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-green-500/10 rounded-xl p-4 text-center">
@@ -534,6 +606,17 @@ export default function FlashcardsPage() {
               </div>
             )}
           </div>
+
+          {/* Hard cards review section */}
+          {hardCards.length > 0 && (
+            <div className="card border-red-500/20 bg-red-500/5 text-left space-y-4">
+              <h2 className="font-bold text-red-400 flex items-center gap-2">
+                😰 Review your {hardCards.length} hard {hardCards.length === 1 ? 'card' : 'cards'}
+              </h2>
+              <HardCardReview cards={hardCards} onDone={() => setHardCards([])} />
+            </div>
+          )}
+
           <div className="flex gap-3 justify-center">
             <button onClick={() => setScreen('home')} className="btn-ghost">All Decks</button>
             <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary">Study Again</button>
@@ -585,7 +668,6 @@ export default function FlashcardsPage() {
 
         {selectedDeck && (
           <>
-            {/* Manual */}
             <div className="card space-y-4">
               <h2 className="font-bold">Add a Card Manually</h2>
               <input value={cardQ} onChange={e => setCardQ(e.target.value)}
@@ -599,7 +681,6 @@ export default function FlashcardsPage() {
               </button>
             </div>
 
-            {/* AI from notes */}
             <div className="card space-y-4 border-brand-500/20 bg-brand-500/5">
               <h2 className="font-bold flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-brand-400" /> Generate from Notes
@@ -613,14 +694,13 @@ export default function FlashcardsPage() {
                   ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Generating...</>
                   : <><Sparkles className="w-4 h-4" /> Generate 10 Cards</>}
               </button>
-
-              {/* Live preview of generated cards */}
               <AnimatePresence>
                 {generatedCards.length > 0 && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 pt-2 border-t border-brand-500/20">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="space-y-2 pt-2 border-t border-brand-500/20">
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-brand-400 font-semibold uppercase tracking-widest">
-                        {generatedCards.length} cards generated
+                        {generatedCards.length} cards generated — edit below
                       </p>
                       <button onClick={() => openViewCards(selectedDeck)}
                         className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
@@ -635,14 +715,12 @@ export default function FlashcardsPage() {
               </AnimatePresence>
             </div>
 
-            {/* PDF upload */}
             <div className="card space-y-4 border-blue-500/20 bg-blue-500/5">
               <h2 className="font-bold flex items-center gap-2">
                 <Upload className="w-5 h-5 text-blue-400" /> Generate from PDF
               </h2>
               <p className="text-sm text-slate-400">Upload a PDF and AI will extract 10 flashcards automatically.</p>
               <input ref={pdfRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfFile} />
-
               {pdfFile ? (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-sm">
                   <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
@@ -661,8 +739,6 @@ export default function FlashcardsPage() {
                   <span className="text-xs text-slate-500">Max 10MB</span>
                 </button>
               )}
-
-              {/* Progress indicator */}
               <AnimatePresence>
                 {generatingPdf && pdfProgress && (
                   <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -672,21 +748,19 @@ export default function FlashcardsPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-
               <button onClick={generateFromPdf} disabled={generatingPdf || !pdfFile}
                 className="w-full border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl py-2.5 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
                 {generatingPdf
                   ? <><div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin" /> Processing...</>
                   : <><Sparkles className="w-4 h-4" /> Generate from PDF</>}
               </button>
-
-              {/* Live preview of PDF generated cards */}
               <AnimatePresence>
                 {pdfCards.length > 0 && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2 pt-2 border-t border-blue-500/20">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="space-y-2 pt-2 border-t border-blue-500/20">
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-blue-400 font-semibold uppercase tracking-widest">
-                        {pdfCards.length} cards from PDF
+                        {pdfCards.length} cards from PDF — edit below
                       </p>
                       <button onClick={() => openViewCards(selectedDeck)}
                         className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
