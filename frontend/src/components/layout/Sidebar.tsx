@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Brain
+  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Brain, Calculator
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { getLevelFromXP } from '@/lib/utils';
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/flashcards',  icon: BookOpen,         label: 'Flashcards' },
   { href: '/homework',    icon: HelpCircle,       label: 'Homework' },
+  { href: '/math',        icon: Calculator,       label: 'Math Helper' },
   { href: '/leaderboard', icon: Trophy,           label: 'Leaderboard' },
   { href: '/profile',     icon: User,             label: 'Profile' },
 ];
