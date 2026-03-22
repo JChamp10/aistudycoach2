@@ -23,7 +23,6 @@ function groq(messages, maxTokens = 1024) {
         try {
           const parsed = JSON.parse(data);
           const content = parsed.choices?.[0]?.message?.content || '';
-          console.log('Groq raw response:', content);
           resolve(content);
         } catch (e) {
           reject(new Error('Failed to parse Groq response'));
@@ -38,12 +37,7 @@ function groq(messages, maxTokens = 1024) {
 
 function parseJSON(text) {
   try {
-    // Strip markdown code blocks
-    let cleaned = text
-      .replace(/```json/gi, '')
-      .replace(/```/g, '')
-      .trim();
-    // Find first { or [ and last } or ]
+    let cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
     const firstBrace = cleaned.indexOf('{');
     const firstBracket = cleaned.indexOf('[');
     let start = -1;
@@ -53,36 +47,32 @@ function parseJSON(text) {
     const lastBrace = cleaned.lastIndexOf('}');
     const lastBracket = cleaned.lastIndexOf(']');
     const end = Math.max(lastBrace, lastBracket);
-    if (start !== -1 && end !== -1) {
-      cleaned = cleaned.slice(start, end + 1);
-    }
+    if (start !== -1 && end !== -1) cleaned = cleaned.slice(start, end + 1);
     return JSON.parse(cleaned);
   } catch (e) {
-    console.log('JSON parse failed:', e.message);
     return null;
   }
 }
 
-async explainHomework(question, subject, conversationHistory) {
+async function explainHomework(question, subject, conversationHistory) {
   const messages = conversationHistory && conversationHistory.length > 0
     ? conversationHistory
-    : [{ role: 'user', content: question }];
+    : [
+        {
+          role: 'system',
+          content: `You are an expert tutor helping a student with their homework. Give the direct answer first, then explain step by step. Be clear and educational.${subject ? ` Subject: ${subject}` : ''}`,
+        },
+        { role: 'user', content: question },
+      ];
 
-  const systemPrompt = `You are an expert tutor helping a student with their homework. 
-Give the direct answer first, then explain step by step. Be clear and educational.
-${subject ? `Subject: ${subject}` : ''}`;
-
-  const response = await this.callGroq(messages, systemPrompt);
+  const content = await groq(messages, 1500);
   return {
-    explanation: response,
+    explanation: content || 'Could not generate explanation.',
     steps: [],
     hint: '',
   };
-},
-  const parsed = parseJSON(content);
-  if (parsed && parsed.explanation) return parsed;
-  return { explanation: content || 'Could not generate explanation.', steps: ['Review the question carefully.'], hint: 'Try breaking the problem into smaller parts.' };
 }
+
 async function generateFlashcardsFromNotes(notes, count = 10) {
   const content = await groq([
     { role: 'system', content: `You are a flashcard generator. Respond ONLY with a valid JSON array. No markdown, no extra text. Format: [{"question": "string", "answer": "string"}]. Generate exactly ${count} flashcards.` },
