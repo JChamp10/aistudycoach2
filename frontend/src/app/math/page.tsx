@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Calculator, LineChart, Brain, Delete } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 type Tab = 'calculator' | 'graphing';
 
@@ -342,7 +343,6 @@ function DesmosGraphing() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 // Need to import toast
-import toast from 'react-hot-toast';
 
 export default function MathPage() {
   const [tab, setTab] = useState<Tab>('calculator');
