@@ -18,13 +18,12 @@ const upload = multer({
   },
 });
 
-// Ask a text question
 router.post('/ask', async (req, res) => {
   const { question, subject, history } = req.body;
   if (!question?.trim()) return res.status(400).json({ error: 'Question is required' });
   try {
     const messages = [
-      ...(history || []).map((m: any) => ({ role: m.role, content: m.content })),
+      ...(history || []).map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: question }
     ];
     const result = await aiService.explainHomework(question, subject, messages);
@@ -43,7 +42,7 @@ router.post('/ask', async (req, res) => {
     res.status(500).json({ error: 'Failed to get answer' });
   }
 });
-// Ask with PDF
+
 router.post('/ask-pdf', upload.single('pdf'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No PDF uploaded' });
   const question = req.body.question || 'Please explain and help me understand this document';
@@ -69,7 +68,6 @@ router.post('/ask-pdf', upload.single('pdf'), async (req, res) => {
   }
 });
 
-// Get history
 router.get('/history', async (req, res) => {
   try {
     const result = await query(
