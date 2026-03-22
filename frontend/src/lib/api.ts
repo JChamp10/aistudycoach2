@@ -40,45 +40,20 @@ export const flashcardApi = {
   createCard: (data: any) => api.post('/flashcards', data),
   generateFromNotes: (data: any) => api.post('/flashcards/generate', data),
   generateFromPdf: (formData: FormData) =>
-    api.post('/flashcards/generate-pdf', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  reviewCard: (id: string, difficulty: string) => api.post(`/flashcards/${id}/review`, { difficulty }),
+    api.post('/flashcards/generate-pdf', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  reviewCard: (id: string, difficulty: string) =>
+    api.post(`/flashcards/${id}/review`, { difficulty }),
 };
 
 export const homeworkApi = {
   ask: (data: any) => api.post('/homework/ask', data),
   askPdf: (formData: FormData) =>
-    api.post('/homework/ask-pdf', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    api.post('/homework/ask-pdf', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   history: () => api.get('/homework/history'),
-};
-
-export const quizApi = {
-  generate: (data: any) => api.post('/quiz/generate', data),
-  submit: (data: any) => api.post('/quiz/submit', data),
-};
-
-export const kahootApi = {
-  questionsFromDeck: (data: { deck_id: string; count?: number }) =>
-    api.post('/kahoot/questions/deck', data),
-  questionsFromAI: (data: { topic: string; difficulty?: string; count?: number }) =>
-    api.post('/kahoot/questions/ai', data),
-  saveResults: (data: any) => api.post('/kahoot/results', data),
-};
-
-export const studyApi = {
-  start: (data: any) => api.post('/study/start', data),
-  end: (id: string, data: any) => api.put(`/study/${id}/end`, data),
-  sessions: () => api.get('/study/sessions'),
-  recordSession: (data: any) => api.post('/study/start', data),
-  submitRecall: (data: any) => api.post('/study/recall', data),
-};
-
-export const plannerApi = {
-  list: (params?: any) => api.get('/planner', { params }),
-  get: (params?: any) => api.get('/planner', { params }),
-  generate: (data: any) => api.post('/planner/generate', data),
-  create: (data: any) => api.post('/planner', data),
-  update: (id: string, data: any) => api.put(`/planner/${id}`, data),
-  delete: (id: string) => api.delete(`/planner/${id}`),
 };
 
 export const leaderboardApi = {
