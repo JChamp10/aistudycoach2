@@ -197,4 +197,48 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete card' });
   }
 });
+router.put('/:id', async (req, res) => {
+  const { question, answer } = req.body;
+  try {
+    const result = await query(
+      'UPDATE flashcards SET question = $1, answer = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
+      [question, answer, req.params.id, req.user.id]
+    );
+    if (!result.rows[0]) return res.status(404).json({ error: 'Card not found' });
+    res.json({ card: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update card' });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const card = await query(
+      'DELETE FROM flashcards WHERE id = $1 AND user_id = $2 RETURNING deck_id',
+      [req.params.id, req.user.id]
+    );
+    if (card.rows[0]) {
+      await query(
+        'UPDATE flashcard_decks SET card_count = GREATEST(card_count - 1, 0) WHERE id = $1',
+        [card.rows[0].deck_id]
+      );
+    }
+    res.json({ deleted: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete card' });
+  }
+});
+
+router.delete('/decks/:id', async (req, res) => {
+  try {
+    await query('DELETE FROM flashcards WHERE deck_id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    await query('DELETE FROM flashcard_decks WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+    res.json({ deleted: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete deck' });
+  }
+});
 module.exports = router;
