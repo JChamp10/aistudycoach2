@@ -15,43 +15,80 @@
     font-weight: 700;
     color: #2d1f0e;
   }
+  p { color: #5c4030; }
+  label { color: #5c4030; }
+
+  /* Force all text that was white/slate to be dark */
+  .text-white { color: #2d1f0e !important; }
+  .text-slate-100 { color: #2d1f0e !important; }
+  .text-slate-200 { color: #3d2a18 !important; }
+  .text-slate-300 { color: #5c4030 !important; }
+  .text-slate-400 { color: #8b6f5a !important; }
+  .text-slate-500 { color: #b8a090 !important; }
+  .text-slate-600 { color: #c8b0a0 !important; }
+
+  /* Keep colored text working */
+  .text-brand-400 { color: #ff6b1a !important; }
+  .text-brand-500 { color: #e85500 !important; }
+  .text-green-400 { color: #16a34a !important; }
+  .text-green-300 { color: #15803d !important; }
+  .text-red-400 { color: #dc2626 !important; }
+  .text-amber-400 { color: #d97706 !important; }
+  .text-blue-400 { color: #2563eb !important; }
+  .text-purple-400 { color: #7c3aed !important; }
+
+  /* Background overrides */
+  .bg-surface-card { background-color: #fffcf9 !important; }
+  .bg-surface-muted { background-color: #f5ede3 !important; }
+  .bg-surface-border { background-color: #e8ddd0 !important; }
+  .border-surface-border { border-color: #e8ddd0 !important; }
+
+  /* Dark backgrounds should keep white text */
+  .bg-brand-500 { color: white !important; }
+  .btn-primary { color: white !important; }
+
+  /* Input text */
+  input, textarea, select {
+    color: #2d1f0e !important;
+    background-color: #fffcf9 !important;
+  }
 }
 
 @layer components {
   .card {
-    @apply bg-surface-card border border-surface-border rounded-2xl p-6;
+    background-color: #fffcf9;
+    border: 1.5px solid #e8ddd0;
+    @apply rounded-2xl p-6;
     box-shadow: 0 2px 12px rgba(139, 90, 60, 0.08);
   }
   .btn-primary {
     @apply font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98];
-    background: linear-gradient(135deg, #ff6b1a, #e85500);
-    color: white;
+    background: linear-gradient(135deg, #ff6b1a, #e85500) !important;
+    color: white !important;
     box-shadow: 0 4px 14px rgba(255, 107, 26, 0.35);
   }
   .btn-primary:hover {
     box-shadow: 0 6px 20px rgba(255, 107, 26, 0.45);
   }
   .btn-ghost {
-    @apply border font-medium px-5 py-2.5 rounded-xl transition-all duration-200;
-    border-color: #e8ddd0;
-    color: #5c4030;
+    @apply font-medium px-5 py-2.5 rounded-xl transition-all duration-200;
+    border: 1.5px solid #e8ddd0;
+    color: #5c4030 !important;
     background: transparent;
   }
   .btn-ghost:hover {
     background: #f5ede3;
     border-color: #ff6b1a;
-    color: #2d1f0e;
+    color: #2d1f0e !important;
   }
   .input {
     @apply rounded-xl px-4 py-3 transition-all w-full;
-    background: #fffcf9;
+    background: #fffcf9 !important;
     border: 1.5px solid #e8ddd0;
-    color: #2d1f0e;
+    color: #2d1f0e !important;
     outline: none;
   }
-  .input::placeholder {
-    color: #b8a090;
-  }
+  .input::placeholder { color: #b8a090 !important; }
   .input:focus {
     border-color: #ff6b1a;
     box-shadow: 0 0 0 3px rgba(255, 107, 26, 0.12);
@@ -100,7 +137,7 @@
 }
 .flashcard-back { transform: rotateY(180deg); }
 
-/* Warm paper texture overlay */
+/* Warm paper texture */
 body::before {
   content: '';
   position: fixed;
