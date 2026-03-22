@@ -47,7 +47,10 @@ export default function Sidebar() {
                   : 'text-slate-400 hover:text-white hover:bg-surface-muted border border-transparent'
               )}
             >
-              <item.icon className={clsx('w-5 h-5 flex-shrink-0', active ? 'text-brand-400' : 'text-slate-500')} />
+              <item.icon className={clsx(
+                'w-5 h-5 flex-shrink-0',
+                active ? 'text-brand-400' : 'text-slate-500'
+              )} />
               {item.label}
               {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-400" />}
             </Link>
@@ -55,15 +58,14 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* XP bar + user */}
+      {/* XP + user */}
       {user && (
         <div className="p-4 border-t border-surface-border flex-shrink-0 space-y-3">
           {level && (
             <div>
               <div className="flex justify-between text-xs text-slate-500 mb-1.5">
                 <span className="flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-amber-400" />
-                  Level {level.level}
+                  <Zap className="w-3 h-3 text-amber-400" /> Level {level.level}
                 </span>
                 <span>{user.xp || 0} XP</span>
               </div>
@@ -78,7 +80,6 @@ export default function Sidebar() {
               </div>
             </div>
           )}
-
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-brand-500/20 border border-brand-500/30 flex items-center justify-center text-brand-400 font-bold text-sm flex-shrink-0">
               {user.username?.[0]?.toUpperCase() || '?'}
@@ -90,8 +91,7 @@ export default function Sidebar() {
             <button
               onClick={logout}
               className="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-lg hover:bg-red-500/10"
-              title="Log out"
-            >
+              title="Log out">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
