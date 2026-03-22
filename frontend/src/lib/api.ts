@@ -47,6 +47,7 @@ export const flashcardApi = {
     }),
   reviewCard: (id: string, difficulty: string) =>
     api.post(`/flashcards/${id}/review`, { difficulty }),
+  deleteDeck: (id: string) => api.delete(`/flashcards/decks/${id}`),
 };
 
 export const homeworkApi = {
