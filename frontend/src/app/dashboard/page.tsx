@@ -29,29 +29,6 @@ export default function DashboardPage() {
     }).finally(() => setLoading(false));
   }, []);
 
-  const cards = [
-    {
-      title: 'Flashcards',
-      href: '/flashcards',
-      icon: BookOpen,
-      color: 'brand',
-      value: dueCards > 0 ? `${dueCards} due` : 'All caught up!',
-      sub: dueCards > 0 ? 'cards need review' : 'no cards due today',
-      cta: dueCards > 0 ? 'Study now' : 'Add cards',
-      urgent: dueCards > 0,
-    },
-    {
-      title: 'Homework',
-      href: '/homework',
-      icon: HelpCircle,
-      color: 'blue',
-      value: recentHomework.length > 0 ? `${recentHomework.length} recent` : 'Ask away',
-      sub: 'AI-powered help',
-      cta: 'Ask a question',
-      urgent: false,
-    },
-  ];
-
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-8">
@@ -109,16 +86,38 @@ export default function DashboardPage() {
 
         {/* Quick action cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {cards.map((c, i) => (
-            <motion.div key={c.href} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+          {[
+            {
+              href: '/flashcards',
+              icon: BookOpen,
+              color: 'brand',
+              title: 'Flashcards',
+              value: dueCards > 0 ? `${dueCards} due` : 'All caught up!',
+              sub: dueCards > 0 ? 'cards need review' : 'no cards due today',
+              urgent: dueCards > 0,
+            },
+            {
+              href: '/homework',
+              icon: HelpCircle,
+              color: 'blue',
+              title: 'Homework Helper',
+              value: recentHomework.length > 0 ? `${recentHomework.length} recent` : 'Ask away',
+              sub: 'AI-powered help',
+              urgent: false,
+            },
+          ].map((c, i) => (
+            <motion.div key={c.href} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}>
               <Link href={c.href}
-                className={`card flex items-center gap-4 hover:border-${c.color}-500/40 transition-all group cursor-pointer block`}>
+                className="card flex items-center gap-4 hover:border-brand-500/40 transition-all group cursor-pointer block">
                 <div className={`w-12 h-12 rounded-2xl bg-${c.color}-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-${c.color}-500/20 transition-colors`}>
                   <c.icon className={`w-6 h-6 text-${c.color}-400`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold">{c.title}</div>
-                  <div className={`text-sm font-semibold ${c.urgent ? 'text-amber-400' : 'text-slate-400'}`}>{c.value}</div>
+                  <div className={`text-sm font-semibold ${c.urgent ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {c.value}
+                  </div>
                   <div className="text-xs text-slate-500">{c.sub}</div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
@@ -146,7 +145,7 @@ export default function DashboardPage() {
                   <HelpCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate group-hover:text-white transition-colors">
-                      {hw.question}
+                      {hw.question?.replace('[PDF] ', '') || 'Question'}
                     </div>
                     {hw.subject && (
                       <div className="text-xs text-slate-500 mt-0.5">{hw.subject}</div>
@@ -187,7 +186,9 @@ export default function DashboardPage() {
           <div className="text-center py-12 card border-dashed">
             <div className="text-5xl mb-4">🚀</div>
             <h2 className="text-xl font-bold mb-2">Ready to start learning?</h2>
-            <p className="text-slate-500 mb-6 text-sm">Create some flashcards or ask your first homework question!</p>
+            <p className="text-slate-500 mb-6 text-sm">
+              Create some flashcards or ask your first homework question!
+            </p>
             <div className="flex gap-3 justify-center">
               <Link href="/flashcards" className="btn-primary flex items-center gap-2">
                 <BookOpen className="w-4 h-4" /> Flashcards
