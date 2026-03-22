@@ -63,11 +63,22 @@ function parseJSON(text) {
   }
 }
 
-async function explainHomework(question, context) {
-  const content = await groq([
-    { role: 'system', content: 'You are a helpful tutor. Give the direct answer first, then explain step by step how to get to that answer. Respond ONLY with valid JSON. No markdown, no extra text. JSON format: {"explanation": "Direct answer here, then brief overview", "steps": ["Step 1: ...", "Step 2: ...", "Step 3: ..."], "hint": "A tip to remember this in future"}' },
-    { role: 'user', content: `Question: ${question}\nContext: ${context || 'none'}` }
-  ]);
+async explainHomework(question, subject, conversationHistory) {
+  const messages = conversationHistory && conversationHistory.length > 0
+    ? conversationHistory
+    : [{ role: 'user', content: question }];
+
+  const systemPrompt = `You are an expert tutor helping a student with their homework. 
+Give the direct answer first, then explain step by step. Be clear and educational.
+${subject ? `Subject: ${subject}` : ''}`;
+
+  const response = await this.callGroq(messages, systemPrompt);
+  return {
+    explanation: response,
+    steps: [],
+    hint: '',
+  };
+},
   const parsed = parseJSON(content);
   if (parsed && parsed.explanation) return parsed;
   return { explanation: content || 'Could not generate explanation.', steps: ['Review the question carefully.'], hint: 'Try breaking the problem into smaller parts.' };
