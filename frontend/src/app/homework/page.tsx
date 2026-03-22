@@ -83,7 +83,10 @@ export default function HomeworkPage() {
         const formData = new FormData();
         formData.append('pdf', file);
         formData.append('question', sentInput || 'Please explain and help me understand this document');
-        res = await homeworkApi.askPdf(formData);
+        res = await homeworkApi.ask({ 
+          question: sentInput,
+          history: messages.map(m => ({ role: m.role, content: m.content }))
+      });
         setFile(null);
         setPdfProgress('');
         if (fileRef.current) fileRef.current.value = '';
