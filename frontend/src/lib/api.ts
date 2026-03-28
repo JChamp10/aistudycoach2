@@ -16,6 +16,10 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('token');
       window.location.href = '/login';
+    } else if (err.response?.status === 403 && err.response?.data?.error === 'REQUIRES_UPGRADE') {
+      import('@/lib/store').then(({ useAuthStore }) => {
+        useAuthStore.getState().setShowUpgradeModal(true);
+      });
     }
     return Promise.reject(err);
   }
@@ -28,6 +32,7 @@ export const authApi = {
     api.post('/auth/register', data),
   login: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
+  devLogin: () => api.post('/auth/dev-login'),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
 };
@@ -57,6 +62,10 @@ export const homeworkApi = {
   ask: (data: any) => api.post('/homework/ask', data),
   askPdf: (formData: FormData) =>
     api.post('/homework/ask-pdf', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  askImage: (formData: FormData) =>
+    api.post('/homework/ask-image', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   history: () => api.get('/homework/history'),

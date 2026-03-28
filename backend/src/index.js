@@ -11,8 +11,10 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
 }));
+const { apiLimiter } = require('./middleware/rateLimit.middleware');
 app.use(express.json({ limit: '10mb' }));
 app.use(morgan('combined'));
+app.use('/api', apiLimiter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

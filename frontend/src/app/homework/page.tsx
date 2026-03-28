@@ -5,11 +5,14 @@ import { homeworkApi } from '@/lib/api';
 import { HelpCircle, Send, Upload, X, FileText, Loader, Clock, ChevronLeft, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSFX } from '@/lib/useSFX';
+import { TypewriterText, ThinkingPulse } from '@/components/layout/TypewriterText';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   fileName?: string;
+  isNew?: boolean;
 }
 
 interface HistoryItem {
@@ -31,6 +34,7 @@ export default function HomeworkPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { playSfx } = useSFX();
 
   useEffect(() => {
     loadHistory();
@@ -48,7 +52,7 @@ export default function HomeworkPage() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.type !== 'application/pdf') return toast.error('Only PDF files are supported');
+    if (f.type !== 'application/pdf' && !f.type.startsWith('image/')) return toast.error('Only PDF and image files are supported');
     if (f.size > 10 * 1024 * 1024) return toast.error('File must be under 10MB');
     setFile(f);
     toast.success(`${f.name} attached!`);
@@ -71,22 +75,27 @@ export default function HomeworkPage() {
     const sentInput = input;
     setInput('');
     setLoading(true);
+    playSfx('send');
 
     try {
       let res;
       if (file) {
         setPdfProgress('Reading PDF...');
         await new Promise(r => setTimeout(r, 400));
-        setPdfProgress('Extracting text...');
-        await new Promise(r => setTimeout(r, 400));
-        setPdfProgress('AI is thinking...');
         const formData = new FormData();
-        formData.append('pdf', file);
-        formData.append('question', sentInput || 'Please explain and help me understand this document');
-        res = await homeworkApi.ask({ 
-          question: sentInput,
-          history: messages.map(m => ({ role: m.role, content: m.content }))
-      });
+        if (file.type.startsWith('image/')) {
+          setPdfProgress('Analyzing image...');
+          await new Promise(r => setTimeout(r, 400));
+          formData.append('image', file);
+          formData.append('question', sentInput || 'Explain and solve the problem in this image.');
+          res = await homeworkApi.askImage(formData);
+        } else {
+          setPdfProgress('Extracting text from PDF...');
+          await new Promise(r => setTimeout(r, 400));
+          formData.append('pdf', file);
+          formData.append('question', sentInput || 'Please explain and help me understand this document');
+          res = await homeworkApi.askPdf(formData);
+        }
         setFile(null);
         setPdfProgress('');
         if (fileRef.current) fileRef.current.value = '';
@@ -94,7 +103,8 @@ export default function HomeworkPage() {
         res = await homeworkApi.ask({ question: sentInput });
       }
       const answer = res.data.answer || res.data.explanation || 'No response received.';
-      setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: answer, isNew: true }]);
+      playSfx('pop');
       loadHistory();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to get answer');
@@ -297,7 +307,13 @@ export default function HomeworkPage() {
                         <FileText className="w-3 h-3" /> {msg.fileName}
                       </div>
                     )}
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                    {msg.role === 'assistant' && msg.isNew ? (
+                      <TypewriterText text={msg.content} speed={15} onComplete={() => {
+                        setMessages(prev => prev.map((m, idx) => idx === i ? { ...m, isNew: false } : m));
+                      }} />
+                    ) : (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -324,13 +340,11 @@ export default function HomeworkPage() {
               {loading && !pdfProgress && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="flex justify-start">
-                  <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mr-2 mt-1">
-                    <HelpCircle className="w-3.5 h-3.5 text-blue-400" />
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
+                    style={{ background: 'rgba(var(--brand-400-rgb, 255,107,26), 0.15)', border: '1.5px solid var(--border-brand)' }}>
+                    <HelpCircle className="w-3.5 h-3.5" style={{ color: 'var(--brand-400)' }} />
                   </div>
-                  <div className="bg-surface-card border border-surface-border rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
-                    <Loader className="w-4 h-4 text-brand-400 animate-spin" />
-                    <span className="text-sm text-slate-400">Thinking...</span>
-                  </div>
+                  <ThinkingPulse />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -360,7 +374,7 @@ export default function HomeworkPage() {
                 className="w-10 h-10 rounded-xl border border-surface-border flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-500/40 transition-all flex-shrink-0">
                 <Upload className="w-4 h-4" />
               </button>
-              <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={handleFile} />
+              <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden" onChange={handleFile} />
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -375,7 +389,7 @@ export default function HomeworkPage() {
                 <Send className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-slate-600 text-center">Press Enter to send · Upload PDF for document help</p>
+            <p className="text-xs text-slate-600 text-center">Press Enter to send · Upload PDF or Image for document help</p>
           </div>
         </div>
       </div>

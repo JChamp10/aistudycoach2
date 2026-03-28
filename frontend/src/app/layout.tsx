@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
+import { UpgradeModal } from '@/components/layout/UpgradeModal';
 
 export const metadata: Metadata = {
   title: 'AI Study Coach – Learn Smarter',
@@ -16,13 +17,14 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {children}
+        <UpgradeModal />
         <Toaster
           position="top-right"
           toastOptions={{
             style: {
-              background: '#181d2a',
-              color: '#ffffff',
-              border: '1px solid #252b3b',
+              background: 'var(--toast-bg)',
+              color: 'var(--toast-text)',
+              border: '1px solid var(--toast-border)',
               borderRadius: '12px',
               fontFamily: 'Syne, sans-serif',
             },

@@ -1,25 +1,71 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import Sidebar from './Sidebar';
 import { getLevelFromXP } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useSFX } from '@/lib/useSFX';
 
-// ─── Floating Phoenix ─────────────────────────────────────────────────────────
+// ─── Fire Particle ────────────────────────────────────────────────────────────
+function FireParticle({ x, y, color }: { x: number; y: number; color: string }) {
+  const angle = Math.random() * Math.PI * 2;
+  const distance = 20 + Math.random() * 40;
+  const dx = Math.cos(angle) * distance;
+  const dy = Math.sin(angle) * distance - 30; // bias upward
+
+  return (
+    <motion.div
+      initial={{ x, y, opacity: 1, scale: 1 }}
+      animate={{ x: x + dx, y: y + dy, opacity: 0, scale: 0 }}
+      transition={{ duration: 0.5 + Math.random() * 0.3, ease: 'easeOut' }}
+      className="absolute rounded-full pointer-events-none"
+      style={{
+        width: 4 + Math.random() * 4,
+        height: 4 + Math.random() * 4,
+        background: color,
+        boxShadow: `0 0 6px ${color}`,
+      }}
+    />
+  );
+}
+
+// ─── XP Text Float ────────────────────────────────────────────────────────────
+function XPFloat({ x, y }: { x: number; y: number }) {
+  return (
+    <motion.div
+      initial={{ x, y, opacity: 1, scale: 0.8 }}
+      animate={{ x, y: y - 50, opacity: 0, scale: 1.2 }}
+      transition={{ duration: 0.8, ease: 'easeOut' }}
+      className="absolute pointer-events-none font-bold text-sm"
+      style={{ color: 'var(--brand-400)', textShadow: '0 0 10px var(--brand-glow)' }}
+    >
+      +5 XP ✨
+    </motion.div>
+  );
+}
+
+// ─── Interactive Floating Phoenix ─────────────────────────────────────────────
 function FloatingPhoenix({ level }: { level: number }) {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('');
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
+  const [particles, setParticles] = useState<{ id: number; x: number; y: number; color: string }[]>([]);
+  const [xpFloats, setXpFloats] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [isJumping, setIsJumping] = useState(false);
+  const lastClickRef = useRef(0);
   const dragStart = useRef<{ mx: number; my: number; px: number; py: number } | null>(null);
+  const { playSfx } = useSFX();
+  let nextId = useRef(0);
 
   const stage = level <= 3 ? 'egg' : level <= 8 ? 'chick' : level <= 15 ? 'bird' : 'phoenix';
 
   const tips: Record<string, string[]> = {
-    egg: ['Study a little every day! 🌱', 'I\'m almost ready to hatch! 🥚', 'You\'re doing great! ⭐'],
-    chick: ['Keep your streak alive! 🔥', 'Flashcards help memory! 🧠', 'You\'re growing fast! 🌟'],
-    bird: ['Free recall boosts retention! 💡', 'Review hard cards again! 💪', 'You\'re soaring! 🦅'],
-    phoenix: ['You\'re legendary! 🔥', 'Share your decks with friends! 🌍', 'Unstoppable force! ⚡'],
+    egg: ['Study a little every day! 🌱', "I'm almost ready to hatch! 🥚", "You're doing great! ⭐"],
+    chick: ['Keep your streak alive! 🔥', 'Flashcards help memory! 🧠', "You're growing fast! 🌟"],
+    bird: ['Free recall boosts retention! 💡', 'Review hard cards again! 💪', "You're soaring! 🦅"],
+    phoenix: ["You're legendary! 🔥", 'Share your decks with friends! 🌍', 'Unstoppable force! ⚡'],
   };
 
   useEffect(() => {
@@ -56,6 +102,34 @@ function FloatingPhoenix({ level }: { level: number }) {
     window.addEventListener('mouseup', onUp);
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
   }, [dragging]);
+
+  const handleClick = useCallback(() => {
+    const now = Date.now();
+    if (now - lastClickRef.current < 400) return; // cooldown
+    lastClickRef.current = now;
+
+    playSfx('phoenix');
+
+    // Fire particles
+    const colors = ['#ff6b1a', '#ffb570', '#ff8c3a', '#e85500', '#ffe0a0'];
+    const newParticles = Array.from({ length: 8 }, () => ({
+      id: nextId.current++,
+      x: 28 + Math.random() * 8 - 4,
+      y: 28 + Math.random() * 8 - 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    }));
+    setParticles(prev => [...prev, ...newParticles]);
+    setTimeout(() => setParticles(prev => prev.filter(p => !newParticles.includes(p))), 800);
+
+    // XP float
+    const xpFloat = { id: nextId.current++, x: 20, y: -10 };
+    setXpFloats(prev => [...prev, xpFloat]);
+    setTimeout(() => setXpFloats(prev => prev.filter(f => f.id !== xpFloat.id)), 900);
+
+    // Jump
+    setIsJumping(true);
+    setTimeout(() => setIsJumping(false), 400);
+  }, [playSfx]);
 
   const PhoenixSVG = () => {
     if (stage === 'egg') return (
@@ -143,38 +217,66 @@ function FloatingPhoenix({ level }: { level: number }) {
       style={{
         bottom: `${80 + pos.y * -1}px`,
         right: `${24 + pos.x * -1}px`,
-        cursor: dragging ? 'grabbing' : 'grab',
+        cursor: dragging ? 'grabbing' : 'pointer',
       }}
       onMouseDown={onMouseDown}
     >
+      {/* Speech bubble */}
       {visible && (
         <div
-          className="absolute bottom-14 right-0 text-xs font-semibold px-3 py-2 rounded-2xl rounded-br-sm whitespace-nowrap max-w-[200px] text-center"
+          className="absolute bottom-16 right-0 text-xs font-semibold px-3 py-2 rounded-2xl rounded-br-sm whitespace-nowrap max-w-[200px] text-center"
           style={{
-            background: 'linear-gradient(135deg, #fffcf9, #fdf8f3)',
-            border: '1.5px solid #e8ddd0',
-            color: '#5c4030',
-            boxShadow: '0 4px 16px rgba(139,90,60,0.15)',
+            background: 'var(--bg-secondary)',
+            border: '1.5px solid var(--border-primary)',
+            color: 'var(--text-muted)',
+            boxShadow: '0 4px 16px var(--surface-shadow)',
           }}>
           {message}
           <div className="absolute bottom-[-8px] right-4 w-3 h-3 rotate-45"
-            style={{ background: '#fdf8f3', borderRight: '1.5px solid #e8ddd0', borderBottom: '1.5px solid #e8ddd0' }} />
+            style={{ background: 'var(--bg-secondary)', borderRight: '1.5px solid var(--border-primary)', borderBottom: '1.5px solid var(--border-primary)' }} />
         </div>
       )}
-      <div className="w-14 h-14 animate-float drop-shadow-lg hover:scale-110 transition-transform">
-        <PhoenixSVG />
-      </div>
+
+      {/* Fire particles */}
+      <AnimatePresence>
+        {particles.map(p => (
+          <FireParticle key={p.id} x={p.x} y={p.y} color={p.color} />
+        ))}
+      </AnimatePresence>
+
+      {/* XP floats */}
+      <AnimatePresence>
+        {xpFloats.map(f => (
+          <XPFloat key={f.id} x={f.x} y={f.y} />
+        ))}
+      </AnimatePresence>
+
+      {/* Phoenix */}
+      <motion.div
+        className="w-14 h-14 drop-shadow-lg hover:scale-110 transition-transform"
+        animate={isJumping ? { y: [0, -25, 0], rotate: [0, 10, -10, 0] } : { y: 0 }}
+        transition={isJumping ? { duration: 0.4, type: 'spring', stiffness: 300 } : {}}
+        onClick={handleClick}
+        style={{ filter: 'drop-shadow(0 0 8px rgba(255,107,26,0.3))' }}
+      >
+        <div className="animate-float w-full h-full">
+          <PhoenixSVG />
+        </div>
+      </motion.div>
     </div>
   );
 }
 
 // ─── App Layout ───────────────────────────────────────────────────────────────
+import BottomNav from './BottomNav';
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, fetchMe, user } = useAuthStore();
   const level = user ? getLevelFromXP(user.xp || 0) : null;
 
   useEffect(() => {
+    useAuthStore.getState().initTheme();
     fetchMe().then(() => {
       const { isAuthenticated } = useAuthStore.getState();
       if (!isAuthenticated) router.push('/login');
@@ -182,17 +284,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!isAuthenticated) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#fdf8f3' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
       <div className="w-10 h-10 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
     </div>
   );
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#fdf8f3' }}>
+    <div className="flex min-h-screen pb-16 md:pb-0" style={{ background: 'var(--bg-primary)', transition: 'background-color 0.3s ease' }}>
       <Sidebar />
-      <main className="flex-1 ml-64 p-8 relative z-10">
+      <main className="flex-1 md:ml-64 p-4 md:p-8 relative z-10 w-full overflow-x-hidden">
         {children}
       </main>
+      <BottomNav />
       {level && <FloatingPhoenix level={level.level} />}
     </div>
   );

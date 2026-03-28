@@ -3,9 +3,9 @@ const https = require('https');
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const MODEL = 'llama-3.3-70b-versatile';
 
-function groq(messages, maxTokens = 1024) {
+function groq(messages, maxTokens = 1024, modelOverride = null) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model: MODEL, messages, max_tokens: maxTokens });
+    const body = JSON.stringify({ model: modelOverride || MODEL, messages, max_tokens: maxTokens });
     const options = {
       hostname: 'api.groq.com',
       path: '/openai/v1/chat/completions',
@@ -55,17 +55,24 @@ function parseJSON(text) {
 }
 
 async function explainHomework(question, subject, conversationHistory) {
-  const messages = conversationHistory && conversationHistory.length > 0
-    ? conversationHistory
-    : [
-        {
-          role: 'system',
-          content: `You are an expert tutor helping a student with their homework. Give the direct answer first, then explain step by step. Be clear and educational.${subject ? ` Subject: ${subject}` : ''}`,
-        },
-        { role: 'user', content: question },
-      ];
+  const systemPrompt = {
+    role: 'system',
+    content: `You are an expert tutor helping a student with their homework. Give the direct answer first, then explain step by step. Be clear and educational.${subject ? ` Subject: ${subject}` : ''}`,
+  };
 
-  const content = await groq(messages, 1500);
+  let messages = [];
+  if (conversationHistory && conversationHistory.length > 0) {
+    // Keep only the last 10 messages for a rolling context window
+    const recentHistory = conversationHistory.slice(-10);
+    messages = [systemPrompt, ...recentHistory];
+  } else {
+    messages = [systemPrompt, { role: 'user', content: question }];
+  }
+
+  // Adjust maxTokens dynamically based on history length (more history -> shorter response to fit limits)
+  const dynamicMaxTokens = messages.length > 6 ? 1000 : 1500;
+
+  const content = await groq(messages, dynamicMaxTokens);
   return {
     explanation: content || 'Could not generate explanation.',
     steps: [],
@@ -116,4 +123,15 @@ async function generateStudyPlan(subjects, dailyHours) {
   return [];
 }
 
-module.exports = { explainHomework, generateFlashcardsFromNotes, generateQuizQuestions, analyzeRecall, generateStudyPlan };
+async function explainHomeworkFromImage(base64Image, question, subject) {
+  const content = await groq([{
+    role: 'user',
+    content: [
+      { type: 'text', text: `Subject: ${subject || 'General'}. Question: ${question || 'Explain and solve the problem in this image.'} Please step by step explain the homework problem shown.` },
+      { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
+    ]
+  }], 1500, 'llama-3.2-90b-vision-preview');
+  return { explanation: content || 'Could not explain image.', steps: [] };
+}
+
+module.exports = { explainHomework, explainHomeworkFromImage, generateFlashcardsFromNotes, generateQuizQuestions, analyzeRecall, generateStudyPlan };

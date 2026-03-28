@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const { login, isLoading } = useAuthStore();
+  const { login, devLogin, isLoading } = useAuthStore();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,6 +21,16 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Login failed');
+    }
+  };
+
+  const handleDevLogin = async () => {
+    try {
+      await devLogin();
+      toast.success('Bypassed login (Dev Mode) ⚡');
+      router.push('/dashboard');
+    } catch (err: any) {
+      toast.error('Dev login failed');
     }
   };
 
@@ -52,6 +62,15 @@ export default function LoginPage() {
             <button type="submit" disabled={isLoading} className="btn-primary w-full py-3 disabled:opacity-50">
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
+            {process.env.NODE_ENV === 'development' && (
+              <button 
+                type="button" 
+                onClick={handleDevLogin} 
+                disabled={isLoading} 
+                className="w-full py-3 rounded-xl border border-brand-500/50 bg-brand-500/10 text-brand-400 font-semibold hover:bg-brand-500/20 transition-all font-mono">
+                ⚡ Developer Bypass Limit
+              </button>
+            )}
           </form>
         </div>
         <p className="text-center text-slate-400 mt-6 text-sm">

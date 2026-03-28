@@ -1,0 +1,23 @@
+# Root Git Ignore
+node_modules/
+.next/
+out/
+build/
+.DS_Store
+*.tsbuildinfo
+
+# Frontend specific
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+frontend/next-env.d.ts
+
+# Backend specific
+backend/node_modules/
+backend/.env
+backend/logs/
+
+# Miscellaneous
+.vscode/
+.idea/
+*.log

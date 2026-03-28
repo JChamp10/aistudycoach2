@@ -5,6 +5,8 @@ const { query } = require('../db/pool');
 const { authenticate } = require('../middleware/auth.middleware');
 const { awardXP } = require('../services/gamification.service');
 const aiService = require('../services/ai.service');
+const { aiLimiter } = require('../middleware/rateLimit.middleware');
+const { checkAILimits } = require('../middleware/usage.middleware');
 
 const router = express.Router();
 router.use(authenticate);
@@ -18,7 +20,7 @@ const upload = multer({
   },
 });
 
-router.post('/ask', async (req, res) => {
+router.post('/ask', aiLimiter, checkAILimits, async (req, res) => {
   const { question, subject, history } = req.body;
   if (!question?.trim()) return res.status(400).json({ error: 'Question is required' });
   try {
@@ -43,7 +45,7 @@ router.post('/ask', async (req, res) => {
   }
 });
 
-router.post('/ask-pdf', upload.single('pdf'), async (req, res) => {
+router.post('/ask-pdf', aiLimiter, checkAILimits, upload.single('document'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No PDF uploaded' });
   const question = req.body.question || 'Please explain and help me understand this document';
   try {

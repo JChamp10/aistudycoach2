@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Calculator
+  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Calculator, Users, Moon, Sun, Brain
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { getLevelFromXP } from '@/lib/utils';
@@ -10,9 +10,12 @@ import { clsx } from 'clsx';
 
 const navItems = [
   { href: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/brain',       icon: Brain,           label: 'Brain' },
   { href: '/flashcards',  icon: BookOpen,         label: 'Flashcards' },
   { href: '/homework',    icon: HelpCircle,       label: 'Homework' },
   { href: '/math',        icon: Calculator,       label: 'Math Helper' },
+  { href: '/progress',    icon: Trophy,           label: 'Progress' },
+  { href: '/community',   icon: Users,            label: 'Community' },
   { href: '/leaderboard', icon: Trophy,           label: 'Leaderboard' },
   { href: '/profile',     icon: User,             label: 'Profile' },
 ];
@@ -189,12 +192,12 @@ export default function Sidebar() {
   const level = user ? getLevelFromXP(user.xp || 0) : null;
 
   return (
-    <aside className="w-64 h-screen fixed left-0 top-0 flex flex-col z-40"
-      style={{ background: 'linear-gradient(180deg, #fffcf9 0%, #fdf8f3 100%)', borderRight: '1.5px solid #e8ddd0' }}>
+    <aside className="hidden md:flex w-64 h-screen fixed left-0 top-0 flex-col z-40"
+      style={{ background: 'var(--gradient-sidebar)', borderRight: '1.5px solid var(--border-primary)', transition: 'background 0.3s ease, border-color 0.3s ease' }}>
 
       {/* Logo + Phoenix */}
       <div className="h-16 px-5 flex items-center gap-3 flex-shrink-0"
-        style={{ borderBottom: '1.5px solid #e8ddd0' }}>
+        style={{ borderBottom: '1.5px solid var(--border-primary)' }}>
         <div className="w-9 h-9 flex-shrink-0 animate-float">
           <Phoenix level={level?.level || 1} />
         </div>
@@ -230,7 +233,49 @@ export default function Sidebar() {
 
       {/* XP + user */}
       {user && (
-        <div className="p-4 flex-shrink-0 space-y-3" style={{ borderTop: '1.5px solid #e8ddd0' }}>
+        <div className="p-4 flex-shrink-0 space-y-3" style={{ borderTop: '1.5px solid var(--border-primary)' }}>
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={() => useAuthStore.getState().toggleDarkMode()}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all border border-transparent hover:border-purple-500/30"
+            style={{ background: 'var(--bg-muted)' }}
+          >
+            {useAuthStore.getState().darkMode ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-purple-400" />
+            )}
+            <span style={{ color: 'var(--text-muted)' }}>
+              {useAuthStore.getState().darkMode ? 'Light Mode' : 'Night Study'}
+            </span>
+          </button>
+          {user.plan !== 'pro' && (
+            <div className="bg-brand-50 rounded-xl p-3 border border-brand-200 shadow-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-brand-500 opacity-5 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110" />
+              <div className="flex justify-between items-center mb-1">
+                <div className="text-xs font-bold text-brand-700 flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5" />
+                  AI Limit
+                </div>
+                <div className="text-xs font-medium text-brand-600">
+                  {user.ai_calls_today || 0} / 5
+                </div>
+              </div>
+              <div className="h-1.5 w-full bg-brand-200/50 rounded-full overflow-hidden mb-2">
+                <div 
+                  className="h-full bg-brand-500 rounded-full transition-all"
+                  style={{ width: `${Math.min(((user.ai_calls_today || 0) / 5) * 100, 100)}%` }}
+                />
+              </div>
+              <button 
+                onClick={() => useAuthStore.getState().setShowUpgradeModal(true)}
+                className="w-full py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-[11px] font-bold rounded-lg transition-colors shadow-sm"
+              >
+                Upgrade to Pro
+              </button>
+            </div>
+          )}
+
           {level && (
             <div>
               <div className="flex justify-between text-xs text-ink-muted mb-1.5">

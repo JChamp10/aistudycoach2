@@ -4,10 +4,11 @@ import AppLayout from '@/components/layout/AppLayout';
 import { flashcardApi, homeworkApi } from '@/lib/api';
 import {
   BookOpen, Plus, X, ChevronLeft, Sparkles, Zap, RotateCcw,
-  Upload, FileText, Pencil, Trash2, Check, Eye, Share2, Brain
+  Upload, FileText, Pencil, Trash2, Check, Eye, Share2, Brain, ScanSearch
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation } from 'framer-motion';
+import { useSFX } from '@/lib/useSFX';
 
 interface Card { id: string; question: string; answer: string; memory_strength: number; }
 interface Deck { id: string; title: string; card_count: number; is_public?: boolean; share_token?: string; }
@@ -18,78 +19,99 @@ function SwipeCard({ card, onSwipe, isTop }: {
   card: Card; onSwipe?: (dir: 'left' | 'right') => void; isTop: boolean;
 }) {
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-25, 25]);
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
-  const hardOpacity = useTransform(x, [-100, -20, 0], [1, 0, 0]);
-  const easyOpacity = useTransform(x, [0, 20, 100], [0, 0, 1]);
+  const rotate = useTransform(x, [-300, 300], [-18, 18]);
+  const opacity = useTransform(x, [-300, -150, 0, 150, 300], [0, 1, 1, 1, 0]);
+  const scale = useTransform(x, [-200, 0, 200], [0.95, 1.02, 0.95]);
+  const hardOpacity = useTransform(x, [-120, -30, 0], [1, 0, 0]);
+  const easyOpacity = useTransform(x, [0, 30, 120], [0, 0, 1]);
+  const bgGreen = useTransform(x, [0, 120], [0, 0.08]);
+  const bgRed = useTransform(x, [-120, 0], [0.08, 0]);
   const controls = useAnimation();
   const [flipped, setFlipped] = useState(false);
+  const { playSfx } = useSFX();
 
   const handleDragEnd = async (_: any, info: any) => {
-    if (info.offset.x < -120) {
-      await controls.start({ x: -500, opacity: 0, transition: { duration: 0.3 } });
+    const swipeThreshold = 80;
+    const velocityThreshold = 300;
+    const shouldSwipeLeft = info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold;
+    const shouldSwipeRight = info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold;
+
+    if (shouldSwipeLeft) {
+      playSfx('pop');
+      await controls.start({ x: -600, opacity: 0, transition: { duration: 0.25 } });
       onSwipe?.('left');
-    } else if (info.offset.x > 120) {
-      await controls.start({ x: 500, opacity: 0, transition: { duration: 0.3 } });
+    } else if (shouldSwipeRight) {
+      playSfx('success');
+      await controls.start({ x: 600, opacity: 0, transition: { duration: 0.25 } });
       onSwipe?.('right');
     } else {
-      controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 20 } });
+      controls.start({ x: 0, transition: { type: 'spring', stiffness: 400, damping: 18, mass: 0.8 } });
     }
   };
 
   const triggerSwipe = async (dir: 'left' | 'right') => {
-    await controls.start({ x: dir === 'left' ? -500 : 500, opacity: 0, transition: { duration: 0.3 } });
+    playSfx(dir === 'right' ? 'success' : 'pop');
+    await controls.start({ x: dir === 'left' ? -600 : 600, opacity: 0, transition: { duration: 0.25 } });
     onSwipe?.(dir);
   };
 
   return (
     <motion.div
-      style={{ x, rotate, opacity, position: 'absolute', width: '100%' }}
+      style={{ x, rotate, opacity, scale, position: 'absolute', width: '100%' }}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.8}
       onDragEnd={handleDragEnd}
       animate={controls}
       className={isTop ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}
+      whileTap={isTop ? { cursor: 'grabbing' } : undefined}
     >
       {isTop && (
         <>
-          <motion.div style={{ opacity: hardOpacity }}
-            className="absolute top-6 left-6 z-10 px-4 py-2 rounded-xl border-2 border-red-500 text-red-400 font-extrabold text-lg rotate-[-12deg]">
-            HARD
+          <motion.div
+            className="absolute top-6 left-6 z-10 px-4 py-2 rounded-xl border-2 font-extrabold text-lg rotate-[-12deg]"
+            style={{ borderColor: '#ef4444', color: '#ef4444', opacity: hardOpacity as any }}>
+            HARD 😰
           </motion.div>
-          <motion.div style={{ opacity: easyOpacity }}
-            className="absolute top-6 right-6 z-10 px-4 py-2 rounded-xl border-2 border-green-500 text-green-400 font-extrabold text-lg rotate-[12deg]">
-            EASY
+          <motion.div
+            className="absolute top-6 right-6 z-10 px-4 py-2 rounded-xl border-2 font-extrabold text-lg rotate-[12deg]"
+            style={{ borderColor: '#22c55e', color: '#22c55e', opacity: easyOpacity as any }}>
+            EASY 😊
           </motion.div>
         </>
       )}
       <div className="flashcard-container select-none" style={{ height: '320px' }}
-        onClick={() => isTop && setFlipped(f => !f)}>
+        onClick={() => { if (isTop) { playSfx('flip'); setFlipped(f => !f); } }}>
         <div className={`flashcard-inner w-full h-full ${flipped ? 'flipped' : ''}`}>
-          <div className="flashcard-front card h-full flex flex-col items-center justify-center text-center gap-4 border-brand-500/20 bg-gradient-to-br from-brand-500/5 to-purple-500/5">
-            <div className="text-xs text-brand-400/60 uppercase tracking-widest font-semibold">Question</div>
-            <p className="text-xl font-bold px-6 leading-relaxed">{card.question}</p>
-            <div className="text-xs text-slate-600">Tap to flip · Drag to rate</div>
+          <div className="flashcard-front card h-full flex flex-col items-center justify-center text-center gap-4"
+            style={{ borderColor: 'var(--border-brand)', background: 'var(--gradient-card)' }}>
+            <div className="text-xs uppercase tracking-widest font-semibold" style={{ color: 'var(--brand-400)', opacity: 0.6 }}>Question</div>
+            <p className="text-xl font-bold px-6 leading-relaxed" style={{ color: 'var(--text-primary)' }}>{card.question}</p>
+            <div className="text-xs" style={{ color: 'var(--text-faint)' }}>Tap to flip · Drag to rate</div>
           </div>
-          <div className="flashcard-back card h-full flex flex-col items-center justify-center text-center gap-4 border-green-500/20 bg-gradient-to-br from-green-500/5 to-emerald-500/5">
-            <div className="text-xs text-green-400/60 uppercase tracking-widest font-semibold">Answer</div>
-            <p className="text-xl font-bold text-green-300 px-6 leading-relaxed">{card.answer}</p>
-            <div className="text-xs text-slate-600">← Hard · Easy →</div>
+          <div className="flashcard-back card h-full flex flex-col items-center justify-center text-center gap-4"
+            style={{ borderColor: 'rgba(34,197,94,0.3)', background: 'var(--gradient-card)' }}>
+            <div className="text-xs uppercase tracking-widest font-semibold" style={{ color: '#22c55e', opacity: 0.6 }}>Answer</div>
+            <p className="text-xl font-bold px-6 leading-relaxed" style={{ color: '#22c55e' }}>{card.answer}</p>
+            <div className="text-xs" style={{ color: 'var(--text-faint)' }}>← Hard · Easy →</div>
           </div>
         </div>
       </div>
       {isTop && (
         <div className="flex justify-center gap-6 mt-5">
           <button onClick={() => triggerSwipe('left')}
-            className="w-14 h-14 rounded-full border-2 border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95">
+            className="w-14 h-14 rounded-full border-2 text-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+            style={{ borderColor: 'rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
             😰
           </button>
-          <button onClick={() => setFlipped(f => !f)}
-            className="w-14 h-14 rounded-full border-2 border-surface-border bg-surface-muted hover:bg-surface-card text-slate-400 flex items-center justify-center transition-all hover:scale-110 active:scale-95">
+          <button onClick={() => { playSfx('flip'); setFlipped(f => !f); }}
+            className="w-14 h-14 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+            style={{ borderColor: 'var(--border-primary)', background: 'var(--bg-muted)', color: 'var(--text-faint)' }}>
             <RotateCcw className="w-5 h-5" />
           </button>
           <button onClick={() => triggerSwipe('right')}
-            className="w-14 h-14 rounded-full border-2 border-green-500/40 bg-green-500/10 hover:bg-green-500/20 text-green-400 text-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95">
+            className="w-14 h-14 rounded-full border-2 text-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+            style={{ borderColor: 'rgba(34,197,94,0.4)', background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
             😊
           </button>
         </div>
@@ -316,7 +338,7 @@ function RecallMode({ deck, onDone }: {
     if (timerRef.current) clearInterval(timerRef.current);
     setPhase('generating');
     try {
-      const prompt = `You are a study gap analyzer.
+      const prompt = `You are an extremely strict study gap analyzer.
 
 STUDY MATERIAL:
 ---
@@ -328,17 +350,18 @@ STUDENT'S FREE RECALL:
 ${recall}
 ---
 
-Compare the student's recall against the study material. Find concepts, facts, and details from the material that the student MISSED or got WRONG.
+REQUIRED STRICTNESS:
+Compare the student's recall against the study material using STRICT, word-for-word checking. Find phrasing, concepts, facts, and details from the material that the student MISSED or got WRONG. Do not accept vague facts or generalizations—if they didn't write the specific details, it is a gap!
 
 For each gap, return:
 - question: a flashcard question targeting that gap
 - answer: the correct answer
-- source: the EXACT sentence or phrase from the study material above that contains this information (copy it word for word)
+- source: the EXACT sentence or phrase from the study material above that contains this information (copy it exactly, word for word, as it appears in the text so we can highlight it. Do not alter punctuation or capitalization).
 
 Return ONLY a valid JSON array, no other text:
 [{"question": "...", "answer": "...", "source": "..."}, ...]
 
-Generate 5-8 items maximum. Only include things the student actually missed.`;
+Generate 5-10 items maximum. Only include things the student actually missed.`;
 
       const res = await homeworkApi.ask({ question: prompt });
       const raw = res.data.answer || '[]';
@@ -525,7 +548,39 @@ The AI will compare this against your material and show you exactly what you mis
           ))}
         </div>
       )}
-      <button onClick={() => onDone(savedCards)} className="btn-primary w-full py-3 font-bold">Done</button>
+
+      {gapResults.length > 0 && materialText && (
+        <div className="mt-8">
+          <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+            <ScanSearch className="w-5 h-5 text-brand-400" />
+            Your Study Material (Gaps Circled)
+          </h3>
+          <div className="p-5 bg-surface-elevated border border-brand-500/20 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto font-serif text-slate-300">
+            <div dangerouslySetInnerHTML={{ 
+              __html: (() => {
+                let html = materialText
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;');
+                
+                const sources = gapResults.map(g => g.source).filter(Boolean).sort((a,b) => b.length - a.length);
+                sources.forEach(src => {
+                  if (src.length < 5) return;
+                  const escSrc = src
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                  // Use a red "circled" highlight style
+                  html = html.split(escSrc).join(`<span class="border-2 border-red-500 rounded-lg bg-red-500/20 text-white px-1.5 py-0.5 mx-0.5 shadow-[0_0_12px_rgba(239,68,68,0.4)] font-medium">${escSrc}</span>`);
+                });
+                return html;
+              })()
+            }} />
+          </div>
+        </div>
+      )}
+
+      <button onClick={() => onDone(savedCards)} className="btn-primary w-full py-3 mt-6 font-bold">Done</button>
     </div>
   );
 }
@@ -537,6 +592,7 @@ export default function FlashcardsPage() {
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [deckCards, setDeckCards] = useState<Card[]>([]);
+  const [dueCardsData, setDueCardsData] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [cardsLoading, setCardsLoading] = useState(false);
   const [deletingDeck, setDeletingDeck] = useState<string | null>(null);
@@ -567,10 +623,27 @@ export default function FlashcardsPage() {
   const loadDecks = async () => {
     setLoading(true);
     try {
-      const res = await flashcardApi.decks();
-      setDecks(res.data.decks || []);
+      const [resDecks, resDue] = await Promise.all([
+        flashcardApi.decks(),
+        flashcardApi.dueCards()
+      ]);
+      setDecks(resDecks.data.decks || []);
+      setDueCardsData(resDue.data.cards || []);
     } catch { toast.error('Failed to load decks'); }
     finally { setLoading(false); }
+  };
+
+  const startDueSession = () => {
+    if (dueCardsData.length === 0) return;
+    setCards(dueCardsData);
+    setSelectedDeck({ id: 'due', title: 'Due Today', card_count: dueCardsData.length });
+    const shuffled = [...dueCardsData].sort(() => Math.random() - 0.5);
+    setSwipeStack(shuffled);
+    setHardCards([]);
+    setEasyCount(0);
+    setHardCount(0);
+    setSessionXP(0);
+    setScreen('study');
   };
 
   const loadDeckCards = async (deck: Deck) => {
@@ -810,6 +883,24 @@ export default function FlashcardsPage() {
             </button>
           </div>
         </div>
+
+        {!loading && dueCardsData.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+             className="card border-brand-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 gap-4"
+             style={{ background: 'linear-gradient(135deg, rgba(var(--brand-500), 0.1), rgba(var(--amber-500), 0.1))' }}>
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" /> Review Due Cards
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                You have <strong className="text-brand-500">{dueCardsData.length}</strong> cards due for spaced repetition review today.
+              </p>
+            </div>
+            <button onClick={startDueSession} className="btn-primary flex-shrink-0">
+              Review Now →
+            </button>
+          </motion.div>
+        )}
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

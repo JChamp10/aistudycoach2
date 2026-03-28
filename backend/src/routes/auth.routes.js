@@ -68,4 +68,27 @@ router.get('/me', authenticate, (req, res) => {
   res.json({ user: req.user });
 });
 
+router.post('/dev-login', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'Forbidden in production' });
+  try {
+    // Return a fully mocked user to bypass any local database requirement issues!
+    const mockUser = {
+      id: 'dev-uuid-1234',
+      username: 'DevUser',
+      email: 'dev@local.host',
+      xp: 1000,
+      streak: 5,
+      region: 'Global',
+      plan: 'free',
+      ai_calls_today: 0,
+      created_at: new Date().toISOString()
+    };
+    const token = jwt.sign({ userId: mockUser.id }, process.env.JWT_SECRET || 'devsecret', { expiresIn: '7d' });
+    res.json({ token, user: mockUser });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Dev login failed' });
+  }
+});
+
 module.exports = router;

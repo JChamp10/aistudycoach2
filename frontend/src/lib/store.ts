@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { authApi } from '@/lib/api';
+import { authApi, flashcardApi } from '@/lib/api';
 
 interface User {
   id: string;
@@ -10,6 +10,16 @@ interface User {
   role: string;
   region?: string;
   avatar_url?: string;
+  plan: string;
+  ai_calls_today: number;
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  source: 'scratch' | 'scan' | 'ai' | 'lesson';
+  createdAt: string;
 }
 
 interface AuthState {
@@ -17,23 +27,68 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  darkMode: boolean;
   login: (email: string, password: string) => Promise<void>;
+  devLogin: () => Promise<void>;
   register: (username: string, email: string, password: string, region?: string) => Promise<void>;
   logout: () => void;
   fetchMe: () => Promise<void>;
   setUser: (user: User) => void;
+  showUpgradeModal: boolean;
+  setShowUpgradeModal: (show: boolean) => void;
+  toggleDarkMode: () => void;
+  initTheme: () => void;
+  notes: Note[];
+  addNote: (note: Omit<Note, 'id' | 'createdAt'>) => void;
+  deleteNote: (id: string) => void;
+  transmuteNote: (id: string, deckTitle: string) => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
   isLoading: false,
   isAuthenticated: false,
+  darkMode: false,
+  showUpgradeModal: false,
+  setShowUpgradeModal: (show) => set({ showUpgradeModal: show }),
+
+  initTheme: () => {
+    if (typeof window === 'undefined') return;
+    const saved = localStorage.getItem('dark_mode');
+    const isDark = saved === 'true';
+    if (isDark) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+    set({ darkMode: isDark });
+  },
+
+  toggleDarkMode: () => {
+    const next = !get().darkMode;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dark_mode', String(next));
+      if (next) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+    }
+    set({ darkMode: next });
+  },
 
   login: async (email, password) => {
     set({ isLoading: true });
     try {
       const res = await authApi.login({ email, password });
+      const { token, user } = res.data;
+      localStorage.setItem('token', token);
+      set({ token, user, isAuthenticated: true, isLoading: false });
+    } catch (err) {
+      set({ isLoading: false });
+      throw err;
+    }
+  },
+
+  devLogin: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await authApi.devLogin();
       const { token, user } = res.data;
       localStorage.setItem('token', token);
       set({ token, user, isAuthenticated: true, isLoading: false });
@@ -71,6 +126,46 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       localStorage.removeItem('token');
       set({ user: null, token: null, isAuthenticated: false });
+    }
+  },
+
+  notes: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('brain_notes') || '[]') : [],
+
+  addNote: (noteData) => {
+    const newNote: Note = {
+      ...noteData,
+      id: Math.random().toString(36).substring(7),
+      createdAt: new Date().toISOString(),
+    };
+    const nextNotes = [newNote, ...get().notes];
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('brain_notes', JSON.stringify(nextNotes));
+    }
+    set({ notes: nextNotes });
+  },
+
+  deleteNote: (id) => {
+    const nextNotes = get().notes.filter(n => n.id !== id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('brain_notes', JSON.stringify(nextNotes));
+    }
+    set({ notes: nextNotes });
+  },
+
+  transmuteNote: async (id, deckTitle) => {
+    const note = get().notes.find(n => n.id === id);
+    if (!note) return;
+
+    try {
+      // Real transmutation logic
+      await flashcardApi.generateFromNotes({ 
+        notes: note.content, 
+        title: deckTitle || note.title 
+      });
+      get().deleteNote(id);
+    } catch (err) {
+      console.error('Transmutation failed:', err);
+      throw err;
     }
   },
 

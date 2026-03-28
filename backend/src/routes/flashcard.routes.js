@@ -5,6 +5,8 @@ const { query } = require('../db/pool');
 const { authenticate } = require('../middleware/auth.middleware');
 const { awardXP, updateStreak } = require('../services/gamification.service');
 const aiService = require('../services/ai.service');
+const { aiLimiter } = require('../middleware/rateLimit.middleware');
+const { checkAILimits } = require('../middleware/usage.middleware');
 
 const router = express.Router();
 
@@ -36,6 +38,23 @@ router.get('/public/:token', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch public deck' });
+  }
+});
+
+router.get('/community', async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT fd.*, u.username AS creator_name,
+        (SELECT COUNT(*) FROM flashcards WHERE deck_id = fd.id) as card_count
+       FROM flashcard_decks fd
+       JOIN users u ON fd.user_id = u.id
+       WHERE fd.is_public = true
+       ORDER BY fd.created_at DESC LIMIT 50`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch community decks' });
   }
 });
 
@@ -177,7 +196,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-router.post('/generate', async (req, res) => {
+router.post('/generate', authenticate, aiLimiter, checkAILimits, async (req, res) => {
   const { notes, deck_id, count } = req.body;
   try {
     const generated = await aiService.generateFlashcardsFromNotes(notes, count || 10);
@@ -195,7 +214,7 @@ router.post('/generate', async (req, res) => {
   }
 });
 
-router.post('/generate-pdf', upload.single('pdf'), async (req, res) => {
+router.post('/generate-pdf', authenticate, aiLimiter, checkAILimits, upload.single('pdf'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No PDF uploaded' });
   const { deck_id, count } = req.body;
   if (!deck_id) return res.status(400).json({ error: 'deck_id is required' });

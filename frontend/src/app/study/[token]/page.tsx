@@ -5,6 +5,7 @@ import { flashcardApi } from '@/lib/api';
 import { BookOpen, RotateCcw, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useSFX } from '@/lib/useSFX';
 
 interface Card { id: string; question: string; answer: string; }
 interface Deck { title: string; creator_name: string; card_count: number; }
@@ -19,6 +20,7 @@ function SwipeCard({ card, onSwipe, isTop }: {
   const easyOpacity = useTransform(x, [0, 20, 100], [0, 0, 1]);
   const controls = useAnimation();
   const [flipped, setFlipped] = useState(false);
+  const { playSfx } = useSFX();
 
   const handleDragEnd = async (_: any, info: any) => {
     if (info.offset.x < -120) {
@@ -33,6 +35,7 @@ function SwipeCard({ card, onSwipe, isTop }: {
   };
 
   const triggerSwipe = async (dir: 'left' | 'right') => {
+    playSfx(dir === 'right' ? 'success' : 'pop');
     await controls.start({ x: dir === 'left' ? -500 : 500, opacity: 0, transition: { duration: 0.3 } });
     onSwipe?.(dir);
   };
@@ -59,7 +62,7 @@ function SwipeCard({ card, onSwipe, isTop }: {
         </>
       )}
       <div className="select-none rounded-2xl border" style={{ height: '320px' }}
-        onClick={() => isTop && setFlipped(f => !f)}>
+        onClick={() => { if (isTop) { playSfx('flip'); setFlipped(f => !f); } }}>
         <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d', transition: 'transform 0.5s', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
           <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center text-center gap-4 p-6 bg-gray-900 border border-gray-700"
             style={{ backfaceVisibility: 'hidden' }}>
@@ -108,6 +111,7 @@ export default function PublicStudyPage() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [mode, setMode] = useState<'pick' | 'swipe' | 'browse'>('pick');
+  const { playSfx } = useSFX();
 
   useEffect(() => {
     if (!token) return;
@@ -297,7 +301,7 @@ export default function PublicStudyPage() {
               <motion.div key={currentIdx} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
                 className="select-none rounded-2xl border border-gray-700 cursor-pointer"
                 style={{ height: '300px' }}
-                onClick={() => setFlipped(f => !f)}>
+                onClick={() => { playSfx('flip'); setFlipped(f => !f); }}>
                 <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d', transition: 'transform 0.5s', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
                   <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center text-center gap-4 p-6 bg-gray-900"
                     style={{ backfaceVisibility: 'hidden' }}>
@@ -319,7 +323,7 @@ export default function PublicStudyPage() {
                 className="w-12 h-12 rounded-xl border border-gray-700 flex items-center justify-center text-gray-400 hover:text-white hover:border-gray-500 disabled:opacity-30 transition-all">
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <button onClick={() => setFlipped(f => !f)}
+              <button onClick={() => { playSfx('flip'); setFlipped(f => !f); }}
                 className="px-6 py-2.5 rounded-xl border border-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-all">
                 {flipped ? 'Show Question' : 'Reveal Answer'}
               </button>
