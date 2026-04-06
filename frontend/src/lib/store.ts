@@ -42,6 +42,7 @@ interface AuthState {
   addNote: (note: Omit<Note, 'id' | 'createdAt'>) => void;
   deleteNote: (id: string) => void;
   transmuteNote: (id: string, deckTitle: string) => Promise<void>;
+  setNotes: (notes: Note[]) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -168,6 +169,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       throw err;
     }
   },
-
+  setNotes: (notes) => set({ notes }),
   setUser: (user) => set({ user }),
 }));
