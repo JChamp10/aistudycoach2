@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 const api = axios.create({ baseURL: API });
 
@@ -56,6 +56,25 @@ export const flashcardApi = {
     }),
   reviewCard: (id: string, difficulty: string) =>
     api.post(`/flashcards/${id}/review`, { difficulty }),
+};
+
+export const notesApi = {
+  getAll: () => api.get('/notes'),
+  create: (data: { title: string; content: string; source: string }) =>
+    api.post('/notes', data),
+  aiCompose: (topic: string) =>
+    api.post('/notes/ai-compose', { topic }),
+  scan: (formData: FormData) =>
+    api.post('/notes/scan', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  lesson: (formData: FormData) =>
+    api.post('/notes/lesson', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  delete: (id: string) => api.delete(`/notes/${id}`),
+  transmute: (id: string, deckTitle: string) =>
+    api.post(`/notes/${id}/transmute`, { deckTitle }),
 };
 
 export const homeworkApi = {
