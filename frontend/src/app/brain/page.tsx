@@ -1,53 +1,58 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { Note, useAuthStore } from '@/lib/store';
 import { NoteCard } from '@/components/layout/NoteCard';
 import { ScanningOverlay } from '@/components/layout/ScanningOverlay';
 import { StaggerContainer, StaggerItem } from '@/components/layout/StaggerContainer';
-import { Brain, Plus, Search, Scan, Sparkles, GraduationCap, X, FileText, Filter, Send, ArrowLeft, Loader2, Save } from 'lucide-react';
+import { Brain, Plus, Search, Scan, Sparkles, GraduationCap, X, FileText, Filter, ArrowLeft, Loader2, Save, Upload, ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSFX } from '@/lib/useSFX';
 import toast from 'react-hot-toast';
+import { notesApi } from '@/lib/api';
 
 type ForgeView = 'options' | 'manual' | 'ai' | 'scan' | 'lesson';
 
 export default function BrainPage() {
-  const { notes, addNote } = useAuthStore();
+  const { notes, setNotes, deleteNote } = useAuthStore();
   const { playSfx } = useSFX();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | Note['source']>('all');
   const [isForgeOpen, setIsForgeOpen] = useState(false);
   const [forgeView, setForgeView] = useState<ForgeView>('options');
   const [isScanning, setIsScanning] = useState(false);
-  
-  // Form States
+
   const [manualTitle, setManualTitle] = useState('');
   const [manualContent, setManualContent] = useState('');
   const [aiTopic, setAiTopic] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    notesApi.getAll()
+      .then(res => setNotes(res.data.notes))
+      .catch(() => {});
+  }, []);
 
   const filteredNotes = notes.filter(n => {
-    const matchesSearch = n.title.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch = n.title.toLowerCase().includes(search.toLowerCase()) ||
                           n.content.toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filter === 'all' || n.source === filter;
     return matchesSearch && matchesFilter;
   });
 
   const forgeOptions = [
-    { id: 'scan',    icon: Scan,         label: 'Scan Note',   color: 'text-purple-400', bg: 'bg-purple-500/10', desc: 'OCR from paper' },
-    { id: 'ai',      icon: Sparkles,     label: 'AI Compose',  color: 'text-brand-400',  bg: 'bg-brand-500/10', desc: 'Gen from topic' },
+    { id: 'scan',    icon: Scan,          label: 'Scan Note',   color: 'text-purple-400', bg: 'bg-purple-500/10', desc: 'OCR from photo' },
+    { id: 'ai',      icon: Sparkles,      label: 'AI Compose',  color: 'text-brand-400',  bg: 'bg-brand-500/10',  desc: 'Gen from topic' },
     { id: 'lesson',  icon: GraduationCap, label: 'Lesson Plan', color: 'text-emerald-400', bg: 'bg-emerald-500/10', desc: 'Extract key info' },
-    { id: 'scratch', icon: FileText,      label: 'New Blank',   color: 'text-blue-400',   bg: 'bg-blue-500/10', desc: 'Start from 0' },
+    { id: 'scratch', icon: FileText,      label: 'New Blank',   color: 'text-blue-400',   bg: 'bg-blue-500/10',   desc: 'Start from 0' },
   ];
 
   const handleForge = (id: string) => {
     playSfx('click');
-    if (id === 'scratch') {
-      setForgeView('manual');
-    } else {
-      setForgeView(id as ForgeView);
-    }
+    setForgeView(id === 'scratch' ? 'manual' : id as ForgeView);
   };
 
   const closeForge = () => {
@@ -57,38 +62,164 @@ export default function BrainPage() {
       setManualTitle('');
       setManualContent('');
       setAiTopic('');
+      setUploadedFile(null);
+      setUploadTitle('');
     }, 300);
   };
 
-  const startSynthesis = (type: Note['source'], title: string, contentPrefix: string) => {
+  const handleManualSave = async () => {
+    if (!manualTitle.trim()) return toast.error('Add a title');
+    setIsProcessing(true);
+    try {
+      const res = await notesApi.create({ title: manualTitle, content: manualContent, source: 'scratch' });
+      setNotes([res.data.note, ...notes]);
+      playSfx('pop');
+      toast.success('Note forged!');
+      closeForge();
+    } catch {
+      toast.error('Failed to save note');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleAiCompose = async () => {
+    if (!aiTopic.trim()) return toast.error('Enter a topic');
+    setIsProcessing(true);
     setIsForgeOpen(false);
     setIsScanning(true);
-    setIsProcessing(true);
-    
-    // Simulate multi-stage synthesis
-    setTimeout(() => {
-      const finalContent = type === 'ai' 
-        ? `Comprehensive summary of ${aiTopic}. This Phoenix-generated synthesis covers key components, historical context, and modern applications of the subject matter.`
-        : contentPrefix;
-
-      addNote({
-        title: title || (type === 'ai' ? `AI: ${aiTopic}` : 'New Note'),
-        content: finalContent,
-        source: type
-      });
-      
-      setIsScanning(false);
-      setIsProcessing(false);
+    try {
+      const res = await notesApi.aiCompose(aiTopic);
+      setNotes([res.data.note, ...notes]);
       playSfx('success');
       toast.success('Phoenix synthesized your note! 🔥');
-      setForgeView('options');
-    }, 3500);
+    } catch {
+      toast.error('AI compose failed — check your API key');
+    } finally {
+      setIsScanning(false);
+      setIsProcessing(false);
+      closeForge();
+    }
   };
+
+  const handleFileUpload = async (type: 'scan' | 'lesson') => {
+    if (!uploadedFile) return toast.error('Please upload a file first');
+    setIsProcessing(true);
+    setIsForgeOpen(false);
+    setIsScanning(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+      if (uploadTitle) formData.append('title', uploadTitle);
+
+      const res = type === 'scan'
+        ? await notesApi.scan(formData)
+        : await notesApi.lesson(formData);
+
+      setNotes([res.data.note, ...notes]);
+      playSfx('success');
+      toast.success(type === 'scan' ? 'Note scanned! 📸' : 'Lesson plan processed! 📚');
+    } catch {
+      toast.error('Failed to process file');
+    } finally {
+      setIsScanning(false);
+      setIsProcessing(false);
+      closeForge();
+    }
+  };
+
+  const handleTransmute = async (noteId: string, deckTitle: string) => {
+    try {
+      const res = await notesApi.transmute(noteId, deckTitle);
+      setNotes(notes.filter(n => n.id !== noteId));
+      playSfx('success');
+      toast.success(`Transmuted into ${res.data.cardCount} flashcards! ⚡`);
+    } catch {
+      toast.error('Transmutation failed');
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      if (!uploadTitle) setUploadTitle(file.name.replace(/\.[^/.]+$/, ''));
+    }
+  };
+
+  const UploadView = ({ type }: { type: 'scan' | 'lesson' }) => (
+    <motion.div key={type} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+      <button onClick={() => setForgeView('options')} className="text-xs font-bold text-brand-500 flex items-center gap-1 mb-4 hover:underline">
+        <ArrowLeft className="w-3 h-3" /> Back
+      </button>
+      <h2 className="text-2xl font-bold text-ink mb-2">
+        {type === 'scan' ? '📸 Scan Note' : '📚 Lesson Plan'}
+      </h2>
+      <p className="text-ink-muted text-sm mb-6">
+        {type === 'scan'
+          ? 'Upload a photo of your handwritten notes — Phoenix will extract the text.'
+          : 'Upload a lesson plan or PDF — Phoenix will extract the key study points.'}
+      </p>
+
+      <div
+        onClick={() => fileInputRef.current?.click()}
+        className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all group mb-4
+          ${uploadedFile ? 'border-brand-500/60 bg-brand-500/5' : 'border-surface-border hover:border-brand-500/40 bg-surface-muted/20 hover:bg-surface-muted/40'}`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={type === 'scan' ? 'image/*' : 'image/*,.pdf'}
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        {uploadedFile ? (
+          <>
+            <div className="w-12 h-12 rounded-full bg-brand-500/20 flex items-center justify-center">
+              <ImageIcon className="w-6 h-6 text-brand-500" />
+            </div>
+            <div className="text-center">
+              <div className="text-sm font-bold text-ink">{uploadedFile.name}</div>
+              <div className="text-xs text-ink-faint">{(uploadedFile.size / 1024).toFixed(1)} KB — click to change</div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="w-14 h-14 rounded-full bg-surface-muted flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Upload className="w-7 h-7 text-ink-faint group-hover:text-brand-500 transition-colors" />
+            </div>
+            <div className="text-center">
+              <div className="text-sm font-bold text-ink">Click to upload</div>
+              <div className="text-xs text-ink-faint">
+                {type === 'scan' ? 'PNG, JPG up to 10MB' : 'PNG, JPG, PDF up to 10MB'}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <input
+        type="text"
+        placeholder="Note title (optional)"
+        value={uploadTitle}
+        onChange={e => setUploadTitle(e.target.value)}
+        className="input text-sm mb-4 bg-surface-muted/30"
+      />
+
+      <button
+        onClick={() => handleFileUpload(type)}
+        disabled={!uploadedFile || isProcessing}
+        className="btn-primary w-full !py-4 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+        {isProcessing ? 'Processing...' : 'Forge from File'}
+      </button>
+    </motion.div>
+  );
 
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto py-8 px-4 md:px-8 pb-32">
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -103,9 +234,9 @@ export default function BrainPage() {
           <div className="flex items-center gap-3">
             <div className="relative group flex-1 md:flex-initial">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint group-focus-within:text-brand-500 transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search your brain..." 
+              <input
+                type="text"
+                placeholder="Search your brain..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="input !pl-10 !py-2 text-sm w-full md:w-64"
@@ -121,20 +252,19 @@ export default function BrainPage() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex flex-wrap gap-2 mb-8 items-center">
           <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-ink-faint bg-surface-muted/50 rounded-lg border border-surface-border/50 mr-2">
             <Filter className="w-3 h-3" />
             Filter
           </div>
-          <button 
+          <button
             onClick={() => setFilter('all')}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${filter === 'all' ? 'bg-brand-500 border-brand-500 text-white shadow-lg shadow-brand-500/15' : 'bg-surface-card border-surface-border text-ink-muted hover:border-brand-500/30'}`}
           >
             All Notes
           </button>
           {forgeOptions.map((opt) => (
-            <button 
+            <button
               key={opt.id}
               onClick={() => setFilter(opt.id as any)}
               className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border flex items-center gap-2 ${filter === opt.id ? 'bg-surface-elevated border-brand-500/50 text-ink shadow-sm' : 'bg-surface-card border-surface-border text-ink-muted hover:border-brand-500/30'}`}
@@ -145,14 +275,13 @@ export default function BrainPage() {
           ))}
         </div>
 
-        {/* Forge Modal / Drawer Overlay */}
         <AnimatePresence>
           {isForgeOpen && (
             <>
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 onClick={closeForge}
-                className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]" 
+                className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 100 }}
@@ -161,11 +290,10 @@ export default function BrainPage() {
                 className="fixed bottom-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-[51] w-full max-w-lg p-4 md:p-6"
               >
                 <div className="bg-surface-card border border-surface-border rounded-t-3xl md:rounded-3xl shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto">
-                  {/* Close Handle (Mobile) */}
                   <div className="md:hidden flex justify-center py-3">
                     <div className="w-12 h-1.5 bg-surface-border rounded-full" />
                   </div>
-                  
+
                   <div className="p-6 md:p-8">
                     <div className="absolute top-4 right-4 hidden md:block">
                       <button onClick={closeForge} className="text-ink-faint hover:text-ink"><X className="w-5 h-5" /></button>
@@ -176,7 +304,6 @@ export default function BrainPage() {
                         <motion.div key="options" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
                           <h2 className="text-2xl font-bold text-ink mb-2">Phoenix Forge</h2>
                           <p className="text-ink-muted text-sm mb-8">Choose how to bring your notes to life.</p>
-                          
                           <div className="grid grid-cols-2 gap-4">
                             {forgeOptions.map(opt => (
                               <button
@@ -204,27 +331,23 @@ export default function BrainPage() {
                           </button>
                           <h2 className="text-2xl font-bold text-ink mb-6">New Blank Note</h2>
                           <div className="space-y-4">
-                            <input 
-                              type="text" placeholder="Note Title" 
+                            <input
+                              type="text" placeholder="Note Title"
                               value={manualTitle} onChange={e => setManualTitle(e.target.value)}
-                              className="input font-bold text-lg !py-3 bg-surface-muted/30" 
+                              className="input font-bold text-lg !py-3 bg-surface-muted/30"
                             />
-                            <textarea 
-                              placeholder="Write your study notes here..." 
+                            <textarea
+                              placeholder="Write your study notes here..."
                               value={manualContent} onChange={e => setManualContent(e.target.value)}
-                              className="input min-h-[200px] text-sm resize-none bg-surface-muted/30" 
+                              className="input min-h-[200px] text-sm resize-none bg-surface-muted/30"
                             />
-                            <button 
-                              onClick={() => {
-                                if (!manualTitle) return toast.error('Add a title');
-                                addNote({ title: manualTitle, content: manualContent, source: 'scratch' });
-                                playSfx('pop');
-                                toast.success('Note forged!');
-                                closeForge();
-                              }}
-                              className="btn-primary w-full !py-3 flex items-center justify-center gap-2"
+                            <button
+                              onClick={handleManualSave}
+                              disabled={isProcessing}
+                              className="btn-primary w-full !py-3 flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                              <Save className="w-5 h-5" /> Forge Now
+                              {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                              Forge Now
                             </button>
                           </div>
                         </motion.div>
@@ -236,59 +359,34 @@ export default function BrainPage() {
                             <ArrowLeft className="w-3 h-3" /> Back
                           </button>
                           <h2 className="text-2xl font-bold text-ink mb-2">AI Alchemist</h2>
-                          <p className="text-ink-muted text-sm mb-6">Enter a topic and let the Phoenix synthesize deep-dive notes for you.</p>
+                          <p className="text-ink-muted text-sm mb-6">Enter a topic and let Phoenix synthesize deep-dive notes using AI.</p>
                           <div className="space-y-4">
                             <div className="relative">
                               <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-400" />
-                              <input 
-                                type="text" placeholder="Topic: e.g. Quantum Entanglement" 
+                              <input
+                                type="text" placeholder="e.g. Quantum Entanglement, The French Revolution..."
                                 value={aiTopic} onChange={e => setAiTopic(e.target.value)}
-                                className="input !pl-12 !py-4 font-semibold bg-surface-muted/30" 
+                                onKeyDown={e => e.key === 'Enter' && handleAiCompose()}
+                                className="input !pl-12 !py-4 font-semibold bg-surface-muted/30"
                               />
                             </div>
-                            <button 
-                              onClick={() => {
-                                if (!aiTopic) return toast.error('Enter a topic');
-                                startSynthesis('ai', `Analysis: ${aiTopic}`, '');
-                              }}
-                              className="btn-primary w-full !py-4 flex items-center justify-center gap-3 animate-phoenix"
+                            <button
+                              onClick={handleAiCompose}
+                              disabled={isProcessing}
+                              className="btn-primary w-full !py-4 flex items-center justify-center gap-3 disabled:opacity-50"
                             >
-                              <Plus className="w-5 h-5" /> Begin Synthesis
+                              {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                              {isProcessing ? 'Synthesizing...' : 'Begin Synthesis'}
                             </button>
                           </div>
                         </motion.div>
                       )}
 
-                      {(forgeView === 'scan' || forgeView === 'lesson') && (
-                        <motion.div key="scan" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                          <button onClick={() => setForgeView('options')} className="text-xs font-bold text-brand-500 flex items-center gap-1 mb-4 hover:underline">
-                            <ArrowLeft className="w-3 h-3" /> Back
-                          </button>
-                          <h2 className="text-2xl font-bold text-ink mb-2">Upload Material</h2>
-                          <p className="text-ink-muted text-sm mb-8">Upload a picture of your notes or a lesson plan PDF.</p>
-                          
-                          <div className="border-2 border-dashed border-surface-border rounded-2xl p-10 flex flex-col items-center justify-center gap-4 bg-surface-muted/20 hover:bg-surface-muted/40 transition-colors cursor-pointer group">
-                            <div className="w-16 h-16 rounded-full bg-brand-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                              <Scan className="w-8 h-8 text-brand-500" />
-                            </div>
-                            <div className="text-center">
-                              <div className="text-sm font-bold text-ink">Click to upload file</div>
-                              <div className="text-xs text-ink-faint">PNG, JPG or PDF up to 10MB</div>
-                            </div>
-                          </div>
-                          
-                          <button 
-                            onClick={() => startSynthesis(forgeView as any, 'Extracted Note', 'Content successfully extracted from visual media. The Phoenix has identified key formulas and definitions.')}
-                            className="btn-primary w-full !py-4 mt-6 flex items-center justify-center gap-3"
-                          >
-                            <Plus className="w-5 h-5" /> Forge from File
-                          </button>
-                        </motion.div>
-                      )}
+                      {forgeView === 'scan' && <UploadView type="scan" />}
+                      {forgeView === 'lesson' && <UploadView type="lesson" />}
                     </AnimatePresence>
                   </div>
-                  
-                  {/* Fire Glow Effect behind modal */}
+
                   <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-brand-500/5 blur-[80px] rounded-full pointer-events-none" />
                 </div>
               </motion.div>
@@ -296,12 +394,11 @@ export default function BrainPage() {
           )}
         </AnimatePresence>
 
-        {/* Notes Grid */}
         {filteredNotes.length > 0 ? (
           <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredNotes.map(note => (
               <StaggerItem key={note.id}>
-                <NoteCard note={note} />
+                <NoteCard note={note} onTransmute={handleTransmute} />
               </StaggerItem>
             ))}
           </StaggerContainer>
@@ -315,10 +412,8 @@ export default function BrainPage() {
           </div>
         )}
 
-        {/* Scanning Animation */}
         <ScanningOverlay isVisible={isScanning} onComplete={() => {}} />
       </div>
     </AppLayout>
   );
 }
-
