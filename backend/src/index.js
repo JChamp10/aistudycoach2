@@ -23,6 +23,7 @@ app.use('/api/users',       require('./routes/user.routes'));
 app.use('/api/flashcards',  require('./routes/flashcard.routes'));
 app.use('/api/homework',    require('./routes/homework.routes'));
 app.use('/api/leaderboard', require('./routes/leaderboard.routes'));
+app.use('/api/notes', require('./routes/notes.routes'));
 
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 app.use((err, req, res, next) => {
