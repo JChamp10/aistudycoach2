@@ -102,3 +102,8 @@ export const userApi = {
   stats: () => api.get('/users/stats'),
   achievements: () => api.get('/users/achievements'),
 };
+
+export const quizApi = {
+  generate: (data: any) => api.post('/quiz/generate', data),
+  submit: (data: any) => api.post('/quiz/submit', data),
+};

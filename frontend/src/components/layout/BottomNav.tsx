@@ -8,12 +8,11 @@ import { useAuthStore } from '@/lib/store';
 import { motion } from 'framer-motion';
 
 const navItems = [
-  { href: '/dashboard',   icon: LayoutDashboard, label: 'Dash' },
-  { href: '/brain',       icon: Brain,           label: 'Brain' },
+  { href: '/',            icon: LayoutDashboard, label: 'Learn' },
   { href: '/flashcards',  icon: BookOpen,        label: 'Cards' },
   { href: '/homework',    icon: HelpCircle,      label: 'Help' },
   { href: '/leaderboard', icon: Trophy,          label: 'Rank' },
-  { href: '/profile',     icon: User,            label: 'Me' },
+  { href: '/profile',     icon: User,            label: 'Profile' },
 ];
 
 export default function BottomNav() {
@@ -35,7 +34,7 @@ export default function BottomNav() {
     >
       <div className="flex items-center justify-around h-16 px-1 pb-safe relative">
         {navItems.map(item => {
-          const active = pathname.startsWith(item.href);
+          const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
@@ -45,11 +44,7 @@ export default function BottomNav() {
               {active && (
                 <motion.div
                   layoutId="bottomNavIndicator"
-                  className="absolute -top-0.5 w-8 h-1 rounded-full"
-                  style={{
-                    background: 'linear-gradient(90deg, var(--brand-400), var(--brand-500))',
-                    boxShadow: '0 0 12px var(--brand-glow)',
-                  }}
+                  className="absolute -top-0.5 w-8 h-1 rounded-full bg-brand-500 shadow-[0_0_12px_var(--brand-glow)]"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}

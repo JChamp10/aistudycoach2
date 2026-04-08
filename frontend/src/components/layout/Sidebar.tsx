@@ -9,15 +9,12 @@ import { getLevelFromXP } from '@/lib/utils';
 import { clsx } from 'clsx';
 
 const navItems = [
-  { href: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/brain',       icon: Brain,           label: 'Brain' },
-  { href: '/flashcards',  icon: BookOpen,         label: 'Flashcards' },
-  { href: '/homework',    icon: HelpCircle,       label: 'Homework' },
-  { href: '/math',        icon: Calculator,       label: 'Math Helper' },
-  { href: '/progress',    icon: Trophy,           label: 'Progress' },
-  { href: '/community',   icon: Users,            label: 'Community' },
-  { href: '/leaderboard', icon: Trophy,           label: 'Leaderboard' },
-  { href: '/profile',     icon: User,             label: 'Profile' },
+  { href: '/',            icon: LayoutDashboard, label: 'Learn' },
+  { href: '/flashcards',  icon: BookOpen,        label: 'Flashcards' },
+  { href: '/homework',    icon: HelpCircle,      label: 'AI Helper' },
+  { href: '/quiz',        icon: Zap,             label: 'Practice' },
+  { href: '/leaderboard', icon: Trophy,          label: 'Leaderboard' },
+  { href: '/profile',     icon: User,            label: 'Profile' },
 ];
 
 // ─── Phoenix SVG (levels up based on XP) ─────────────────────────────────────
@@ -210,22 +207,20 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto mt-4">
         {navItems.map(item => {
-          const active = pathname.startsWith(item.href);
+          const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href}
               className={clsx(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                'flex items-center gap-3 px-4 py-3 rounded-2xl text-[15px] font-bold uppercase tracking-wider transition-all border-2',
                 active
-                  ? 'text-brand-600 border border-brand-200'
-                  : 'text-ink-light hover:text-ink border border-transparent hover:border-warm-200'
+                  ? 'border-brand-400 bg-brand-50 text-brand-500'
+                  : 'border-transparent text-text-muted hover:bg-surface-muted'
               )}
-              style={active ? { background: 'linear-gradient(135deg, rgba(255,107,26,0.1), rgba(255,181,112,0.1))' } : {}}
             >
-              <item.icon className={clsx('w-5 h-5 flex-shrink-0', active ? 'text-brand-500' : 'text-ink-muted')} />
+              <item.icon className={clsx('w-6 h-6 flex-shrink-0', active ? 'text-brand-500' : 'text-text-muted')} />
               {item.label}
-              {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-500" />}
             </Link>
           );
         })}
@@ -249,30 +244,40 @@ export default function Sidebar() {
               {useAuthStore.getState().darkMode ? 'Light Mode' : 'Night Study'}
             </span>
           </button>
-          {user.plan !== 'pro' && (
-            <div className="bg-brand-50 rounded-xl p-3 border border-brand-200 shadow-sm relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-brand-500 opacity-5 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110" />
-              <div className="flex justify-between items-center mb-1">
-                <div className="text-xs font-bold text-brand-700 flex items-center gap-1">
-                  <Zap className="w-3.5 h-3.5" />
-                  AI Limit
-                </div>
-                <div className="text-xs font-medium text-brand-600">
-                  {user.ai_calls_today || 0} / 5
-                </div>
+          {user.plan !== 'legend' && user.plan !== 'pro' && (
+            <div className="relative rounded-xl p-3 shadow-md overflow-hidden group" style={{ background: 'linear-gradient(to bottom right, var(--bg-card), var(--bg-surface))' }}>
+              {/* Animated legendary border base */}
+              <div className="absolute inset-0 z-0 p-[2px] rounded-xl overflow-hidden">
+                <div className="absolute inset-[-100%] animate-[spin_4s_linear_infinite]" 
+                  style={{ background: 'conic-gradient(from 0deg, transparent 0%, #fbbf24 25%, #f59e0b 50%, #fbbf24 75%, transparent 100%)' }} />
+                <div className="absolute inset-[2px] rounded-[10px]" style={{ background: 'var(--bg-card)' }} />
               </div>
-              <div className="h-1.5 w-full bg-brand-200/50 rounded-full overflow-hidden mb-2">
-                <div 
-                  className="h-full bg-brand-500 rounded-full transition-all"
-                  style={{ width: `${Math.min(((user.ai_calls_today || 0) / 5) * 100, 100)}%` }}
-                />
+              
+              <div className="relative z-10">
+                <div className="absolute top-0 right-0 w-16 h-16 opacity-10 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110" style={{ background: '#f59e0b' }} />
+                <div className="flex justify-between items-center mb-1">
+                  <div className="text-xs font-bold flex items-center gap-1" style={{ color: '#d97706' }}>
+                    <Zap className="w-3.5 h-3.5" />
+                    AI Energy
+                  </div>
+                  <div className="text-xs font-medium" style={{ color: '#b45309' }}>
+                    {user.ai_calls_today || 0} / 5
+                  </div>
+                </div>
+                <div className="h-1.5 w-full rounded-full overflow-hidden mb-2" style={{ background: 'rgba(245, 158, 11, 0.2)' }}>
+                  <div 
+                    className="h-full rounded-full transition-all"
+                    style={{ background: '#f59e0b', width: `${Math.min(((user.ai_calls_today || 0) / 5) * 100, 100)}%`, boxShadow: '0 0 8px #f59e0b' }}
+                  />
+                </div>
+                <button 
+                  onClick={() => useAuthStore.getState().setShowUpgradeModal(true)}
+                  className="w-full py-1.5 text-white text-[11px] font-bold rounded-lg shadow-sm hover:-translate-y-0.5 transition-all duration-300"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', textShadow: '0px 1px 2px rgba(0,0,0,0.2)' }}
+                >
+                  Become a Legend
+                </button>
               </div>
-              <button 
-                onClick={() => useAuthStore.getState().setShowUpgradeModal(true)}
-                className="w-full py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-[11px] font-bold rounded-lg transition-colors shadow-sm"
-              >
-                Upgrade to Pro
-              </button>
             </div>
           )}
 

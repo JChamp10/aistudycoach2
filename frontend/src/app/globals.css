@@ -6,245 +6,171 @@
 /* ─── Theme Variables ──────────────────────────────────────────────────────── */
 :root {
   --bg-primary: #ffffff;
-  --bg-secondary: #fcfcfc;
-  --bg-muted: #f8f9fa;
-  --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-secondary: #f9fafa;
+  --bg-muted: #f3f4f6;
+  --bg-card: #ffffff;
   --bg-elevated: #ffffff;
 
-  --border-primary: #f0f1f4;
-  --border-brand: rgba(255,107,26,0.25);
+  --border-primary: #e5e5e5;
+  --border-brand: rgba(88,204,2,0.25);
 
-  --text-primary: #2d1f0e;
-  --text-secondary: #3d2a18;
-  --text-muted: #5c4030;
-  --text-light: #8b6f5a;
-  --text-faint: #b8a090;
+  --text-primary: #374151;
+  --text-secondary: #4b5563;
+  --text-muted: #777777;
+  --text-light: #9ca3af;
+  --text-faint: #afafaf;
 
-  --brand-50: #fff8f0;
-  --brand-100: #ffecd6;
-  --brand-200: #ffd4a8;
-  --brand-400: #ff6b1a;
-  --brand-500: #e85500;
-  --brand-600: #c44400;
-  --brand-700: #a03800;
+  --brand-50: #f1fdf4;
+  --brand-100: #dcfce7;
+  --brand-200: #bbf7d0;
+  --brand-400: #58CC02;
+  --brand-500: #58CC02;
+  --brand-600: #58A700;
+  --brand-700: #468700;
 
-  --surface-shadow: rgba(139, 90, 60, 0.08);
-  --brand-glow: rgba(255, 107, 26, 0.35);
-  --brand-glow-hover: rgba(255, 107, 26, 0.55);
+  --surface-shadow: rgba(0, 0, 0, 0.08);
+  --brand-glow: rgba(88, 204, 2, 0.35);
+  --brand-glow-hover: rgba(88, 204, 2, 0.55);
 
-  --scrollbar-track: #fcfcfc;
-  --scrollbar-thumb: #ced4da;
+  --scrollbar-track: #f9fafa;
+  --scrollbar-thumb: #d1d5db;
 
-  --gradient-card: linear-gradient(135deg, #ffffff, #f8f9fa);
-  --gradient-sidebar: linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%);
+  --gradient-card: linear-gradient(135deg, #ffffff, #f9fafa);
+  --gradient-sidebar: linear-gradient(180deg, #ffffff 0%, #f9fafa 100%);
 
-  --toast-bg: #181d2a;
+  --toast-bg: #374151;
   --toast-text: #ffffff;
-  --toast-border: #252b3b;
+  --toast-border: #4b5563;
 
-  --input-bg: #fffcf9;
-  --overlay-bg: rgba(0,0,0,0.6);
-  --noise-opacity: 0.4;
+  --input-bg: #f9fafa;
+  --overlay-bg: rgba(0,0,0,0.4);
 }
 
 html.dark {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #0f1424;
-  --bg-muted: #151b2e;
-  --bg-card: #111827;
-  --bg-elevated: #1a2040;
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-muted: #374151;
+  --bg-card: #1f2937;
+  --bg-elevated: #374151;
 
-  --border-primary: #1e2a4a;
-  --border-brand: rgba(168,85,247,0.3);
+  --border-primary: #4b5563;
+  --border-brand: rgba(88,204,2,0.3);
 
-  --text-primary: #e8eaf0;
-  --text-secondary: #c8cdd8;
-  --text-muted: #94a3b8;
-  --text-light: #64748b;
-  --text-faint: #475569;
-
-  --brand-50: #1a0f2e;
-  --brand-100: #2d1854;
-  --brand-200: #4c2882;
-  --brand-400: #a855f7;
-  --brand-500: #8b5cf6;
-  --brand-600: #7c3aed;
-  --brand-700: #6d28d9;
-
-  --surface-shadow: rgba(0, 0, 0, 0.3);
-  --brand-glow: rgba(139, 92, 246, 0.4);
-  --brand-glow-hover: rgba(139, 92, 246, 0.6);
-
-  --scrollbar-track: #0f1424;
-  --scrollbar-thumb: #1e2a4a;
-
-  --gradient-card: linear-gradient(135deg, #111827, #1a2040);
-  --gradient-sidebar: linear-gradient(180deg, #0f1424 0%, #0a0e1a 100%);
-
-  --toast-bg: #1a2040;
-  --toast-text: #e8eaf0;
-  --toast-border: #2d3a5c;
-
-  --input-bg: #0f1424;
-  --overlay-bg: rgba(0,0,0,0.8);
-  --noise-opacity: 0.15;
+  --text-primary: #f9fafb;
+  --text-secondary: #e5e7eb;
+  --text-muted: #9ca3af;
+  --text-light: #6b7280;
+  --text-faint: #4b5563;
 }
 
 @layer base {
   body {
     @apply antialiased;
-    font-family: 'Syne', system-ui, sans-serif;
+    font-family: 'Nunito', system-ui, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Syne', system-ui, sans-serif;
-    font-weight: 700;
+    font-family: 'Nunito', system-ui, sans-serif;
+    font-weight: 800;
     color: var(--text-primary);
   }
   p { color: var(--text-muted); }
-  label { color: var(--text-muted); }
-
-  /* Semantic text colors using CSS vars */
-  .text-ink { color: var(--text-primary) !important; }
-  .text-ink-light { color: var(--text-muted) !important; }
-  .text-ink-muted { color: var(--text-light) !important; }
-  .text-ink-faint { color: var(--text-faint) !important; }
-
-  /* Slate overrides — map to theme vars */
-  .text-white { color: var(--text-primary) !important; }
-  .text-slate-100 { color: var(--text-primary) !important; }
-  .text-slate-200 { color: var(--text-secondary) !important; }
-  .text-slate-300 { color: var(--text-muted) !important; }
-  .text-slate-400 { color: var(--text-light) !important; }
-  .text-slate-500 { color: var(--text-faint) !important; }
-  .text-slate-600 { color: var(--text-faint) !important; }
-
-  /* Keep colored text working */
-  .text-brand-400 { color: var(--brand-400) !important; }
-  .text-brand-500 { color: var(--brand-500) !important; }
-  .text-brand-600 { color: var(--brand-600) !important; }
-  .text-brand-700 { color: var(--brand-700) !important; }
-  .text-green-400 { color: #16a34a !important; }
-  .text-green-300 { color: #15803d !important; }
-  .text-red-400 { color: #dc2626 !important; }
-  .text-amber-400 { color: #d97706 !important; }
-  .text-blue-400 { color: #2563eb !important; }
-  .text-purple-400 { color: #7c3aed !important; }
-
-  /* Background overrides */
-  .bg-surface-card { background-color: var(--bg-card) !important; }
-  .bg-surface-muted { background-color: var(--bg-muted) !important; }
-  .bg-surface-elevated { background-color: var(--bg-elevated) !important; }
-  .bg-surface-border { background-color: var(--border-primary) !important; }
-  .border-surface-border { border-color: var(--border-primary) !important; }
-
-  /* Dark background elements keep white text */
-  .bg-brand-500 { color: white !important; }
-  .btn-primary { color: white !important; }
+  label { color: var(--text-muted); font-weight: 700; }
 
   /* Input text */
   input, textarea, select {
     color: var(--text-primary) !important;
     background-color: var(--input-bg) !important;
     border-color: var(--border-primary);
+    border-width: 2px;
   }
 }
 
 @layer components {
   .card {
     background-color: var(--bg-card);
-    border: 1.5px solid var(--border-primary);
+    border: 2px solid var(--border-primary);
+    border-bottom-width: 4px;
     @apply rounded-2xl p-6;
-    box-shadow: 0 2px 12px var(--surface-shadow);
     transition: background-color 0.3s ease, border-color 0.3s ease;
   }
 
-  /* ─── Phoenix CTA Buttons ───────────────────────────────────────────── */
+  /* ─── Duolingo Style CTA Buttons ───────────────────────────────────────────── */
   .btn-primary {
-    @apply font-semibold px-5 py-2.5 rounded-xl transition-all duration-200;
-    background: linear-gradient(135deg, var(--brand-400), var(--brand-500)) !important;
+    @apply font-bold px-5 py-3 rounded-2xl transition-all duration-75 text-center cursor-pointer uppercase tracking-wider text-sm;
+    background-color: var(--brand-500) !important;
     color: white !important;
-    box-shadow: 0 4px 14px var(--brand-glow);
-    position: relative;
-    overflow: hidden;
-  }
-  .btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent 60%);
-    opacity: 0;
-    transition: opacity 0.2s ease;
+    border-bottom: 4px solid var(--brand-600);
   }
   .btn-primary:hover {
-    box-shadow: 0 6px 24px var(--brand-glow-hover);
-    transform: scale(1.03);
+    filter: brightness(1.1);
   }
-  .btn-primary:hover::before { opacity: 1; }
   .btn-primary:active {
-    transform: scale(0.96);
-    box-shadow: 0 2px 10px var(--brand-glow);
+    border-bottom-width: 0px;
+    transform: translateY(4px);
+    margin-bottom: 4px;
   }
 
   .btn-ghost {
-    @apply font-medium px-5 py-2.5 rounded-xl transition-all duration-200;
-    border: 1.5px solid var(--border-primary);
+    @apply font-bold px-5 py-3 rounded-2xl transition-all duration-75 text-center cursor-pointer uppercase tracking-wider text-sm;
+    border: 2px solid var(--border-primary);
+    border-bottom: 4px solid var(--border-primary);
     color: var(--text-muted) !important;
     background: transparent;
   }
   .btn-ghost:hover {
     background: var(--bg-muted);
-    border-color: var(--brand-400);
-    color: var(--text-primary) !important;
+  }
+  .btn-ghost:active {
+    border-bottom-width: 2px;
+    transform: translateY(2px);
+    margin-bottom: 2px;
   }
 
   .input {
-    @apply rounded-xl px-4 py-3 transition-all w-full;
+    @apply rounded-2xl px-4 py-3 transition-all w-full;
     background: var(--input-bg) !important;
-    border: 1.5px solid var(--border-primary);
+    border: 2px solid var(--border-primary);
     color: var(--text-primary) !important;
     outline: none;
+    font-weight: 600;
   }
-  .input::placeholder { color: var(--text-faint) !important; }
+  .input::placeholder { color: var(--text-faint) !important; font-weight: 600; }
   .input:focus {
     border-color: var(--brand-400);
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
   }
 
   .badge {
-    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold uppercase;
   }
 
   .xp-bar {
-    @apply h-2 rounded-full overflow-hidden;
+    @apply h-4 rounded-full overflow-hidden;
     background: var(--border-primary);
   }
   .xp-bar-fill {
-    @apply h-full rounded-full transition-all duration-500;
-    background: linear-gradient(90deg, var(--brand-400), var(--brand-200));
+    @apply h-full rounded-full transition-all duration-500 relative;
+    background: var(--brand-500);
+  }
+  .xp-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    right: 4px;
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 4px;
   }
 
   .skeleton {
-    @apply rounded-xl animate-pulse;
+    @apply rounded-2xl animate-pulse;
     background: var(--bg-muted);
   }
-
-  .glow-text {
-    color: var(--brand-400);
-    text-shadow: 0 0 30px var(--brand-glow);
-  }
-
-  /* ─── Phoenix Glow Animation ────────────────────────────────────────── */
-  @keyframes phoenixPulse {
-    0%, 100% { box-shadow: 0 4px 14px var(--brand-glow); }
-    50% { box-shadow: 0 6px 28px var(--brand-glow-hover), 0 0 40px var(--brand-glow); }
-  }
-  .btn-phoenix {
-    animation: phoenixPulse 2.5s ease-in-out infinite;
-  }
 }
+
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }

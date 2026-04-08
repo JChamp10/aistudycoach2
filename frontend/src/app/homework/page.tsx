@@ -155,7 +155,7 @@ export default function HomeworkPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto flex gap-0 h-[calc(100vh-4rem)] relative">
+      <div className="max-w-5xl mx-auto flex gap-4 h-[calc(100vh-4rem)] relative pt-4 pb-4">
 
         {/* History panel */}
         <AnimatePresence>
@@ -171,52 +171,49 @@ export default function HomeworkPage() {
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: -280, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="w-72 flex-shrink-0 flex flex-col border-r border-surface-border bg-surface-card z-30 absolute md:relative h-full rounded-l-2xl overflow-hidden">
+                className="w-72 flex-shrink-0 flex flex-col card !rounded-2xl z-30 absolute md:relative h-full overflow-hidden">
 
-                <div className="flex items-center justify-between px-4 py-4 border-b border-surface-border">
-                  <h2 className="font-bold flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-brand-400" /> History
+                <div className="flex items-center justify-between px-4 py-4 border-b-2 border-surface-border">
+                  <h2 className="font-extrabold flex items-center gap-2 text-text-primary">
+                    <Clock className="w-5 h-5 text-duo-yellow" /> History
                     {history.length > 0 && (
-                      <span className="text-xs bg-brand-500/20 text-brand-400 px-1.5 py-0.5 rounded-full">
+                      <span className="text-xs bg-duo-yellow text-white px-2 py-0.5 rounded-full font-bold shadow-[0_2px_0_var(--duo-yellowShadow)]">
                         {history.length}
                       </span>
                     )}
                   </h2>
                   <button onClick={() => setHistoryOpen(false)}
-                    className="text-slate-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-surface-muted">
-                    <ChevronLeft className="w-4 h-4" />
+                    className="text-text-muted hover:text-text-primary transition-colors p-1 rounded-xl">
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
                   {historyLoading ? (
                     <div className="space-y-2">
-                      {[...Array(5)].map((_, i) => <div key={i} className="skeleton h-14" />)}
+                      {[...Array(5)].map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
                     </div>
                   ) : history.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500 text-sm">
+                    <div className="text-center py-12 text-text-muted font-bold text-sm">
                       No history yet. Ask your first question!
                     </div>
                   ) : (
                     history.map(item => (
                       <button key={item.id} onClick={() => loadFromHistory(item)}
-                        className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-surface-muted border border-transparent hover:border-surface-border transition-all group">
+                        className="w-full text-left px-3 py-3 rounded-xl hover:bg-surface-elevated border-2 border-transparent hover:border-surface-border hover:shadow-[0_4px_0_var(--border-rgb)] transition-all group">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-slate-300 group-hover:text-white truncate transition-colors">
+                            <div className="text-sm font-bold text-text-primary truncate transition-colors">
                               {item.question.replace('[PDF] ', '').slice(0, 60)}
                               {item.question.length > 60 ? '...' : ''}
                             </div>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-2 mt-2">
                               {item.question.startsWith('[PDF]') && (
-                                <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                                  <FileText className="w-2.5 h-2.5" /> PDF
+                                <span className="text-[10px] bg-duo-blue/10 text-duo-blue border border-duo-blue px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                  <FileText className="w-3 h-3" /> PDF
                                 </span>
                               )}
-                              {item.subject && (
-                                <span className="text-xs text-slate-600">{item.subject}</span>
-                              )}
-                              <span className="text-xs text-slate-600 ml-auto">{formatTime(item.created_at)}</span>
+                              <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider ml-auto">{formatTime(item.created_at)}</span>
                             </div>
                           </div>
                         </div>
@@ -230,57 +227,52 @@ export default function HomeworkPage() {
         </AnimatePresence>
 
         {/* Main chat */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 card !rounded-2xl relative">
 
           {/* Header */}
-          <div className="flex-shrink-0 pb-4 border-b border-surface-border mb-4 flex items-center gap-3">
+          <div className="flex-shrink-0 pb-4 border-b-2 border-surface-border mb-4 flex items-center gap-3">
             <button
               onClick={() => setHistoryOpen(!historyOpen)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 font-bold transition-all ${
                 historyOpen
-                  ? 'bg-brand-500/20 border-brand-500/40 text-brand-400'
-                  : 'border-surface-border text-slate-400 hover:text-white hover:border-brand-500/30'
+                  ? 'bg-duo-yellow/10 border-duo-yellow text-duo-yellowShadow'
+                  : 'border-surface-border text-text-muted hover:text-text-primary'
               }`}>
-              <Clock className="w-4 h-4" />
+              <Clock className="w-5 h-5" />
               <span className="hidden sm:inline">History</span>
-              {history.length > 0 && (
-                <span className="text-xs bg-brand-500/20 text-brand-400 px-1.5 py-0.5 rounded-full">
-                  {history.length}
-                </span>
-              )}
             </button>
 
-            <div className="flex-1">
-              <h1 className="text-2xl font-extrabold flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                  <HelpCircle className="w-5 h-5 text-blue-400" />
+            <div className="flex-1 flex justify-center">
+              <h1 className="text-2xl font-extrabold flex items-center gap-2 text-text-primary">
+                <div className="w-10 h-10 rounded-xl bg-duo-blue border-b-4 border-duo-blueShadow flex items-center justify-center">
+                  <HelpCircle className="w-6 h-6 text-white" />
                 </div>
-                Homework Helper
+                AI Helper
               </h1>
             </div>
 
             {messages.length > 0 && (
               <button onClick={newChat}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-surface-border text-slate-400 hover:text-white hover:border-brand-500/30 text-sm transition-all">
-                <X className="w-4 h-4" />
-                <span className="hidden sm:inline">New chat</span>
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 border-surface-border text-text-muted hover:text-text-primary font-bold transition-all">
+                <X className="w-5 h-5" />
+                <span className="hidden sm:inline">Clear</span>
               </button>
             )}
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+          <div className="flex-1 overflow-y-auto space-y-6 pr-1">
             {messages.length === 0 && (
-              <div className="text-center py-12 space-y-4">
-                <div className="text-6xl">🧠</div>
-                <h2 className="text-xl font-bold">Ask me anything!</h2>
-                <p className="text-slate-500 text-sm max-w-sm mx-auto">
-                  Type a question, paste a problem, or upload a PDF and I'll explain it step by step.
+              <div className="text-center py-16 space-y-6">
+                <div className="text-7xl animate-bounce-pop">🤖</div>
+                <h2 className="text-2xl font-extrabold text-text-primary">Ask me anything!</h2>
+                <p className="text-text-muted font-bold mb-6 max-w-sm mx-auto">
+                  Type a question or upload a PDF/Image for an instant explanation.
                 </p>
-                <div className="flex flex-wrap gap-2 justify-center mt-4">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center mt-6">
                   {suggestions.map(q => (
                     <button key={q} onClick={() => setInput(q)}
-                      className="px-3 py-1.5 rounded-xl border border-surface-border text-sm text-slate-400 hover:text-white hover:border-brand-500/40 transition-all">
+                      className="px-4 py-3 rounded-2xl border-2 border-b-4 border-surface-border font-bold text-sm text-text-muted hover:text-brand-500 hover:border-brand-500 hover:bg-brand-50 transition-all transform active:translate-y-1 active:border-b-2">
                       {q}
                     </button>
                   ))}
@@ -293,18 +285,18 @@ export default function HomeworkPage() {
                 <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   {msg.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mr-2 mt-1">
-                      <HelpCircle className="w-3.5 h-3.5 text-blue-400" />
+                    <div className="w-10 h-10 rounded-xl bg-duo-blue border-b-4 border-duo-blueShadow flex items-center justify-center flex-shrink-0 mr-3">
+                      <HelpCircle className="w-5 h-5 text-white" />
                     </div>
                   )}
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                  <div className={`max-w-[75%] rounded-2xl px-5 py-4 text-[15px] font-medium leading-relaxed border-2 border-b-4 ${
                     msg.role === 'user'
-                      ? 'bg-brand-500 text-white rounded-tr-sm'
-                      : 'bg-surface-card border border-surface-border text-slate-200 rounded-tl-sm'
+                      ? 'bg-brand-500 border-brand-600 text-white rounded-tr-sm'
+                      : 'bg-surface border-surface-border text-text-primary rounded-tl-sm'
                   }`}>
                     {msg.fileName && (
-                      <div className="flex items-center gap-2 mb-2 pb-2 border-b border-white/20 text-xs opacity-80">
-                        <FileText className="w-3 h-3" /> {msg.fileName}
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b-2 border-white/20 text-xs font-bold uppercase tracking-wider opacity-90">
+                        <FileText className="w-4 h-4" /> {msg.fileName}
                       </div>
                     )}
                     {msg.role === 'assistant' && msg.isNew ? (
@@ -324,12 +316,12 @@ export default function HomeworkPage() {
               {loading && pdfProgress && (
                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   className="flex justify-start">
-                  <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 mr-2 mt-1">
-                    <FileText className="w-3.5 h-3.5 text-blue-400" />
+                  <div className="w-10 h-10 rounded-xl bg-duo-blue border-b-4 border-duo-blueShadow flex items-center justify-center flex-shrink-0 mr-3">
+                    <FileText className="w-5 h-5 text-white" />
                   </div>
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-3">
-                    <div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin flex-shrink-0" />
-                    <span className="text-sm text-blue-300">{pdfProgress}</span>
+                  <div className="bg-duo-blue/10 border-2 border-b-4 border-duo-blue rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full border-4 border-duo-blue/30 border-t-duo-blue animate-spin flex-shrink-0" />
+                    <span className="text-[15px] font-bold text-duo-blueShadow">{pdfProgress}</span>
                   </div>
                 </motion.div>
               )}
@@ -340,9 +332,8 @@ export default function HomeworkPage() {
               {loading && !pdfProgress && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="flex justify-start">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mr-2 mt-1"
-                    style={{ background: 'rgba(var(--brand-400-rgb, 255,107,26), 0.15)', border: '1.5px solid var(--border-brand)' }}>
-                    <HelpCircle className="w-3.5 h-3.5" style={{ color: 'var(--brand-400)' }} />
+                  <div className="w-10 h-10 rounded-xl bg-duo-blue border-b-4 border-duo-blueShadow flex items-center justify-center flex-shrink-0 mr-3">
+                    <HelpCircle className="w-5 h-5 text-white" />
                   </div>
                   <ThinkingPulse />
                 </motion.div>
@@ -353,15 +344,15 @@ export default function HomeworkPage() {
           </div>
 
           {/* Input area */}
-          <div className="flex-shrink-0 pt-4 border-t border-surface-border space-y-2">
+          <div className="flex-shrink-0 pt-4 border-t-2 border-surface-border mt-2 space-y-3">
             <AnimatePresence>
               {file && (
                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-sm">
-                  <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                  <span className="text-blue-300 truncate flex-1">{file.name}</span>
-                  <span className="text-slate-500 text-xs">{(file.size / 1024).toFixed(0)}KB</span>
-                  <button onClick={removeFile} className="text-slate-500 hover:text-red-400 transition-colors">
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-duo-blue/10 border-2 border-duo-blue text-sm font-bold">
+                  <FileText className="w-5 h-5 text-duo-blue flex-shrink-0" />
+                  <span className="text-duo-blueShadow truncate flex-1">{file.name}</span>
+                  <span className="text-duo-blue/70 text-xs">{(file.size / 1024).toFixed(0)}KB</span>
+                  <button onClick={removeFile} className="text-duo-blue hover:text-duo-red transition-colors bg-white rounded-full p-1 shadow-sm">
                     <X className="w-4 h-4" />
                   </button>
                 </motion.div>
@@ -370,26 +361,28 @@ export default function HomeworkPage() {
 
             <div className="flex gap-2">
               <button onClick={() => fileRef.current?.click()}
-                title="Upload PDF"
-                className="w-10 h-10 rounded-xl border border-surface-border flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-500/40 transition-all flex-shrink-0">
-                <Upload className="w-4 h-4" />
+                title="Upload Photo or PDF"
+                className="w-14 h-14 rounded-2xl border-2 border-b-4 border-surface-border bg-surface flex items-center justify-center text-text-muted hover:text-duo-blue hover:border-duo-blue hover:bg-duo-blue/10 transition-all flex-shrink-0 active:translate-y-1 active:border-b-2">
+                <Upload className="w-6 h-6" />
               </button>
               <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden" onChange={handleFile} />
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                placeholder={file ? 'Ask about this PDF... (or leave blank)' : 'Ask a question...'}
-                className="input flex-1"
+                placeholder={file ? 'Ask about this upload...' : 'Type a question...'}
+                className="input flex-1 h-14 text-base"
                 disabled={loading}
               />
               <button onClick={sendMessage}
                 disabled={loading || (!input.trim() && !file)}
-                className="w-10 h-10 rounded-xl bg-brand-500 hover:bg-brand-400 flex items-center justify-center text-white disabled:opacity-50 transition-all flex-shrink-0">
-                <Send className="w-4 h-4" />
+                className="btn-primary w-14 h-14 !p-0 flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                <Send className="w-6 h-6" />
               </button>
             </div>
-            <p className="text-xs text-slate-600 text-center">Press Enter to send · Upload PDF or Image for document help</p>
+            <p className="text-[11px] font-bold text-text-muted text-center uppercase tracking-wider">
+              Upload PDF or Image for document help
+            </p>
           </div>
         </div>
       </div>
