@@ -84,8 +84,9 @@ function MathSuite() {
     try {
       const res = await homeworkApi.ask({ question: `Please solve this mathematical equation step-by-step and show the final answer prominently: ${eqInput}` });
       setEqResult(res.data.answer || res.data.explanation || 'No response.');
-    } catch {
-      toast.error('Failed to solve equation');
+    } catch (err: any) {
+      console.error('solveEquation error:', err);
+      toast.error(err.response?.data?.error || err.message || 'Failed to solve equation');
     } finally {
       setSolving(false);
     }
@@ -109,6 +110,12 @@ function MathSuite() {
            <textarea 
              value={eqInput}
              onChange={e => setEqInput(e.target.value)}
+             onKeyDown={e => {
+               if (e.key === 'Enter' && !e.shiftKey) {
+                 e.preventDefault();
+                 solveEquation();
+               }
+             }}
              placeholder="e.g. 2x + 5 = 15"
              className="w-full input !rounded-xl !py-2 text-sm font-mono h-24 resize-none"
            />
