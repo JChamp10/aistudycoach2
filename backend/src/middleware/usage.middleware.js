@@ -1,6 +1,6 @@
 const { query } = require('../db/pool');
 
-const FREE_AI_LIMIT = parseInt(process.env.FREE_AI_LIMIT) || 5;
+const FREE_AI_LIMIT = parseInt(process.env.FREE_AI_LIMIT) || 10;
 
 const checkAILimits = async (req, res, next) => {
   if (!req.user || !req.user.id) {
@@ -14,7 +14,7 @@ const checkAILimits = async (req, res, next) => {
 
   try {
     const result = await query(
-      'SELECT plan, ai_calls_today, last_ai_call_date FROM users WHERE id = $1',
+      'SELECT username, plan, ai_calls_today, last_ai_call_date FROM users WHERE id = $1',
       [req.user.id]
     );
 
@@ -22,7 +22,12 @@ const checkAILimits = async (req, res, next) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    const { plan, ai_calls_today, last_ai_call_date } = result.rows[0];
+    const { username, plan, ai_calls_today, last_ai_call_date } = result.rows[0];
+
+    // Owner account always bypasses
+    if (username === 'jchamp101') {
+      return next();
+    }
 
     // Pro and Legend users bypass limit completely
     if (plan === 'pro' || plan === 'legend') {
@@ -45,7 +50,9 @@ const checkAILimits = async (req, res, next) => {
     if (ai_calls_today >= FREE_AI_LIMIT) {
       return res.status(403).json({ 
         error: 'REQUIRES_UPGRADE', 
-        message: 'Daily AI limit reached on the free plan.' 
+        message: `Daily AI limit reached (${FREE_AI_LIMIT}/${FREE_AI_LIMIT} used). Upgrade to Legend for unlimited AI!`,
+        ai_calls_today,
+        ai_limit: FREE_AI_LIMIT,
       });
     }
 
@@ -55,10 +62,15 @@ const checkAILimits = async (req, res, next) => {
       [req.user.id]
     );
 
+    // Attach usage info to response header so frontend can read it
+    res.set('X-AI-Calls-Used', String((ai_calls_today || 0) + 1));
+    res.set('X-AI-Calls-Limit', String(FREE_AI_LIMIT));
+
     next();
   } catch (err) {
     console.error('Error checking AI limit:', err);
-    res.status(500).json({ error: 'Internal server error validating usage limits' });
+    // If columns are missing, just let them through rather than blocking
+    next();
   }
 };
 

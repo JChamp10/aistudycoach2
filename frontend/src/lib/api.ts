@@ -102,6 +102,13 @@ export const userApi = {
   stats: () => api.get('/users/stats'),
   achievements: () => api.get('/users/achievements'),
   redeemCode: (code: string) => api.post('/users/redeem-code', { code }),
+  usage: () => api.get('/users/usage'),
+  // Admin (jchamp101 only)
+  adminResetAI: () => api.post('/users/admin/reset-ai'),
+  adminSetPlan: (plan: string) => api.post('/users/admin/set-plan', { plan }),
+  adminAddXP: (amount: number) => api.post('/users/admin/add-xp', { amount }),
+  adminSetStreak: (streak: number) => api.post('/users/admin/set-streak', { streak }),
+  adminGetUsers: () => api.get('/users/admin/users'),
 };
 
 export const quizApi = {

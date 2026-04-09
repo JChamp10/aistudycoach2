@@ -1,10 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Calculator, Users, Moon, Sun, Brain
+  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Calculator, Users, Moon, Sun, Brain, Shield
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
+import { userApi } from '@/lib/api';
 import { getLevelFromXP } from '@/lib/utils';
 import { clsx } from 'clsx';
 
@@ -183,6 +185,68 @@ export function PhoenixCompanion({ level, xp }: { level: number; xp: number }) {
   );
 }
 
+// ─── AI Usage Widget ──────────────────────────────────────────────────────────
+function AiUsageWidget({ user }: { user: any }) {
+  const [usage, setUsage] = useState<any>(null);
+
+  useEffect(() => {
+    userApi.usage().then(r => setUsage(r.data)).catch(() => {});
+  }, []);
+
+  const isUnlimited = usage?.unlimited || user?.plan === 'legend' || user?.plan === 'pro';
+  const used = usage?.ai_calls_today ?? (user?.ai_calls_today || 0);
+  const limit = usage?.ai_limit ?? 10;
+  const remaining = isUnlimited ? Infinity : Math.max(0, limit - used);
+  const pct = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
+
+  if (isUnlimited) {
+    return (
+      <div className="relative rounded-xl p-3 shadow-md overflow-hidden" style={{ background: 'linear-gradient(to bottom right, var(--bg-card), var(--bg-surface))' }}>
+        <div className="absolute inset-0 z-0 p-[2px] rounded-xl overflow-hidden">
+          <div className="absolute inset-[-100%] animate-[spin_4s_linear_infinite]" style={{ background: 'conic-gradient(from 0deg, transparent 0%, #fbbf24 25%, #f59e0b 50%, #fbbf24 75%, transparent 100%)' }} />
+          <div className="absolute inset-[2px] rounded-[10px]" style={{ background: 'var(--bg-card)' }} />
+        </div>
+        <div className="relative z-10 flex items-center gap-2">
+          <Shield className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <div>
+            <div className="text-xs font-bold text-amber-400">∞ Unlimited AI</div>
+            <div className="text-[10px] text-ink-faint">Legend Mode Active</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative rounded-xl p-3 shadow-md overflow-hidden group" style={{ background: 'linear-gradient(to bottom right, var(--bg-card), var(--bg-surface))' }}>
+      <div className="absolute inset-0 z-0 p-[2px] rounded-xl overflow-hidden">
+        <div className="absolute inset-[-100%] animate-[spin_4s_linear_infinite]" style={{ background: 'conic-gradient(from 0deg, transparent 0%, #fbbf24 25%, #f59e0b 50%, #fbbf24 75%, transparent 100%)' }} />
+        <div className="absolute inset-[2px] rounded-[10px]" style={{ background: 'var(--bg-card)' }} />
+      </div>
+      <div className="relative z-10">
+        <div className="flex justify-between items-center mb-1">
+          <div className="text-xs font-bold flex items-center gap-1" style={{ color: '#d97706' }}>
+            <Zap className="w-3.5 h-3.5" /> AI Energy
+          </div>
+          <div className="text-xs font-medium" style={{ color: remaining <= 2 ? '#ef4444' : '#b45309' }}>
+            {remaining} / {limit} left
+          </div>
+        </div>
+        <div className="h-1.5 w-full rounded-full overflow-hidden mb-2" style={{ background: 'rgba(245, 158, 11, 0.2)' }}>
+          <div className="h-full rounded-full transition-all" style={{ background: pct >= 80 ? '#ef4444' : '#f59e0b', width: `${pct}%`, boxShadow: `0 0 8px ${pct >= 80 ? '#ef4444' : '#f59e0b'}` }} />
+        </div>
+        <button
+          onClick={() => useAuthStore.getState().setShowUpgradeModal(true)}
+          className="w-full py-1.5 text-white text-[11px] font-bold rounded-lg shadow-sm hover:-translate-y-0.5 transition-all duration-300"
+          style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', textShadow: '0px 1px 2px rgba(0,0,0,0.2)' }}
+        >
+          Become a Legend
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
@@ -224,6 +288,20 @@ export default function Sidebar() {
             </Link>
           );
         })}
+        {/* Secret admin link for owner */}
+        {user?.username === 'jchamp101' && (
+          <Link href="/admin"
+            className={clsx(
+              'flex items-center gap-3 px-4 py-3 rounded-2xl text-[15px] font-bold uppercase tracking-wider transition-all border-2',
+              pathname === '/admin'
+                ? 'border-red-400 bg-red-50 text-red-500'
+                : 'border-transparent text-red-400/60 hover:bg-red-50/50'
+            )}
+          >
+            <Shield className={clsx('w-6 h-6 flex-shrink-0', pathname === '/admin' ? 'text-red-500' : 'text-red-400/60')} />
+            Debug
+          </Link>
+        )}
       </nav>
 
       {/* XP + user */}
@@ -244,42 +322,7 @@ export default function Sidebar() {
               {useAuthStore.getState().darkMode ? 'Light Mode' : 'Night Study'}
             </span>
           </button>
-          {user.plan !== 'legend' && user.plan !== 'pro' && (
-            <div className="relative rounded-xl p-3 shadow-md overflow-hidden group" style={{ background: 'linear-gradient(to bottom right, var(--bg-card), var(--bg-surface))' }}>
-              {/* Animated legendary border base */}
-              <div className="absolute inset-0 z-0 p-[2px] rounded-xl overflow-hidden">
-                <div className="absolute inset-[-100%] animate-[spin_4s_linear_infinite]" 
-                  style={{ background: 'conic-gradient(from 0deg, transparent 0%, #fbbf24 25%, #f59e0b 50%, #fbbf24 75%, transparent 100%)' }} />
-                <div className="absolute inset-[2px] rounded-[10px]" style={{ background: 'var(--bg-card)' }} />
-              </div>
-              
-              <div className="relative z-10">
-                <div className="absolute top-0 right-0 w-16 h-16 opacity-10 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110" style={{ background: '#f59e0b' }} />
-                <div className="flex justify-between items-center mb-1">
-                  <div className="text-xs font-bold flex items-center gap-1" style={{ color: '#d97706' }}>
-                    <Zap className="w-3.5 h-3.5" />
-                    AI Energy
-                  </div>
-                  <div className="text-xs font-medium" style={{ color: '#b45309' }}>
-                    {user.ai_calls_today || 0} / 5
-                  </div>
-                </div>
-                <div className="h-1.5 w-full rounded-full overflow-hidden mb-2" style={{ background: 'rgba(245, 158, 11, 0.2)' }}>
-                  <div 
-                    className="h-full rounded-full transition-all"
-                    style={{ background: '#f59e0b', width: `${Math.min(((user.ai_calls_today || 0) / 5) * 100, 100)}%`, boxShadow: '0 0 8px #f59e0b' }}
-                  />
-                </div>
-                <button 
-                  onClick={() => useAuthStore.getState().setShowUpgradeModal(true)}
-                  className="w-full py-1.5 text-white text-[11px] font-bold rounded-lg shadow-sm hover:-translate-y-0.5 transition-all duration-300"
-                  style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', textShadow: '0px 1px 2px rgba(0,0,0,0.2)' }}
-                >
-                  Become a Legend
-                </button>
-              </div>
-            </div>
-          )}
+          <AiUsageWidget user={user} />
 
           {level && (
             <div>

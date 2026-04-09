@@ -93,6 +93,36 @@ router.get('/achievements', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch achievements' });
   }
 });
+// ─── AI Usage Info (for all users) ────────────────────────────────────────────
+router.get('/usage', async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT plan, ai_calls_today, last_ai_call_date, username FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    
+    const { plan, ai_calls_today, last_ai_call_date, username } = result.rows[0];
+    const FREE_AI_LIMIT = parseInt(process.env.FREE_AI_LIMIT) || 10;
+    const isUnlimited = plan === 'pro' || plan === 'legend' || username === 'jchamp101';
+    
+    const today = new Date().toISOString().split('T')[0];
+    const lastCallDate = last_ai_call_date ? last_ai_call_date.toISOString().split('T')[0] : null;
+    const usedToday = lastCallDate === today ? (ai_calls_today || 0) : 0;
+    
+    res.json({
+      plan: plan || 'free',
+      ai_calls_today: usedToday,
+      ai_limit: isUnlimited ? Infinity : FREE_AI_LIMIT,
+      remaining: isUnlimited ? Infinity : Math.max(0, FREE_AI_LIMIT - usedToday),
+      unlimited: isUnlimited,
+      isAdmin: username === 'jchamp101',
+    });
+  } catch (err) {
+    console.error('Usage fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch usage' });
+  }
+});
 
 // ─── Promo Code Redemption ────────────────────────────────────────────────────
 const VALID_CODES = (process.env.PROMO_CODES || 'LEGENDFOUNDER2026,JCHAMPVIP').split(',').map(c => c.trim().toUpperCase());
@@ -107,15 +137,12 @@ router.post('/redeem-code', async (req, res) => {
   }
 
   try {
-    // Ensure the plan column exists (safe to run multiple times)
-    await query(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT 'free'
-    `);
+    // Ensure the plan column exists
+    try {
+      await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT 'free'`);
+    } catch (e) { /* column may already exist */ }
     
-    await query(
-      "UPDATE users SET plan = 'legend' WHERE id = $1",
-      [req.user.id]
-    );
+    await query("UPDATE users SET plan = 'legend' WHERE id = $1", [req.user.id]);
     res.json({ success: true, plan: 'legend', message: '🎉 You are now a Legend! Enjoy infinite AI.' });
   } catch (err) {
     console.error('Redeem code error:', err);
@@ -123,4 +150,80 @@ router.post('/redeem-code', async (req, res) => {
   }
 });
 
+// ─── Admin Panel (jchamp101 only) ─────────────────────────────────────────────
+const requireAdmin = async (req, res, next) => {
+  try {
+    const result = await query('SELECT username FROM users WHERE id = $1', [req.user.id]);
+    if (result.rows.length === 0 || result.rows[0].username !== 'jchamp101') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Auth check failed' });
+  }
+};
+
+// Reset AI calls for self
+router.post('/admin/reset-ai', requireAdmin, async (req, res) => {
+  try {
+    await query('UPDATE users SET ai_calls_today = 0 WHERE id = $1', [req.user.id]);
+    res.json({ success: true, message: 'AI usage reset to 0' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Set plan for yourself
+router.post('/admin/set-plan', requireAdmin, async (req, res) => {
+  const { plan } = req.body;
+  if (!['free', 'pro', 'legend'].includes(plan)) {
+    return res.status(400).json({ error: 'Invalid plan: free, pro, or legend' });
+  }
+  try {
+    try { await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT 'free'`); } catch(e) {}
+    await query('UPDATE users SET plan = $1 WHERE id = $2', [plan, req.user.id]);
+    res.json({ success: true, plan, message: `Plan set to ${plan}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add XP
+router.post('/admin/add-xp', requireAdmin, async (req, res) => {
+  const { amount } = req.body;
+  const xp = parseInt(amount) || 100;
+  try {
+    await query('UPDATE users SET xp = xp + $1 WHERE id = $2', [xp, req.user.id]);
+    const result = await query('SELECT xp FROM users WHERE id = $1', [req.user.id]);
+    res.json({ success: true, xp: result.rows[0].xp, message: `+${xp} XP added` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Set streak
+router.post('/admin/set-streak', requireAdmin, async (req, res) => {
+  const { streak } = req.body;
+  const val = parseInt(streak) || 0;
+  try {
+    await query('UPDATE users SET streak = $1 WHERE id = $2', [val, req.user.id]);
+    res.json({ success: true, streak: val, message: `Streak set to ${val}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all users (admin overview)
+router.get('/admin/users', requireAdmin, async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT id, username, email, xp, streak, plan, ai_calls_today, created_at FROM users ORDER BY xp DESC LIMIT 50'
+    );
+    res.json({ users: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
+
