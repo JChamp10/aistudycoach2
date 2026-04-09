@@ -24,8 +24,8 @@ const checkAILimits = async (req, res, next) => {
 
     const { plan, ai_calls_today, last_ai_call_date } = result.rows[0];
 
-    // Pro users bypass limit completely
-    if (plan === 'pro') {
+    // Pro and Legend users bypass limit completely
+    if (plan === 'pro' || plan === 'legend') {
       return next();
     }
 

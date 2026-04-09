@@ -94,4 +94,28 @@ router.get('/achievements', async (req, res) => {
   }
 });
 
+// ─── Promo Code Redemption ────────────────────────────────────────────────────
+const VALID_CODES = (process.env.PROMO_CODES || 'LEGENDFOUNDER2026,JCHAMPVIP').split(',').map(c => c.trim().toUpperCase());
+
+router.post('/redeem-code', async (req, res) => {
+  const { code } = req.body;
+  if (!code?.trim()) return res.status(400).json({ error: 'Code is required' });
+
+  const normalized = code.trim().toUpperCase();
+  if (!VALID_CODES.includes(normalized)) {
+    return res.status(400).json({ error: 'Invalid or expired promo code' });
+  }
+
+  try {
+    await query(
+      "UPDATE users SET plan = 'legend' WHERE id = $1",
+      [req.user.id]
+    );
+    res.json({ success: true, plan: 'legend', message: '🎉 You are now a Legend! Enjoy infinite AI.' });
+  } catch (err) {
+    console.error('Redeem code error:', err);
+    res.status(500).json({ error: 'Failed to redeem code' });
+  }
+});
+
 module.exports = router;

@@ -2,15 +2,22 @@
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { userApi } from '@/lib/api';
-import { Zap, Flame, Trophy, BookOpen } from 'lucide-react';
+import { Zap, Flame, Trophy, BookOpen, Gift, Crown, Sparkles } from 'lucide-react';
 import { getLevelFromXP } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
+import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProfilePage() {
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const [profile, setProfile] = useState<any>(null);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemed, setRedeemed] = useState(false);
 
   useEffect(() => {
     Promise.all([userApi.profile(), userApi.achievements()])
@@ -18,11 +25,38 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleRedeem = async () => {
+    if (!promoCode.trim()) return;
+    setRedeeming(true);
+    try {
+      const res = await userApi.redeemCode(promoCode.trim());
+      toast.success(res.data.message || 'Code redeemed!');
+      setRedeemed(true);
+      setPromoCode('');
+      // Refresh user data to reflect new plan
+      if (user) {
+        setUser({ ...user, plan: 'legend' });
+      }
+      // Also refresh profile
+      const p = await userApi.profile();
+      setProfile(p.data);
+      // Confetti!
+      import('canvas-confetti').then((confetti) => {
+        confetti.default({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#f59e0b', '#d97706', '#fbbf24', '#b45309'] });
+      });
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Invalid or expired code');
+    } finally {
+      setRedeeming(false);
+    }
+  };
+
   if (loading) return <AppLayout><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" /></div></AppLayout>;
 
   const level = profile ? getLevelFromXP(profile.xp) : null;
   const earnedAchievements = achievements.filter(a => a.earned);
   const pendingAchievements = achievements.filter(a => !a.earned);
+  const isLegend = profile?.plan === 'legend' || user?.plan === 'legend';
 
   return (
     <AppLayout>
@@ -32,11 +66,22 @@ export default function ProfilePage() {
         {profile && (
           <div className="card">
             <div className="flex items-center gap-5">
-              <div className="w-20 h-20 rounded-2xl bg-brand-500/20 border-2 border-brand-500/40 flex items-center justify-center text-3xl font-extrabold text-brand-400">
-                {profile.username[0].toUpperCase()}
+              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-extrabold ${
+                isLegend 
+                  ? 'bg-gradient-to-br from-amber-400/30 to-amber-600/30 border-2 border-amber-400/60 text-amber-400' 
+                  : 'bg-brand-500/20 border-2 border-brand-500/40 text-brand-400'
+              }`}>
+                {isLegend ? <Crown className="w-10 h-10" /> : profile.username[0].toUpperCase()}
               </div>
               <div className="flex-1">
-                <h2 className="text-2xl font-extrabold">{profile.username}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-extrabold">{profile.username}</h2>
+                  {isLegend && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-extrabold text-amber-900 bg-gradient-to-r from-amber-300 to-amber-500 shadow-sm">
+                      <Sparkles className="w-3 h-3" /> LEGEND
+                    </span>
+                  )}
+                </div>
                 <p className="text-slate-400 text-sm">{profile.email}</p>
                 {level && <div className="badge bg-brand-500/20 text-brand-400 border-brand-500/30 mt-2">Level {level.level}</div>}
               </div>
@@ -68,6 +113,57 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+
+        {/* ─── Promo Code Redemption ─────────────────────────────────────── */}
+        <div className="card overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-purple-500/5 pointer-events-none" />
+          <div className="relative z-10">
+            <h2 className="font-bold mb-4 flex items-center gap-2">
+              <Gift className="w-5 h-5 text-amber-400" /> Redeem Promo Code
+            </h2>
+
+            {isLegend && !redeemed ? (
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <Crown className="w-6 h-6 text-amber-400 flex-shrink-0" />
+                <div>
+                  <div className="font-bold text-amber-400 text-sm">You're already a Legend!</div>
+                  <div className="text-xs text-slate-400">You have infinite AI usage.</div>
+                </div>
+              </div>
+            ) : redeemed ? (
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                className="flex items-center gap-3 p-4 rounded-xl bg-green-500/10 border border-green-500/20"
+              >
+                <Sparkles className="w-6 h-6 text-green-400 flex-shrink-0" />
+                <div>
+                  <div className="font-bold text-green-400 text-sm">🎉 Legend Activated!</div>
+                  <div className="text-xs text-slate-400">You now have infinite AI usage across all features.</div>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  value={promoCode}
+                  onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                  onKeyDown={e => e.key === 'Enter' && handleRedeem()}
+                  placeholder="Enter your code..."
+                  className="input flex-1 h-12 font-mono tracking-widest text-center uppercase"
+                  maxLength={30}
+                />
+                <button
+                  onClick={handleRedeem}
+                  disabled={redeeming || !promoCode.trim()}
+                  className="px-6 h-12 rounded-xl font-bold text-sm text-white shadow-lg transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}
+                >
+                  {redeeming ? 'Redeeming...' : 'Redeem'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="card">
           <h2 className="font-bold mb-4 flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-400" /> Achievements ({earnedAchievements.length})</h2>

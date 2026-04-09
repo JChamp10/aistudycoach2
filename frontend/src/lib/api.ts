@@ -101,6 +101,7 @@ export const userApi = {
   updateProfile: (data: any) => api.put('/users/profile', data),
   stats: () => api.get('/users/stats'),
   achievements: () => api.get('/users/achievements'),
+  redeemCode: (code: string) => api.post('/users/redeem-code', { code }),
 };
 
 export const quizApi = {
