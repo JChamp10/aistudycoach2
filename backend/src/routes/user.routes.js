@@ -107,6 +107,11 @@ router.post('/redeem-code', async (req, res) => {
   }
 
   try {
+    // Ensure the plan column exists (safe to run multiple times)
+    await query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT 'free'
+    `);
+    
     await query(
       "UPDATE users SET plan = 'legend' WHERE id = $1",
       [req.user.id]
@@ -114,7 +119,7 @@ router.post('/redeem-code', async (req, res) => {
     res.json({ success: true, plan: 'legend', message: '🎉 You are now a Legend! Enjoy infinite AI.' });
   } catch (err) {
     console.error('Redeem code error:', err);
-    res.status(500).json({ error: 'Failed to redeem code' });
+    res.status(500).json({ error: 'Failed to redeem code: ' + err.message });
   }
 });
 
