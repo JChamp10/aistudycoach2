@@ -104,7 +104,7 @@ router.get('/usage', async (req, res) => {
     
     const { plan, ai_calls_today, last_ai_call_date, username } = result.rows[0];
     const FREE_AI_LIMIT = parseInt(process.env.FREE_AI_LIMIT) || 10;
-    const isUnlimited = plan === 'pro' || plan === 'legend' || username === 'jchamp101';
+    const isUnlimited = plan === 'pro' || plan === 'legend' || (username === 'jchamp101' && plan !== 'free');
     
     const today = new Date().toISOString().split('T')[0];
     const lastCallDate = last_ai_call_date ? last_ai_call_date.toISOString().split('T')[0] : null;

@@ -24,8 +24,8 @@ const checkAILimits = async (req, res, next) => {
 
     const { username, plan, ai_calls_today, last_ai_call_date } = result.rows[0];
 
-    // Owner account always bypasses
-    if (username === 'jchamp101') {
+    // Owner account always bypasses unless they explicitly set themselves to 'free' for testing
+    if (username === 'jchamp101' && plan !== 'free') {
       return next();
     }
 
