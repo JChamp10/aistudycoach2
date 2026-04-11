@@ -48,19 +48,27 @@
 
 html.dark {
   --bg-primary: #111827;
-  --bg-secondary: #1f2937;
-  --bg-muted: #374151;
-  --bg-card: #1f2937;
-  --bg-elevated: #374151;
+  --bg-secondary: #0f172a;
+  --bg-muted: #1e293b;
+  --bg-card: #1e293b;
+  --bg-elevated: #334155;
 
-  --border-primary: #4b5563;
+  --border-primary: #334155;
   --border-brand: rgba(88,204,2,0.3);
 
-  --text-primary: #f9fafb;
-  --text-secondary: #e5e7eb;
-  --text-muted: #9ca3af;
-  --text-light: #6b7280;
-  --text-faint: #4b5563;
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+  --text-faint: #475569;
+
+  --input-bg: #0f172a;
+  --gradient-card: linear-gradient(135deg, #1e293b, #0f172a);
+  --gradient-sidebar: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  
+  --scrollbar-track: #0f172a;
+  --scrollbar-thumb: #334155;
+  --noise-opacity: 0.015;
 }
 
 @layer base {

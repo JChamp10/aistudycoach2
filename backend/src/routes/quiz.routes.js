@@ -34,7 +34,11 @@ router.post('/generate', async (req, res) => {
     const questions = await aiService.generateQuizQuestions(topic, difficulty, count || 5);
     const saved = [];
     for (const q of questions) {
-      const correctAnswer = q.correct || q.correct_answer || q.answer || '';
+      let correctAnswer = q.correct || q.correct_answer || q.answer || '';
+      if (['A', 'B', 'C', 'D'].includes(correctAnswer) && Array.isArray(q.options)) {
+        const index = correctAnswer.charCodeAt(0) - 65;
+        if (q.options[index]) correctAnswer = q.options[index];
+      }
       const result = await query(`
         INSERT INTO quiz_questions (subject_id, deck_id, question, options, correct_answer, explanation, difficulty)
         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *
@@ -60,7 +64,11 @@ router.post('/generate-pdf', upload.single('pdf'), async (req, res) => {
     const questions = await aiService.generateQuizQuestions(`Notes: ${text}`, difficulty, parseInt(count) || 5);
     const saved = [];
     for (const q of questions) {
-      const correctAnswer = q.correct || q.correct_answer || q.answer || '';
+      let correctAnswer = q.correct || q.correct_answer || q.answer || '';
+      if (['A', 'B', 'C', 'D'].includes(correctAnswer) && Array.isArray(q.options)) {
+        const index = correctAnswer.charCodeAt(0) - 65;
+        if (q.options[index]) correctAnswer = q.options[index];
+      }
       const result = await query(`
         INSERT INTO quiz_questions (subject_id, deck_id, question, options, correct_answer, explanation, difficulty)
         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *

@@ -180,7 +180,7 @@ export function PhoenixCompanion({ level, xp }: { level: number; xp: number }) {
       <div className="w-8 h-8 animate-float flex-shrink-0">
         <Phoenix level={level} />
       </div>
-      <div className="text-xs text-ink-muted italic">{msg}</div>
+      <div className="text-xs italic" style={{ color: 'var(--text-muted)' }}>{msg}</div>
     </div>
   );
 }
@@ -263,8 +263,8 @@ export default function Sidebar() {
           <Phoenix level={level?.level || 1} />
         </div>
         <div>
-          <div className="font-bold text-base tracking-tight text-ink">StudyCoach</div>
-          <div className="text-xs text-ink-muted">
+          <div className="font-bold text-base tracking-tight" style={{ color: 'var(--text-primary)' }}>StudyCoach</div>
+          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
             {level ? `Lvl ${level.level} · ${level.level <= 3 ? '🥚 Hatching' : level.level <= 8 ? '🐣 Growing' : level.level <= 15 ? '🐦 Soaring' : '🔥 Phoenix'}` : 'Welcome!'}
           </div>
         </div>
@@ -351,8 +351,8 @@ export default function Sidebar() {
               {user.username?.[0]?.toUpperCase() || '?'}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold truncate text-ink">{user.username}</div>
-              <div className="text-xs text-ink-muted truncate">{user.region || 'Global'}</div>
+              <div className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{user.username}</div>
+              <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user.region || 'Global'}</div>
             </div>
             <button onClick={logout}
               className="text-ink-faint hover:text-red-500 transition-colors p-1 rounded-lg"
