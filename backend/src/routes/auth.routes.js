@@ -22,7 +22,7 @@ router.post('/register', [
 
     const password_hash = await bcrypt.hash(password, 12);
     const result = await query(
-      'INSERT INTO users (username, email, password_hash, region) VALUES ($1, $2, $3, $4) RETURNING id, username, email, xp, streak, region, created_at',
+      'INSERT INTO users (username, email, password_hash, region) VALUES ($1, $2, $3, $4) RETURNING id, username, email, xp, streak, region, plan, created_at',
       [username, email, password_hash, region || 'Global']
     );
 

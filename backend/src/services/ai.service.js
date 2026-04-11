@@ -81,8 +81,12 @@ async function explainHomework(question, subject, conversationHistory) {
 }
 
 async function generateFlashcardsFromNotes(notes, count = 10) {
+  const countPrompt = count > 0 
+    ? `Generate exactly ${count} flashcards.` 
+    : "Generate as many high-quality flashcards as you think are necessary to thoroughly cover the material (aim for a balance between detail and brevity, max 30 cards).";
+
   const content = await groq([
-    { role: 'system', content: `You are a flashcard generator. Respond ONLY with a valid JSON array. No markdown, no extra text. Format: [{"question": "string", "answer": "string"}]. Generate exactly ${count} flashcards.` },
+    { role: 'system', content: `You are a flashcard generator. Respond ONLY with a valid JSON array. No markdown, no extra text. Format: [{"question": "string", "answer": "string"}]. ${countPrompt}` },
     { role: 'user', content: `Notes: ${notes}` }
   ]);
   const parsed = parseJSON(content);

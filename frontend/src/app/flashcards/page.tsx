@@ -609,6 +609,7 @@ export default function FlashcardsPage() {
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [pdfProgress, setPdfProgress] = useState('');
   const [pdfCards, setPdfCards] = useState<Card[]>([]);
+  const [genCount, setGenCount] = useState(0); // 0 = Auto
   const pdfRef = useRef<HTMLInputElement>(null);
 
   // Study
@@ -811,7 +812,7 @@ export default function FlashcardsPage() {
     setGenerating(true);
     setGeneratedCards([]);
     try {
-      const res = await flashcardApi.generateFromNotes({ deck_id: selectedDeck.id, notes: genNotes, count: 10 });
+      const res = await flashcardApi.generateFromNotes({ deck_id: selectedDeck.id, notes: genNotes, count: genCount });
       setGeneratedCards(res.data.cards || []);
       toast.success(`Generated ${res.data.generated} cards!`);
       setGenNotes('');
@@ -843,7 +844,7 @@ export default function FlashcardsPage() {
       const formData = new FormData();
       formData.append('pdf', pdfFile);
       formData.append('deck_id', selectedDeck.id);
-      formData.append('count', '10');
+      formData.append('count', String(genCount));
       const res = await flashcardApi.generateFromPdf(formData);
       setPdfProgress('');
       setPdfCards(res.data.cards || []);
@@ -1245,14 +1246,29 @@ export default function FlashcardsPage() {
                 <Sparkles className="w-5 h-5 text-brand-400" /> Generate from Notes
               </h2>
               <textarea value={genNotes} onChange={e => setGenNotes(e.target.value)}
-                placeholder="Paste your notes and AI will create 10 flashcards..."
+                placeholder="Paste your notes and AI will create flashcards..."
                 className="input min-h-[100px] resize-none" />
-              <button onClick={generateFromNotes} disabled={generating || !genNotes.trim()}
-                className="btn-primary flex items-center gap-2 disabled:opacity-50">
-                {generating
-                  ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Generating...</>
-                  : <><Sparkles className="w-4 h-4" /> Generate 10 Cards</>}
-              </button>
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Number of cards</span>
+                  <div className="flex gap-1 p-1 bg-surface-muted rounded-xl w-fit border border-surface-border">
+                    {[5, 10, 20, 0].map(c => (
+                      <button key={c} onClick={() => setGenCount(c)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${genCount === c ? 'bg-brand-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}>
+                        {c === 0 ? 'Auto ✨' : c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={generateFromNotes} disabled={generating || !genNotes.trim()}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-50 h-10 px-6">
+                  {generating
+                    ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Generating...</>
+                    : <><Sparkles className="w-4 h-4" /> Generate {genCount === 0 ? 'Auto' : genCount} Cards</>}
+                </button>
+              </div>
               <AnimatePresence>
                 {generatedCards.length > 0 && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -1272,7 +1288,7 @@ export default function FlashcardsPage() {
               <h2 className="font-bold flex items-center gap-2">
                 <Upload className="w-5 h-5 text-blue-400" /> Generate from PDF
               </h2>
-              <p className="text-sm text-slate-400">Upload a PDF and AI will extract 10 flashcards automatically.</p>
+              <p className="text-sm text-slate-400">Upload a PDF and AI will extract cards automatically.</p>
               <input ref={pdfRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfFile} />
               {pdfFile ? (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-sm">
@@ -1301,12 +1317,26 @@ export default function FlashcardsPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <button onClick={generateFromPdf} disabled={generatingPdf || !pdfFile}
-                className="w-full border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl py-2.5 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-all">
-                {generatingPdf
-                  ? <><div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin" /> Processing...</>
-                  : <><Sparkles className="w-4 h-4" /> Generate from PDF</>}
-              </button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Number of cards</span>
+                  <div className="flex gap-1 p-1 bg-surface-muted rounded-xl w-fit border border-surface-border">
+                    {[5, 10, 20, 0].map(c => (
+                      <button key={c} onClick={() => setGenCount(c)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${genCount === c ? 'bg-brand-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}>
+                        {c === 0 ? 'Auto ✨' : c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={generateFromPdf} disabled={generatingPdf || !pdfFile}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-50 h-10 px-6 transition-all">
+                  {generatingPdf
+                    ? <><div className="w-4 h-4 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin" /> Processing...</>
+                    : <><Sparkles className="w-4 h-4" /> Generate {genCount === 0 ? 'Auto' : genCount} Cards</>}
+                </button>
+              </div>
               <AnimatePresence>
                 {pdfCards.length > 0 && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}

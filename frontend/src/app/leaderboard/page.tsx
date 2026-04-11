@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Trophy, Zap, Flame, MapPin } from 'lucide-react';
+import { Trophy, Zap, Flame, MapPin, Crown } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { motion } from 'framer-motion';
 import { StaggerContainer, StaggerItem } from '@/components/layout/StaggerContainer';
@@ -43,8 +43,13 @@ function Podium({ entries, tab }: { entries: any[]; tab: string }) {
             style={{ minWidth: rankIdx === 0 ? 130 : 110 }}
           >
             {/* Avatar block */}
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center font-extrabold text-2xl mb-3 border-b-4 text-white ${metal.bg} ${metal.border} ${metal.glow}`}>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center font-extrabold text-2xl mb-3 border-b-4 text-white relative ${metal.bg} ${metal.border} ${metal.glow}`}>
               {entry.username?.[0]?.toUpperCase()}
+              {entry.plan === 'legend' && (
+                <div className="absolute -top-2 -right-2 bg-gradient-to-br from-amber-300 to-amber-500 rounded-full p-1 shadow-lg border-2 border-white">
+                  <Crown className="w-4 h-4 text-amber-900" />
+                </div>
+              )}
             </div>
 
             {/* Name */}
@@ -161,6 +166,11 @@ export default function LeaderboardPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-extrabold text-[15px] flex items-center gap-2 flex-wrap text-text-primary">
                           {entry.username}
+                          {entry.plan === 'legend' && (
+                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 text-amber-900 font-black uppercase tracking-tighter shadow-sm flex items-center gap-0.5">
+                              <Crown className="w-2.5 h-2.5" /> LEGEND
+                            </span>
+                          )}
                           {isMe && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-100 text-brand-600 font-bold uppercase tracking-wider">
                               You

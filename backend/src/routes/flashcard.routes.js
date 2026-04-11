@@ -198,8 +198,9 @@ router.delete('/:id', async (req, res) => {
 
 router.post('/generate', authenticate, aiLimiter, checkAILimits, async (req, res) => {
   const { notes, deck_id, count } = req.body;
+  const numCards = count !== undefined ? parseInt(count) : 10;
   try {
-    const generated = await aiService.generateFlashcardsFromNotes(notes, count || 10);
+    const generated = await aiService.generateFlashcardsFromNotes(notes, numCards);
     const insertedCards = [];
     for (const card of generated) {
       const result = await query(
@@ -222,7 +223,8 @@ router.post('/generate-pdf', authenticate, aiLimiter, checkAILimits, upload.sing
     const pdfData = await pdfParse(req.file.buffer);
     const text = pdfData.text.slice(0, 6000);
     if (!text.trim()) return res.status(400).json({ error: 'Could not extract text from PDF' });
-    const generated = await aiService.generateFlashcardsFromNotes(text, parseInt(count) || 10);
+    const numCards = count !== undefined ? parseInt(count) : 10;
+    const generated = await aiService.generateFlashcardsFromNotes(text, numCards);
     const insertedCards = [];
     for (const card of generated) {
       const result = await query(

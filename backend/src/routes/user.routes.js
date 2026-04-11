@@ -9,7 +9,7 @@ router.use(authenticate);
 router.get('/profile', async (req, res) => {
   try {
     const result = await query(`
-      SELECT u.id, u.username, u.email, u.xp, u.streak,
+      SELECT u.id, u.username, u.email, u.xp, u.streak, u.plan,
         u.avatar_url, u.bio, u.role, u.created_at, u.last_study_date,
         COUNT(DISTINCT ss.id) AS total_sessions,
         COALESCE(SUM(ss.duration_minutes), 0) AS total_study_minutes
@@ -46,7 +46,7 @@ router.put('/profile', async (req, res) => {
         avatar_url = COALESCE($3, avatar_url),
         updated_at = NOW()
       WHERE id = $4
-      RETURNING id, username, email, bio, avatar_url, xp, streak
+      RETURNING id, username, email, bio, avatar_url, xp, streak, plan
     `, [username, bio, avatar_url, req.user.id]);
     res.json({ user: result.rows[0] });
   } catch (err) {
