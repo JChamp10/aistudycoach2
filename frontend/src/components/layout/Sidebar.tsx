@@ -187,17 +187,15 @@ export function PhoenixCompanion({ level, xp }: { level: number; xp: number }) {
 
 // ─── AI Usage Widget ──────────────────────────────────────────────────────────
 function AiUsageWidget({ user }: { user: any }) {
-  const [usage, setUsage] = useState<any>(null);
-
-  useEffect(() => {
-    userApi.usage().then(r => setUsage(r.data)).catch(() => {});
-  }, []);
-
-  const isUnlimited = usage?.unlimited || user?.plan === 'legend' || user?.plan === 'pro';
-  const used = usage?.ai_calls_today ?? (user?.ai_calls_today || 0);
-  const limit = usage?.ai_limit ?? 10;
+  const { aiUsage } = useAuthStore();
+  
+  const isUnlimited = user?.plan === 'legend' || user?.plan === 'pro';
+  const used = aiUsage.used;
+  const limit = aiUsage.limit;
   const remaining = isUnlimited ? Infinity : Math.max(0, limit - used);
-  const pct = isUnlimited ? 0 : Math.min((used / limit) * 100, 100);
+  
+  // PCT is now percentage of REMAINING energy (starts at 100%, goes down to 0%)
+  const pct = isUnlimited ? 100 : Math.min((remaining / limit) * 100, 100);
 
   if (isUnlimited) {
     return (
@@ -233,7 +231,7 @@ function AiUsageWidget({ user }: { user: any }) {
           </div>
         </div>
         <div className="h-1.5 w-full rounded-full overflow-hidden mb-2" style={{ background: 'rgba(245, 158, 11, 0.2)' }}>
-          <div className="h-full rounded-full transition-all" style={{ background: pct >= 80 ? '#ef4444' : '#f59e0b', width: `${pct}%`, boxShadow: `0 0 8px ${pct >= 80 ? '#ef4444' : '#f59e0b'}` }} />
+          <div className="h-full rounded-full transition-all duration-500" style={{ background: pct <= 20 ? '#ef4444' : '#f59e0b', width: `${pct}%`, boxShadow: `0 0 8px ${pct <= 20 ? '#ef4444' : '#f59e0b'}` }} />
         </div>
         <button
           onClick={() => useAuthStore.getState().setShowUpgradeModal(true)}

@@ -11,13 +11,28 @@ api.interceptors.request.use(config => {
 });
 
 api.interceptors.response.use(
-  res => res,
+  res => {
+    // Sync AI usage from headers if present
+    const used = res.headers['x-ai-calls-used'];
+    const limit = res.headers['x-ai-calls-limit'];
+    if (used !== undefined && limit !== undefined) {
+      import('@/lib/store').then(({ useAuthStore }) => {
+        useAuthStore.getState().setUsage(parseInt(used as string), parseInt(limit as string));
+      });
+    }
+    return res;
+  },
   err => {
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('token');
       window.location.href = '/login';
     } else if (err.response?.status === 403 && err.response?.data?.error === 'REQUIRES_UPGRADE') {
       import('@/lib/store').then(({ useAuthStore }) => {
+        const used = err.response?.data?.ai_calls_today;
+        const limit = err.response?.data?.ai_limit;
+        if (used !== undefined && limit !== undefined) {
+          useAuthStore.getState().setUsage(used, limit);
+        }
         useAuthStore.getState().setShowUpgradeModal(true);
       });
     }

@@ -42,6 +42,8 @@ interface AuthState {
   addNote: (note: Omit<Note, 'id' | 'createdAt'>) => void;
   deleteNote: (id: string) => void;
   transmuteNote: (id: string, deckTitle: string) => Promise<void>;
+  aiUsage: { used: number; limit: number };
+  setUsage: (used: number, limit: number) => void;
   setNotes: (notes: Note[]) => void;
 }
 
@@ -52,6 +54,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   darkMode: false,
   showUpgradeModal: false,
+  aiUsage: { used: 0, limit: 10 },
   setShowUpgradeModal: (show) => set({ showUpgradeModal: show }),
 
   initTheme: () => {
@@ -169,6 +172,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       throw err;
     }
   },
+  setUsage: (used, limit) => set((state) => ({ 
+    aiUsage: { used, limit },
+    user: state.user ? { ...state.user, ai_calls_today: used } : null
+  })),
   setNotes: (notes) => set({ notes }),
   setUser: (user) => set({ user }),
 }));
