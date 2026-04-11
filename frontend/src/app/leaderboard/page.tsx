@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { Trophy, Zap, Flame, MapPin, Crown } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
@@ -53,9 +54,9 @@ function Podium({ entries, tab }: { entries: any[]; tab: string }) {
             </div>
 
             {/* Name */}
-            <div className={`text-sm font-extrabold text-center truncate max-w-[100px] ${isMe ? 'text-brand-500' : 'text-text-primary'}`}>
+            <Link href={`/profile/${entry.username}`} className={`text-sm font-extrabold text-center truncate max-w-[100px] hover:text-brand-500 transition-colors cursor-pointer ${isMe ? 'text-brand-500' : 'text-text-primary'}`}>
               {entry.username}
-            </div>
+            </Link>
 
             {/* XP */}
             <div className="flex items-center gap-1 mt-1 mb-2">
@@ -164,7 +165,7 @@ export default function LeaderboardPage() {
                         {entry.username?.[0]?.toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-extrabold text-[15px] flex items-center gap-2 flex-wrap text-text-primary">
+                        <Link href={`/profile/${entry.username}`} className="font-extrabold text-[15px] flex items-center gap-2 flex-wrap text-text-primary hover:text-brand-500 transition-colors cursor-pointer">
                           {entry.username}
                           {entry.plan === 'legend' && (
                             <span className="text-[9px] px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 text-amber-900 font-black uppercase tracking-tighter shadow-sm flex items-center gap-0.5">
@@ -176,7 +177,7 @@ export default function LeaderboardPage() {
                               You
                             </span>
                           )}
-                        </div>
+                        </Link>
                         <div className="text-[11px] font-bold flex items-center gap-3 mt-1 text-text-muted uppercase tracking-wider">
                           <span className="flex items-center gap-1 text-duo-yellow">
                             <Flame className="w-3 h-3 fill-duo-yellow" />

@@ -1,15 +1,36 @@
 const express = require('express');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
 const { query } = require('../db/pool');
 const { authenticate } = require('../middleware/auth.middleware');
 const { awardXP, updateStreak } = require('../services/gamification.service');
 const aiService = require('../services/ai.service');
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files allowed'));
+  },
+});
+
 const router = express.Router();
 router.use(authenticate);
 
 router.post('/generate', async (req, res) => {
-  const { topic, difficulty, count, subject_id, deck_id } = req.body;
+  let { topic, difficulty, count, subject_id, deck_id } = req.body;
   try {
+    if (!topic && deck_id) {
+      const deckCards = await query(
+        'SELECT question, answer FROM flashcards WHERE deck_id = $1 AND user_id = $2',
+        [deck_id, req.user.id]
+      );
+      if (deckCards.rows.length === 0) {
+        return res.status(400).json({ error: 'This deck has no cards to generate a quiz from.' });
+      }
+      topic = `Flashcards Content: ${deckCards.rows.map(c => `Question: ${c.question}, Answer: ${c.answer}`).join('; ')}`;
+    }
     const questions = await aiService.generateQuizQuestions(topic, difficulty, count || 5);
     const saved = [];
     for (const q of questions) {
@@ -24,6 +45,32 @@ router.post('/generate', async (req, res) => {
   } catch (err) {
     console.error('Quiz generate error:', err);
     res.status(500).json({ error: 'Failed to generate quiz' });
+  }
+});
+
+router.post('/generate-pdf', upload.single('pdf'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No PDF uploaded' });
+  const { difficulty, count, subject_id, deck_id } = req.body;
+  
+  try {
+    const pdfData = await pdfParse(req.file.buffer);
+    const text = pdfData.text.slice(0, 6000); // 6k chars limit for AI context
+    if (!text.trim()) return res.status(400).json({ error: 'Could not extract text from PDF' });
+
+    const questions = await aiService.generateQuizQuestions(`Notes: ${text}`, difficulty, parseInt(count) || 5);
+    const saved = [];
+    for (const q of questions) {
+      const correctAnswer = q.correct || q.correct_answer || q.answer || '';
+      const result = await query(`
+        INSERT INTO quiz_questions (subject_id, deck_id, question, options, correct_answer, explanation, difficulty)
+        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *
+      `, [subject_id || null, deck_id || null, q.question, JSON.stringify(q.options), correctAnswer, q.explanation || '', difficulty]);
+      saved.push(result.rows[0]);
+    }
+    res.json({ questions: saved });
+  } catch (err) {
+    console.error('Quiz PDF generate error:', err);
+    res.status(500).json({ error: 'Failed to generate quiz from PDF' });
   }
 });
 

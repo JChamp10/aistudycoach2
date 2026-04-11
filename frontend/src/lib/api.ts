@@ -109,9 +109,21 @@ export const userApi = {
   adminAddXP: (amount: number) => api.post('/users/admin/add-xp', { amount }),
   adminSetStreak: (streak: number) => api.post('/users/admin/set-streak', { streak }),
   adminGetUsers: () => api.get('/users/admin/users'),
+  adminClearLeaderboard: () => api.post('/users/admin/clear-leaderboard'),
+  getPublicProfile: (username: string) => api.get(`/users/public/${username}`),
 };
 
 export const quizApi = {
   generate: (data: any) => api.post('/quiz/generate', data),
+  generateFromPdf: (formData: FormData) =>
+    api.post('/quiz/generate-pdf', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   submit: (data: any) => api.post('/quiz/submit', data),
+};
+
+export const socialApi = {
+  following: () => api.get('/social/following'),
+  follow: (id: string) => api.post(`/social/follow/${id}`),
+  unfollow: (id: string) => api.delete(`/social/unfollow/${id}`),
 };

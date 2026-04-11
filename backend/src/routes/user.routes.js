@@ -225,5 +225,42 @@ router.get('/admin/users', requireAdmin, async (req, res) => {
   }
 });
 
+// Clear Leaderboard (Reset all XP/Streaks)
+router.post('/admin/clear-leaderboard', requireAdmin, async (req, res) => {
+  try {
+    await query('UPDATE users SET xp = 0, streak = 0');
+    await query('TRUNCATE TABLE study_sessions RESTART IDENTITY CASCADE');
+    res.json({ success: true, message: '🏆 Leaderboards cleared! Everyone is back at 0.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public Profile View
+router.get('/public/:username', async (req, res) => {
+  const { username } = req.params;
+  try {
+    const result = await query(`
+      SELECT id, username, xp, streak, plan, avatar_url, bio, role, created_at, region
+      FROM users WHERE username = $1
+    `, [username]);
+
+    const user = result.rows[0];
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Achievements
+    const achResult = await query(`
+      SELECT a.*, ua.earned_at FROM achievements a
+      JOIN user_achievements ua ON ua.achievement_id = a.id
+      WHERE ua.user_id = $1 ORDER BY ua.earned_at DESC
+    `, [user.id]);
+
+    const levelInfo = getLevelFromXP(user.xp);
+    res.json({ user: { ...user, level: levelInfo, achievements: achResult.rows } });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch public profile' });
+  }
+});
+
 module.exports = router;
 

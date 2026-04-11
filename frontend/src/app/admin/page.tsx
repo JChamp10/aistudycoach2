@@ -168,6 +168,24 @@ export default function AdminPage() {
                 <div className="text-xs text-text-muted">Unlimited AI (Pro)</div>
               </div>
             </motion.button>
+
+            {/* Clear Leaderboard */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                if (confirm('⚠️ WARNING: This will reset ALL USERS to 0 XP and 0 Streak. This cannot be undone. Proceed?')) {
+                  doAction('clear-leaderboard', userApi.adminClearLeaderboard);
+                }
+              }}
+              disabled={actionLoading === 'clear-leaderboard'}
+              className="flex items-center gap-3 p-4 rounded-xl border-2 border-red-500/30 hover:border-red-500 hover:bg-red-50 transition-all text-left bg-red-50/10"
+            >
+              <RotateCcw className={`w-5 h-5 text-red-500 ${actionLoading === 'clear-leaderboard' ? 'animate-spin' : ''}`} />
+              <div>
+                <div className="font-bold text-sm text-red-600">Clear Leaderboards</div>
+                <div className="text-xs text-text-muted">Reset all users to 0</div>
+              </div>
+            </motion.button>
           </div>
         </div>
 

@@ -21,6 +21,7 @@ export default function QuizPage() {
   const [selectedOpt, setSelectedOpt] = useState<string | null>(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [quizResult, setQuizResult] = useState<any>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
 
   const { playSfx } = useSFX();
 
@@ -29,16 +30,25 @@ export default function QuizPage() {
   }, []);
 
   const generateQuiz = async () => {
-    if (!topic.trim() && !selectedDeckId) {
-      return toast.error('Enter a topic or select a deck!');
+    if (!topic.trim() && !selectedDeckId && !pdfFile) {
+      return toast.error('Enter a topic, select a deck, or upload a PDF!');
     }
     setPhase('generating');
     try {
-      const payload: any = { difficulty, count: 5 };
-      if (selectedDeckId) payload.deck_id = selectedDeckId;
-      else payload.topic = topic;
+      let res;
+      if (pdfFile) {
+        const formData = new FormData();
+        formData.append('pdf', pdfFile);
+        formData.append('difficulty', difficulty);
+        formData.append('count', '5');
+        res = await quizApi.generateFromPdf(formData);
+      } else {
+        const payload: any = { difficulty, count: 5 };
+        if (selectedDeckId) payload.deck_id = selectedDeckId;
+        else payload.topic = topic;
+        res = await quizApi.generate(payload);
+      }
       
-      const res = await quizApi.generate(payload);
       const q = res.data.questions || [];
       if (q.length === 0) {
         toast.error('No questions were generated');
@@ -127,13 +137,53 @@ export default function QuizPage() {
                   <select 
                     className="input" 
                     value={selectedDeckId} 
-                    onChange={e => { setSelectedDeckId(e.target.value); setTopic(''); }}
+                    onChange={e => { setSelectedDeckId(e.target.value); setTopic(''); setPdfFile(null); }}
                   >
                     <option value="">-- Choose a Deck --</option>
                     {decks.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
                   </select>
                 </>
               )}
+              
+              <div className="text-center text-text-muted font-bold text-xs my-3 uppercase">OR UPLOAD PDF</div>
+              <label 
+                className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${pdfFile ? 'border-brand-500 bg-brand-50' : 'border-surface-border hover:border-brand-400'}`}
+              >
+                <input 
+                  type="file" 
+                  accept=".pdf" 
+                  className="hidden" 
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setPdfFile(file);
+                      setTopic('');
+                      setSelectedDeckId('');
+                    }
+                  }}
+                />
+                {pdfFile ? (
+                   <>
+                     <div className="text-brand-600 font-bold text-center">
+                        📄 {pdfFile.name}
+                     </div>
+                     <button 
+                       onClick={(e) => { e.preventDefault(); setPdfFile(null); }}
+                       className="text-xs text-text-muted hover:text-red-500 mt-2 font-bold underline"
+                     >
+                       Remove
+                     </button>
+                   </>
+                ) : (
+                   <>
+                     <div className="w-10 h-10 bg-surface-muted rounded-full flex items-center justify-center mb-2">
+                        <Zap className="w-5 h-5 text-text-muted" />
+                     </div>
+                     <div className="text-sm font-bold text-text-muted">Click to upload PDF</div>
+                     <div className="text-xs text-text-muted/60 mt-1">Up to 10MB</div>
+                   </>
+                )}
+              </label>
            </div>
 
            <div>

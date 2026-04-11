@@ -1,10 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { userApi } from '@/lib/api';
-import { Zap, Flame, Trophy, BookOpen, Gift, Crown, Sparkles } from 'lucide-react';
+import { Zap, Flame, Trophy, BookOpen, Gift, Crown, Sparkles, Users } from 'lucide-react';
 import { getLevelFromXP } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
+import { userApi, socialApi } from '@/lib/api';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,9 +20,15 @@ export default function ProfilePage() {
   const [redeeming, setRedeeming] = useState(false);
   const [redeemed, setRedeemed] = useState(false);
 
+  const [following, setFollowing] = useState<any[]>([]);
+
   useEffect(() => {
-    Promise.all([userApi.profile(), userApi.achievements()])
-      .then(([p, a]) => { setProfile(p.data); setAchievements(a.data.achievements); })
+    Promise.all([userApi.profile(), userApi.achievements(), socialApi.following()])
+      .then(([p, a, s]) => { 
+        setProfile(p.data); 
+        setAchievements(a.data.achievements);
+        setFollowing(s.data.following || []);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -178,6 +185,33 @@ export default function ProfilePage() {
                   <div className="text-xs text-slate-500 mt-0.5">{a.description}</div>
                   <div className="text-xs text-brand-400 mt-1">+{a.xp_reward} XP</div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ─── Following ────────────────────────────────────────────────── */}
+        <div className="card">
+          <h2 className="font-bold mb-4 flex items-center gap-2">
+            <Users className="w-5 h-5 text-duo-blue" /> Following ({following.length})
+          </h2>
+          {following.length === 0 ? (
+            <p className="text-slate-500 text-sm italic">You're not following anyone yet. Visit the leaderboard to find friends!</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {following.map(u => (
+                <Link 
+                  key={u.id} 
+                  href={`/profile/${u.username}`}
+                  className="flex items-center gap-2 p-2 rounded-xl bg-surface-muted hover:bg-surface-elevated transition-colors border border-surface-border group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center font-bold text-brand-500 text-xs">
+                    {u.avatar_url ? (
+                      <img src={u.avatar_url} alt={u.username} className="w-full h-full object-cover rounded-lg" />
+                    ) : u.username[0].toUpperCase()}
+                  </div>
+                  <span className="text-sm font-bold text-text-primary group-hover:text-brand-500 transition-colors">{u.username}</span>
+                </Link>
               ))}
             </div>
           )}
