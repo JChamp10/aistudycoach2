@@ -419,7 +419,7 @@ export default function HomeworkPage() {
                   <div className="flex-shrink-0 pb-3 pt-3 px-4 border-b-2 border-surface-border flex items-center gap-3">
                     <button onClick={() => setHistoryOpen(!historyOpen)}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 font-bold transition-all ${
-                        historyOpen ? 'bg-brand-50 border-brand-200 text-brand-600' : 'border-surface-border text-text-muted'
+                        historyOpen ? 'bg-brand-500/10 border-brand-500/30 text-brand-500' : 'border-surface-border text-text-muted'
                       }`}>
                       <Clock className="w-4 h-4" /> History
                     </button>
@@ -450,8 +450,8 @@ export default function HomeworkPage() {
                           </div>
                         )}
                         <div className={`max-w-[75%] rounded-2xl px-5 py-4 text-[15px] font-medium leading-relaxed border-2 border-b-4 ${
-                          msg.role === 'user' ? 'bg-brand-500 border-brand-600 text-white rounded-tr-sm' : 'bg-surface border-surface-border text-text-primary rounded-tl-sm'
-                        }`}>
+                          msg.role === 'user' ? 'bg-brand-500 border-brand-600 text-white rounded-tr-sm' : 'rounded-tl-sm'
+                        }`} style={msg.role === 'assistant' ? { background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' } : {}}>
                           {msg.role === 'assistant' && msg.isNew ? (
                             <TypewriterText text={msg.content} speed={15} onComplete={() => setMessages(prev => prev.map((m, idx) => idx === i ? { ...m, isNew: false } : m))} />
                           ) : (

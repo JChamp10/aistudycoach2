@@ -157,11 +157,11 @@ export default function LeaderboardPage() {
                 const xp = tab === 'weekly' ? entry.weekly_xp : entry.xp;
                 return (
                   <StaggerItem key={entry.id}>
-                    <div className={`card !p-4 flex items-center gap-4 ${isMe ? 'border-brand-400 bg-brand-50' : ''}`}>
+                    <div className={`card !p-4 flex items-center gap-4 ${isMe ? 'border-brand-400 bg-brand-500/10' : ''}`}>
                       <div className="w-10 text-center flex-shrink-0">
                         <span className="text-xl font-extrabold text-text-muted">#{entry.rank || i + 4}</span>
                       </div>
-                      <div className="w-12 h-12 rounded-full border-b-4 border-t-2 border-x-2 border-brand-500 bg-brand-100 flex items-center justify-center font-extrabold text-brand-600 flex-shrink-0 text-xl">
+                      <div className="w-12 h-12 rounded-full border-b-4 border-t-2 border-x-2 border-brand-500 bg-brand-500/10 flex items-center justify-center font-extrabold text-brand-600 dark:text-brand-400 flex-shrink-0 text-xl">
                         {entry.username?.[0]?.toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -173,7 +173,7 @@ export default function LeaderboardPage() {
                             </span>
                           )}
                           {isMe && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-100 text-brand-600 font-bold uppercase tracking-wider">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-600 dark:text-brand-400 font-bold uppercase tracking-wider">
                               You
                             </span>
                           )}

@@ -96,27 +96,27 @@ export function UpgradeModal() {
           </div>
 
           {/* Right Side: Features & Pricing */}
-          <div className="w-full md:w-7/12 p-6 md:p-10 flex flex-col bg-white dark:bg-[#0f1115] overflow-y-auto">
+          <div className="w-full md:w-7/12 p-6 md:p-10 flex flex-col overflow-y-auto" style={{ background: 'var(--bg-card)' }}>
             
             {/* Toggle */}
             <div className="flex justify-center mb-8 shrink-0">
-               <div className="bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl flex items-center shadow-inner relative">
-                 <button 
-                   onClick={() => setIsAnnual(false)}
-                   className={`relative z-10 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${!isAnnual ? 'text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                 >
+               <div className="p-1.5 rounded-2xl flex items-center shadow-inner relative" style={{ background: 'var(--bg-muted)' }}>
+                  <button 
+                    onClick={() => setIsAnnual(false)}
+                    className={`relative z-10 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${!isAnnual ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
+                  >
                    Monthly
                  </button>
-                 <button 
-                   onClick={() => setIsAnnual(true)}
-                   className={`relative z-10 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center ${isAnnual ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                 >
+                  <button 
+                    onClick={() => setIsAnnual(true)}
+                    className={`relative z-10 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center ${isAnnual ? 'text-white' : 'text-text-muted hover:text-text-primary'}`}
+                  >
                    Annually
                    <span className="ml-2 bg-amber-400 dark:bg-amber-500 text-amber-950 px-2 py-0.5 rounded-lg text-[10px] uppercase tracking-wider font-extrabold animate-pulse">Save 40%</span>
                  </button>
                  
-                 {/* Sliding Background Indicator */}
-                 <div className={`absolute top-1.5 bottom-1.5 w-[calc(50%-1.5px)] rounded-xl transition-all duration-300 shadow-sm ${isAnnual ? 'left-1/2 bg-gray-900 dark:bg-gray-700' : 'left-1.5 bg-white dark:bg-gray-700'}`} />
+                  {/* Sliding Background Indicator */}
+                  <div className={`absolute top-1.5 bottom-1.5 w-[calc(50%-1.5px)] rounded-xl transition-all duration-300 shadow-sm ${isAnnual ? 'left-1/2 bg-ink dark:bg-surface-elevated' : 'left-1.5 bg-surface-card shadow-sm'}`} />
                </div>
             </div>
 
@@ -128,20 +128,20 @@ export function UpgradeModal() {
                     <feat.icon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <h4 className="text-[14px] font-bold text-gray-900 dark:text-white mb-0.5">{feat.title}</h4>
-                    <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">{feat.desc}</p>
+                    <h4 className="text-[14px] font-bold text-text-primary mb-0.5">{feat.title}</h4>
+                    <p className="text-[13px] text-text-muted leading-relaxed">{feat.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
             <div className="mt-auto">
-              <div className="flex items-end justify-center gap-2 mb-4">
-                 <div className="text-4xl font-extrabold text-gray-900 dark:text-white">
-                   ${isAnnual ? '4.16' : '6.99'}
-                 </div>
-                 <div className="text-gray-500 dark:text-gray-400 pb-1 font-medium">/ month</div>
-              </div>
+                <div className="flex items-end justify-center gap-2 mb-4">
+                   <div className="text-4xl font-extrabold text-text-primary">
+                     ${isAnnual ? '4.16' : '6.99'}
+                   </div>
+                   <div className="text-text-muted pb-1 font-medium">/ month</div>
+                </div>
               {isAnnual && (
                 <div className="text-center text-sm text-green-600 dark:text-green-400 font-bold mb-4">
                   Billed $49.99 yearly. You save $33.89!

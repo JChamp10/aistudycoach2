@@ -89,14 +89,14 @@ export default function ProfilePage() {
                     </span>
                   )}
                 </div>
-                <p className="text-slate-400 text-sm">{profile.email}</p>
-                {level && <div className="badge bg-brand-500/20 text-brand-400 border-brand-500/30 mt-2">Level {level.level}</div>}
+                <p className="text-text-muted text-sm">{profile.email}</p>
+                {level && <div className="badge bg-brand-500/20 text-brand-500 dark:text-brand-400 border-brand-500/30 mt-2">Level {level.level}</div>}
               </div>
             </div>
 
             {level && (
               <div className="mt-6">
-                <div className="flex justify-between text-xs text-slate-500 mb-2">
+                <div className="flex justify-between text-xs text-text-muted mb-2">
                   <span>Level {level.level}</span>
                   <span>{profile.xp} / {level.nextLevelXP} XP</span>
                 </div>
@@ -114,7 +114,7 @@ export default function ProfilePage() {
                 <div key={s.label} className="bg-surface-muted rounded-xl p-3 text-center">
                   <s.icon className={`w-5 h-5 ${s.color} mx-auto mb-1`} />
                   <div className={`font-bold text-lg ${s.color}`}>{s.value}</div>
-                  <div className="text-xs text-slate-500">{s.label}</div>
+                  <div className="text-xs text-text-muted">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -133,8 +133,8 @@ export default function ProfilePage() {
               <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
                 <Crown className="w-6 h-6 text-amber-400 flex-shrink-0" />
                 <div>
-                  <div className="font-bold text-amber-400 text-sm">You're already a Legend!</div>
-                  <div className="text-xs text-slate-400">You have infinite AI usage.</div>
+                  <div className="font-bold text-amber-500 text-sm">You're already a Legend!</div>
+                  <div className="text-xs text-text-muted">You have infinite AI usage.</div>
                 </div>
               </div>
             ) : redeemed ? (
@@ -145,8 +145,8 @@ export default function ProfilePage() {
               >
                 <Sparkles className="w-6 h-6 text-green-400 flex-shrink-0" />
                 <div>
-                  <div className="font-bold text-green-400 text-sm">🎉 Legend Activated!</div>
-                  <div className="text-xs text-slate-400">You now have infinite AI usage across all features.</div>
+                  <div className="font-bold text-green-500 text-sm">🎉 Legend Activated!</div>
+                  <div className="text-xs text-text-muted">You now have infinite AI usage across all features.</div>
                 </div>
               </motion.div>
             ) : (
@@ -175,14 +175,14 @@ export default function ProfilePage() {
         <div className="card">
           <h2 className="font-bold mb-4 flex items-center gap-2"><Trophy className="w-5 h-5 text-amber-400" /> Achievements ({earnedAchievements.length})</h2>
           {earnedAchievements.length === 0 ? (
-            <p className="text-slate-500 text-sm">Start studying to earn achievements!</p>
+            <p className="text-text-muted text-sm">Start studying to earn achievements!</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {earnedAchievements.map(a => (
                 <div key={a.id} className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <div className="text-2xl mb-1">{a.icon}</div>
-                  <div className="text-xs font-semibold text-amber-400">{a.title}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{a.description}</div>
+                  <div className="text-xs font-semibold text-amber-500">{a.title}</div>
+                  <div className="text-xs text-text-muted mt-0.5">{a.description}</div>
                   <div className="text-xs text-brand-400 mt-1">+{a.xp_reward} XP</div>
                 </div>
               ))}
@@ -222,11 +222,11 @@ export default function ProfilePage() {
             <h2 className="font-bold mb-4 text-slate-400">Locked Achievements</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {pendingAchievements.map(a => (
-                <div key={a.id} className="p-3 rounded-xl bg-surface-muted border border-surface-border opacity-60">
+                <div key={a.id} className="p-3 rounded-xl bg-surface-muted border border-surface-border opacity-70">
                   <div className="text-2xl mb-1 grayscale">{a.icon}</div>
-                  <div className="text-xs font-semibold text-slate-400">{a.title}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{a.description}</div>
-                  <div className="text-xs text-slate-600 mt-1">+{a.xp_reward} XP</div>
+                  <div className="text-xs font-semibold text-text-light">{a.title}</div>
+                  <div className="text-xs text-text-muted mt-0.5">{a.description}</div>
+                  <div className="text-xs text-text-faint mt-1">+{a.xp_reward} XP</div>
                 </div>
               ))}
             </div>

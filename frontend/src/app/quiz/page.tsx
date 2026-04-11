@@ -147,7 +147,7 @@ export default function QuizPage() {
               
               <div className="text-center text-text-muted font-bold text-xs my-3 uppercase">OR UPLOAD PDF</div>
               <label 
-                className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${pdfFile ? 'border-brand-500 bg-brand-50' : 'border-surface-border hover:border-brand-400'}`}
+                className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${pdfFile ? 'border-brand-400 bg-brand-500/10' : 'border-surface-border hover:border-brand-400'}`}
               >
                 <input 
                   type="file" 
@@ -252,8 +252,8 @@ export default function QuizPage() {
                    ? "bg-duo-blue/10 border-duo-blue text-duo-blue"
                    : "border-surface-border text-text-primary hover:bg-surface-muted";
                } else {
-                 if (isCorrectAnswer) classes += "bg-brand-100 border-brand-500 text-brand-600";
-                 else if (isSelected) classes += "bg-red-50 border-duo-red text-duo-red";
+                 if (isCorrectAnswer) classes += "bg-brand-500/20 border-brand-500 text-brand-600 dark:text-brand-400";
+                 else if (isSelected) classes += "bg-red-500/10 border-duo-red text-duo-red";
                  else classes += "bg-surface border-surface-border opacity-50";
                }
 
@@ -293,7 +293,7 @@ export default function QuizPage() {
     return (
       <AppLayout>
         <div className="max-w-md mx-auto text-center pt-10 space-y-8 animate-bounce-pop">
-           <div className="w-32 h-32 mx-auto bg-brand-100 rounded-full border-4 border-brand-500 flex items-center justify-center relative overflow-hidden">
+           <div className="w-32 h-32 mx-auto bg-brand-500/10 rounded-full border-4 border-brand-500 flex items-center justify-center relative overflow-hidden">
              <Zap className="w-16 h-16 text-brand-500" />
            </div>
            
@@ -307,8 +307,8 @@ export default function QuizPage() {
                  <div className="text-3xl font-extrabold text-duo-blue">+{quizResult.xp?.xpGained || 0}</div>
                  <div className="text-sm font-bold text-text-muted uppercase">XP Earned</div>
               </div>
-              <div className="card border-brand-500 bg-brand-100 p-4 flex-1">
-                 <div className="text-3xl font-extrabold text-brand-600">{quizResult.correct}/{quizResult.total}</div>
+              <div className="card border-brand-500/50 bg-brand-500/10 p-4 flex-1">
+                 <div className="text-3xl font-extrabold text-brand-600 dark:text-brand-400">{quizResult.correct}/{quizResult.total}</div>
                  <div className="text-sm font-bold text-text-muted uppercase">Correct</div>
               </div>
            </div>

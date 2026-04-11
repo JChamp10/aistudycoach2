@@ -25,11 +25,11 @@ export default function BottomNav() {
     <nav
       className="md:hidden fixed bottom-0 left-0 w-full z-50"
       style={{
-        background: 'rgba(var(--bg-card-rgb, 255,252,249), 0.65)',
+        background: 'rgba(var(--bg-card-rgb), 0.75)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        borderTop: '1px solid rgba(var(--border-rgb, 232,221,208), 0.5)',
-        boxShadow: '0 -4px 30px rgba(0,0,0,0.08)',
+        borderTop: '1px solid var(--border-primary)',
+        boxShadow: '0 -4px 30px rgba(0,0,0,0.2)',
       }}
     >
       <div className="flex items-center justify-around h-16 px-1 pb-safe relative">
