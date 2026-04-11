@@ -70,6 +70,32 @@ router.post('/ask-pdf', aiLimiter, checkAILimits, upload.single('document'), asy
   }
 });
 
+router.post('/ask-image', aiLimiter, checkAILimits, upload.single('image'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+  const question = req.body.question || 'Explain and solve the problem in this image.';
+  const subject = req.body.subject || 'General';
+  
+  try {
+    const base64 = req.file.buffer.toString('base64');
+    const result = await aiService.explainHomeworkFromImage(base64, question, subject);
+    
+    try {
+      await query(
+        'INSERT INTO homework_help (user_id, question, answer, subject) VALUES ($1, $2, $3, $4)',
+        [req.user.id, `[IMG] ${req.file.originalname}: ${question}`, result.explanation, subject]
+      );
+      await awardXP(req.user.id, 'homework_question');
+    } catch (e) {
+      console.log('homework image save skipped:', e.message);
+    }
+    
+    res.json({ answer: result.explanation, steps: result.steps || [] });
+  } catch (err) {
+    console.error('Homework ask-image error:', err);
+    res.status(500).json({ error: 'Failed to analyze image with AI' });
+  }
+});
+
 router.get('/history', async (req, res) => {
   try {
     const result = await query(

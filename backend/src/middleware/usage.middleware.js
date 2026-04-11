@@ -26,11 +26,15 @@ const checkAILimits = async (req, res, next) => {
 
     // Owner account always bypasses unless they explicitly set themselves to 'free' for testing
     if (username === 'jchamp101' && plan !== 'free') {
+      res.set('X-AI-Calls-Used', '0');
+      res.set('X-AI-Calls-Limit', 'Infinity');
       return next();
     }
 
     // Pro and Legend users bypass limit completely
     if (plan === 'pro' || plan === 'legend') {
+      res.set('X-AI-Calls-Used', '0');
+      res.set('X-AI-Calls-Limit', 'Infinity');
       return next();
     }
 
@@ -44,6 +48,8 @@ const checkAILimits = async (req, res, next) => {
         'UPDATE users SET ai_calls_today = 1, last_ai_call_date = CURRENT_DATE WHERE id = $1',
         [req.user.id]
       );
+      res.set('X-AI-Calls-Used', '1');
+      res.set('X-AI-Calls-Limit', String(FREE_AI_LIMIT));
       return next();
     }
 

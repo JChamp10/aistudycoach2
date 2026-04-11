@@ -10,6 +10,7 @@ app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
+  exposedHeaders: ['X-AI-Calls-Used', 'X-AI-Calls-Limit'],
 }));
 const { apiLimiter } = require('./middleware/rateLimit.middleware');
 app.use(express.json({ limit: '10mb' }));

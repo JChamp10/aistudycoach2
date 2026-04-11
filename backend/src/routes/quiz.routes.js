@@ -5,6 +5,8 @@ const { query } = require('../db/pool');
 const { authenticate } = require('../middleware/auth.middleware');
 const { awardXP, updateStreak } = require('../services/gamification.service');
 const aiService = require('../services/ai.service');
+const { aiLimiter } = require('../middleware/rateLimit.middleware');
+const { checkAILimits } = require('../middleware/usage.middleware');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -18,7 +20,7 @@ const upload = multer({
 const router = express.Router();
 router.use(authenticate);
 
-router.post('/generate', async (req, res) => {
+router.post('/generate', aiLimiter, checkAILimits, async (req, res) => {
   let { topic, difficulty, count, subject_id, deck_id } = req.body;
   try {
     if (!topic && deck_id) {
@@ -52,7 +54,7 @@ router.post('/generate', async (req, res) => {
   }
 });
 
-router.post('/generate-pdf', upload.single('pdf'), async (req, res) => {
+router.post('/generate-pdf', aiLimiter, checkAILimits, upload.single('pdf'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No PDF uploaded' });
   const { difficulty, count, subject_id, deck_id } = req.body;
   

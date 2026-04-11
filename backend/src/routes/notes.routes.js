@@ -4,6 +4,8 @@ const { authenticate } = require('../middleware/auth.middleware');
 const { awardXP } = require('../services/gamification.service');
 const aiService = require('../services/ai.service');
 const multer = require('multer');
+const { aiLimiter } = require('../middleware/rateLimit.middleware');
+const { checkAILimits } = require('../middleware/usage.middleware');
 
 const router = express.Router();
 router.use(authenticate);
@@ -47,7 +49,7 @@ router.post('/', async (req, res) => {
 });
 
 // ─── POST AI Compose — generate note from topic using Groq ────────────────
-router.post('/ai-compose', async (req, res) => {
+router.post('/ai-compose', aiLimiter, checkAILimits, async (req, res) => {
   const { topic } = req.body;
   if (!topic) return res.status(400).json({ error: 'Topic is required' });
 
@@ -79,7 +81,7 @@ Keep it concise but thorough — ideal for a student studying this topic.`;
 });
 
 // ─── POST Scan / OCR — extract text from image ────────────────────────────
-router.post('/scan', upload.single('file'), async (req, res) => {
+router.post('/scan', aiLimiter, checkAILimits, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   try {
@@ -108,7 +110,7 @@ If there are diagrams, describe them briefly in [brackets].`;
 });
 
 // ─── POST Lesson Plan — extract key info from PDF or image ────────────────
-router.post('/lesson', upload.single('file'), async (req, res) => {
+router.post('/lesson', aiLimiter, checkAILimits, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   try {
@@ -154,7 +156,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // ─── POST Transmute — convert note into flashcard deck ────────────────────
-router.post('/:id/transmute', async (req, res) => {
+router.post('/:id/transmute', aiLimiter, checkAILimits, async (req, res) => {
   const { deckTitle } = req.body;
   try {
     const noteResult = await query(
