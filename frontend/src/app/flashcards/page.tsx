@@ -200,7 +200,11 @@ function HardQuiz({ cards, onDone }: { cards: Card[]; onDone: () => void }) {
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [options] = useState(() => cards.map(card => {
-    const wrong = cards.filter(c => c.id !== card.id).sort(() => Math.random() - 0.5).slice(0, 3).map(c => c.answer);
+    // Get unique answers from other cards that aren't the same as this answer
+    const otherAnswers = Array.from(new Set(
+      cards.filter(c => c.id !== card.id && c.answer !== card.answer).map(c => c.answer)
+    ));
+    const wrong = otherAnswers.sort(() => Math.random() - 0.5).slice(0, 3);
     return [...wrong, card.answer].sort(() => Math.random() - 0.5);
   }));
 
@@ -752,7 +756,13 @@ export default function FlashcardsPage() {
     const card = swipeStack[swipeStack.length - 1];
     const difficulty = dir === 'right' ? 'easy' : 'hard';
     if (dir === 'right') setEasyCount(e => e + 1);
-    else { setHardCount(h => h + 1); setHardCards(prev => [...prev, card]); }
+    else { 
+      setHardCount(h => h + 1); 
+      setHardCards(prev => {
+        if (prev.find(c => c.id === card.id)) return prev;
+        return [...prev, card];
+      });
+    }
     try {
       const res = await flashcardApi.reviewCard(card.id, difficulty);
       setSessionXP(prev => prev + (res.data.xp?.xpGained || 0));
