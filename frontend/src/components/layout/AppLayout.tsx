@@ -290,7 +290,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="flex min-h-screen pb-16 md:pb-0" style={{ background: 'var(--bg-primary)', transition: 'background-color 0.3s ease' }}>
+    <div
+      className="flex min-h-screen pb-16 md:pb-0"
+      style={{
+        background:
+          'radial-gradient(circle at top, rgba(255, 208, 143, 0.18), transparent 28%), var(--bg-primary)',
+        transition: 'background-color 0.3s ease',
+      }}
+    >
       <Sidebar />
       <main className="flex-1 md:ml-64 p-4 md:p-8 relative z-10 w-full overflow-x-hidden">
         {children}

@@ -189,15 +189,16 @@ export function PhoenixCompanion({ level, xp }: { level: number; xp: number }) {
 function AiUsageWidget({ user }: { user: any }) {
   const { aiUsage } = useAuthStore();
   
-  const isUnlimited = user?.plan === 'legend' || user?.plan === 'pro';
+  const isLegend = user?.plan === 'legend';
+  const isPro = user?.plan === 'pro';
   const used = aiUsage.used;
   const limit = aiUsage.limit;
-  const remaining = isUnlimited ? Infinity : Math.max(0, limit - used);
+  const remaining = isLegend ? Infinity : Math.max(0, limit - used);
   
   // PCT is now percentage of REMAINING energy (starts at 100%, goes down to 0%)
-  const pct = isUnlimited ? 100 : Math.min((remaining / limit) * 100, 100);
+  const pct = isLegend ? 100 : Math.min((remaining / limit) * 100, 100);
 
-  if (isUnlimited) {
+  if (isLegend) {
     return (
       <div className="relative rounded-xl p-3 shadow-md overflow-hidden" style={{ background: 'linear-gradient(to bottom right, var(--bg-card), var(--bg-surface))' }}>
         <div className="absolute inset-0 z-0 p-[2px] rounded-xl overflow-hidden">
@@ -233,13 +234,13 @@ function AiUsageWidget({ user }: { user: any }) {
         <div className="h-1.5 w-full rounded-full overflow-hidden mb-2" style={{ background: 'rgba(245, 158, 11, 0.2)' }}>
           <div className="h-full rounded-full transition-all duration-500" style={{ background: pct <= 20 ? '#ef4444' : '#f59e0b', width: `${pct}%`, boxShadow: `0 0 8px ${pct <= 20 ? '#ef4444' : '#f59e0b'}` }} />
         </div>
-        <button
-          onClick={() => useAuthStore.getState().setShowUpgradeModal(true)}
-          className="w-full py-1.5 text-white text-[11px] font-bold rounded-lg shadow-sm hover:-translate-y-0.5 transition-all duration-300"
+        <Link
+          href="/upgrade"
+          className="block w-full text-center py-1.5 text-white text-[11px] font-bold rounded-lg shadow-sm hover:-translate-y-0.5 transition-all duration-300"
           style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', textShadow: '0px 1px 2px rgba(0,0,0,0.2)' }}
         >
-          Become a Legend
-        </button>
+          {isPro ? 'Upgrade to Legend' : 'Become a Legend'}
+        </Link>
       </div>
     </div>
   );
@@ -308,13 +309,13 @@ export default function Sidebar() {
           {/* Dark Mode Toggle */}
           <button
             onClick={() => useAuthStore.getState().toggleDarkMode()}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all border border-transparent hover:border-purple-500/30"
-            style={{ background: 'var(--bg-muted)' }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all border border-transparent"
+            style={{ background: 'var(--bg-muted)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)' }}
           >
             {useAuthStore.getState().darkMode ? (
               <Sun className="w-4 h-4 text-amber-400" />
             ) : (
-              <Moon className="w-4 h-4 text-purple-400" />
+              <Moon className="w-4 h-4" style={{ color: 'var(--brand-500)' }} />
             )}
             <span style={{ color: 'var(--text-muted)' }}>
               {useAuthStore.getState().darkMode ? 'Light Mode' : 'Night Study'}

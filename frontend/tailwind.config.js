@@ -37,14 +37,14 @@ module.exports = {
           faint: 'var(--text-faint)',
         },
         duo: {
-          blue: '#1CB0F6',
-          blueShadow: '#1899D6',
-          yellow: '#FFC800',
-          yellowShadow: '#D4A400',
+          blue: '#e58b2a',
+          blueShadow: '#bb6515',
+          yellow: '#f4b940',
+          yellowShadow: '#c88816',
           red: '#FF4B4B',
           redShadow: '#D80000',
-          gray: '#E5E5E5',
-          grayShadow: '#CECECE'
+          gray: '#ead7b9',
+          grayShadow: '#cdb18d'
         },
         ink: {
           DEFAULT: 'var(--text-primary)',
@@ -68,8 +68,8 @@ module.exports = {
         bouncePop:{ '0%': { transform: 'scale(0.8)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } }
       },
       backgroundImage: {
-        'hero-glow': 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255,107,26,0.15), transparent)',
-        'warm-glow': 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(255,180,100,0.2), transparent)',
+        'hero-glow': 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(220,123,30,0.22), transparent)',
+        'warm-glow': 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(255,205,124,0.25), transparent)',
       },
     },
   },

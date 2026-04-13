@@ -25,7 +25,7 @@ export default function DashboardPage() {
             particleCount: 150,
             spread: 90,
             origin: { y: 0.6 },
-            colors: ['#ff8c3a', '#ef4444', '#3b82f6', '#eab308']
+            colors: ['#dc7b1e', '#f4b940', '#ffcf7c', '#c65a1e']
           });
         });
       }
@@ -36,7 +36,7 @@ export default function DashboardPage() {
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-6 pt-4">
         {/* Top Stats Banner */}
-        <div className="flex items-center justify-between card bg-surface-card rounded-2xl p-4 border-b-4">
+        <div className="flex items-center justify-between card rounded-2xl p-4 border-b-4">
           <div className="flex items-center gap-3">
              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-surface-border">
                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}`} alt="avatar" />
@@ -51,7 +51,7 @@ export default function DashboardPage() {
                <Flame className="w-5 h-5 fill-current" />
                {user?.streak || 0}
             </div>
-            <div className="flex items-center gap-1.5 font-bold text-duo-blue">
+            <div className="flex items-center gap-1.5 font-bold text-brand-500">
                <Zap className="w-5 h-5 fill-current" />
                {user?.xp || 0}
             </div>
@@ -62,7 +62,7 @@ export default function DashboardPage() {
         <div className="text-center py-6">
            <h2 className="text-2xl font-bold mb-4">Daily Goal</h2>
            
-           <div className="card max-w-md mx-auto p-6 bg-surface-card border-b-4 flex flex-col items-center gap-4">
+           <div className="card max-w-md mx-auto p-6 border-b-4 flex flex-col items-center gap-4">
               <div className="w-24 h-24 rounded-full border-[6px] border-brand-500 flex items-center justify-center shadow-lg relative">
                  <div className="absolute inset-2 rounded-full border-4 border-brand-200"></div>
                  <Trophy className="w-10 h-10 text-brand-500" />
