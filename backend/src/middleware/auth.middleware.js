@@ -22,12 +22,13 @@ const authenticate = async (req, res, next) => {
         plan: 'free',
         ai_calls_today: 0,
         region: 'Global',
+        avatar_url: null,
       };
       return next();
     }
 
     const result = await query(
-      'SELECT id, username, email, xp, streak, role, plan, ai_calls_today, region FROM users WHERE id = $1',
+      'SELECT id, username, email, xp, streak, role, plan, ai_calls_today, region, avatar_url FROM users WHERE id = $1',
       [decoded.userId]
     );
 

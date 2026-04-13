@@ -283,6 +283,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('legend-mode', user?.plan === 'legend');
+    return () => {
+      document.body.classList.remove('legend-mode');
+    };
+  }, [user?.plan]);
+
   if (!isAuthenticated) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
       <div className="w-10 h-10 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/lib/store';
 import { Crown, Flame, Zap, UserPlus, UserMinus, ShieldCheck, Trophy, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import Avatar from '@/components/ui/Avatar';
 
 export default function PublicProfilePage() {
   const { username } = useParams();
@@ -89,13 +90,13 @@ export default function PublicProfilePage() {
           {/* Profile Basic Info */}
           <div className="px-6 pb-6 relative">
             <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-12 mb-6">
-              <div className="w-24 h-24 rounded-3xl bg-surface border-4 border-surface shadow-xl flex items-center justify-center overflow-hidden">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-4xl font-black text-brand-500 uppercase">{profile.username[0]}</div>
-                )}
-              </div>
+              <Avatar
+                username={profile.username}
+                avatarUrl={profile.avatar_url}
+                className="w-24 h-24 rounded-3xl bg-surface border-4 border-surface shadow-xl"
+                fallbackClassName="bg-surface text-brand-500"
+                textClassName="text-4xl font-black"
+              />
               
               <div className="flex-1">
                 <div className="flex items-center gap-2">

@@ -9,6 +9,7 @@ import { useAuthStore } from '@/lib/store';
 import { userApi } from '@/lib/api';
 import { getLevelFromXP } from '@/lib/utils';
 import { clsx } from 'clsx';
+import Avatar from '@/components/ui/Avatar';
 
 const navItems = [
   { href: '/',            icon: LayoutDashboard, label: 'Learn' },
@@ -345,10 +346,14 @@ export default function Sidebar() {
           )}
 
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-brand-600"
-              style={{ background: 'linear-gradient(135deg, rgba(255,107,26,0.15), rgba(255,181,112,0.15))', border: '1.5px solid rgba(255,107,26,0.3)' }}>
-              {user.username?.[0]?.toUpperCase() || '?'}
-            </div>
+            <Avatar
+              username={user.username}
+              avatarUrl={user.avatar_url}
+              className="w-8 h-8 rounded-full flex-shrink-0 border border-brand-500/30"
+              imageClassName="rounded-full"
+              fallbackClassName="bg-brand-500/15 text-brand-600"
+              textClassName="text-sm"
+            />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{user.username}</div>
               <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user.region || 'Global'}</div>

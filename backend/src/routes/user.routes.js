@@ -1,10 +1,56 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
 const { query } = require('../db/pool');
 const { authenticate } = require('../middleware/auth.middleware');
 const { getLevelFromXP } = require('../services/gamification.service');
 
 const router = express.Router();
+
+const uploadsDir = path.join(__dirname, '..', '..', 'uploads', 'avatars');
+fs.mkdirSync(uploadsDir, { recursive: true });
+
+router.get('/avatar-file/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename || '');
+  const fullPath = path.join(uploadsDir, filename);
+  return res.sendFile(fullPath, (err) => {
+    if (err) res.status(err.statusCode || 404).json({ error: 'Avatar not found' });
+  });
+});
+
 router.use(authenticate);
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase() || '.png';
+    const safeExt = ['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext) ? ext : '.png';
+    cb(null, `${req.user.id}-${Date.now()}${safeExt}`);
+  },
+});
+
+const uploadAvatar = multer({
+  storage,
+  limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype?.startsWith('image/')) {
+      return cb(new Error('Only image uploads are allowed'));
+    }
+    cb(null, true);
+  },
+});
+
+async function removeOldAvatar(avatarUrl) {
+  if (!avatarUrl || !avatarUrl.startsWith('/api/users/avatar-file/')) return;
+  const filename = path.basename(avatarUrl);
+  const fullPath = path.join(uploadsDir, filename);
+  try {
+    await fs.promises.unlink(fullPath);
+  } catch (err) {
+    if (err.code !== 'ENOENT') console.error('Failed to remove old avatar:', err);
+  }
+}
 
 router.get('/profile', async (req, res) => {
   try {
@@ -43,7 +89,7 @@ router.put('/profile', async (req, res) => {
       UPDATE users SET
         username = COALESCE($1, username),
         bio = COALESCE($2, bio),
-        avatar_url = COALESCE($3, avatar_url),
+        avatar_url = CASE WHEN $3::text IS NULL THEN avatar_url ELSE $3 END,
         updated_at = NOW()
       WHERE id = $4
       RETURNING id, username, email, bio, avatar_url, xp, streak, plan, ai_calls_today
@@ -51,6 +97,42 @@ router.put('/profile', async (req, res) => {
     res.json({ user: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+router.post('/avatar', uploadAvatar.single('avatar'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+  try {
+    const existing = await query('SELECT avatar_url FROM users WHERE id = $1', [req.user.id]);
+    const avatarUrl = `/api/users/avatar-file/${req.file.filename}`;
+    const result = await query(`
+      UPDATE users
+      SET avatar_url = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, username, email, bio, avatar_url, xp, streak, plan, ai_calls_today, region
+    `, [avatarUrl, req.user.id]);
+    await removeOldAvatar(existing.rows[0]?.avatar_url);
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to upload avatar' });
+  }
+});
+
+router.delete('/avatar', async (req, res) => {
+  try {
+    const existing = await query('SELECT avatar_url FROM users WHERE id = $1', [req.user.id]);
+    await query(`
+      UPDATE users
+      SET avatar_url = NULL, updated_at = NOW()
+      WHERE id = $1
+      RETURNING id, username, email, bio, avatar_url, xp, streak, plan, ai_calls_today, region
+    `, [req.user.id]);
+    await removeOldAvatar(existing.rows[0]?.avatar_url);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to remove avatar' });
   }
 });
 

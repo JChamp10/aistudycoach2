@@ -7,6 +7,7 @@ import { getLevelFromXP } from '@/lib/utils';
 import Link from 'next/link';
 import { BookOpen, HelpCircle, Zap, Flame, Trophy, ChevronRight, Clock, Target, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Avatar from '@/components/ui/Avatar';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -38,9 +39,12 @@ export default function DashboardPage() {
         {/* Top Stats Banner */}
         <div className="flex items-center justify-between card rounded-2xl p-4 border-b-4">
           <div className="flex items-center gap-3">
-             <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-surface-border">
-               <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'user'}`} alt="avatar" />
-             </div>
+             <Avatar
+               username={user?.username}
+               avatarUrl={user?.avatar_url}
+               className="w-12 h-12 rounded-full border-2 border-surface-border"
+               fallbackClassName="bg-brand-500/15 text-brand-500"
+             />
              <div>
                <div className="font-bold text-lg">{user?.username || 'Student'}</div>
                <div className="text-sm font-bold text-brand-500">Level {level?.level || 1}</div>

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/lib/store';
 import { motion } from 'framer-motion';
 import { StaggerContainer, StaggerItem } from '@/components/layout/StaggerContainer';
 import { getLevelFromXP } from '@/lib/utils';
+import Avatar from '@/components/ui/Avatar';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -44,8 +45,14 @@ function Podium({ entries, tab }: { entries: any[]; tab: string }) {
             style={{ minWidth: rankIdx === 0 ? 130 : 110 }}
           >
             {/* Avatar block */}
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center font-extrabold text-2xl mb-3 border-b-4 text-white relative ${metal.bg} ${metal.border} ${metal.glow}`}>
-              {entry.username?.[0]?.toUpperCase()}
+            <div className={`w-16 h-16 rounded-full mb-3 border-b-4 text-white relative overflow-hidden ${metal.bg} ${metal.border} ${metal.glow}`}>
+              <Avatar
+                username={entry.username}
+                avatarUrl={entry.avatar_url}
+                className="w-full h-full"
+                fallbackClassName="text-white"
+                textClassName="text-2xl"
+              />
               {entry.plan === 'legend' && (
                 <div className="absolute -top-2 -right-2 bg-gradient-to-br from-amber-300 to-amber-500 rounded-full p-1 shadow-lg border-2 border-white">
                   <Crown className="w-4 h-4 text-amber-900" />
@@ -161,9 +168,13 @@ export default function LeaderboardPage() {
                       <div className="w-10 text-center flex-shrink-0">
                         <span className="text-xl font-extrabold text-text-muted">#{entry.rank || i + 4}</span>
                       </div>
-                      <div className="w-12 h-12 rounded-full border-b-4 border-t-2 border-x-2 border-brand-500 bg-brand-500/10 flex items-center justify-center font-extrabold text-brand-600 dark:text-brand-400 flex-shrink-0 text-xl">
-                        {entry.username?.[0]?.toUpperCase()}
-                      </div>
+                      <Avatar
+                        username={entry.username}
+                        avatarUrl={entry.avatar_url}
+                        className="w-12 h-12 rounded-full border-b-4 border-t-2 border-x-2 border-brand-500 bg-brand-500/10 flex-shrink-0"
+                        fallbackClassName="bg-brand-500/10 text-brand-600 dark:text-brand-400"
+                        textClassName="text-xl"
+                      />
                       <div className="flex-1 min-w-0">
                         <Link href={`/profile/${entry.username}`} className="font-extrabold text-[15px] flex items-center gap-2 flex-wrap text-text-primary hover:text-brand-500 transition-colors cursor-pointer">
                           {entry.username}

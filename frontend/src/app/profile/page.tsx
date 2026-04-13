@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Zap, Flame, Trophy, BookOpen, Gift, Crown, Sparkles, Users } from 'lucide-react';
+import { Zap, Flame, Trophy, BookOpen, Gift, Crown, Sparkles, Users, Upload, Trash2 } from 'lucide-react';
 import { getLevelFromXP } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
-import { userApi, socialApi } from '@/lib/api';
+import api, { userApi, socialApi } from '@/lib/api';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import Avatar from '@/components/ui/Avatar';
 
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
@@ -21,6 +22,8 @@ export default function ProfilePage() {
   const [redeemed, setRedeemed] = useState(false);
 
   const [following, setFollowing] = useState<any[]>([]);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarRemoving, setAvatarRemoving] = useState(false);
 
   useEffect(() => {
     Promise.all([userApi.profile(), userApi.achievements(), socialApi.following()])
@@ -31,6 +34,48 @@ export default function ProfilePage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleAvatarUpload = async (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file');
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error('Avatar must be 3MB or smaller');
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const res = await api.post('/users/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setProfile((prev: any) => ({ ...prev, avatar_url: res.data.user.avatar_url }));
+      if (user) setUser({ ...user, avatar_url: res.data.user.avatar_url });
+      toast.success('Avatar updated');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to upload avatar');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setAvatarRemoving(true);
+    try {
+      await api.delete('/users/avatar');
+      setProfile((prev: any) => ({ ...prev, avatar_url: null }));
+      if (user) setUser({ ...user, avatar_url: undefined });
+      toast.success('Avatar removed');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to remove avatar');
+    } finally {
+      setAvatarRemoving(false);
+    }
+  };
 
   const handleRedeem = async () => {
     if (!promoCode.trim()) return;
@@ -73,12 +118,27 @@ export default function ProfilePage() {
         {profile && (
           <div className="card">
             <div className="flex items-center gap-5">
-              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-extrabold ${
-                isLegend 
-                  ? 'bg-gradient-to-br from-amber-400/30 to-amber-600/30 border-2 border-amber-400/60 text-amber-400' 
-                  : 'bg-brand-500/20 border-2 border-brand-500/40 text-brand-400'
-              }`}>
-                {isLegend ? <Crown className="w-10 h-10" /> : profile.username[0].toUpperCase()}
+              <div className="relative">
+                <Avatar
+                  username={profile.username}
+                  avatarUrl={profile.avatar_url}
+                  className={`w-20 h-20 rounded-2xl border-2 ${
+                    isLegend
+                      ? 'border-amber-400/60'
+                      : 'border-brand-500/40'
+                  }`}
+                  fallbackClassName={
+                    isLegend
+                      ? 'bg-gradient-to-br from-amber-400/30 to-amber-600/30 text-amber-400'
+                      : 'bg-brand-500/20 text-brand-400'
+                  }
+                  textClassName="text-3xl"
+                />
+                {isLegend && !profile.avatar_url && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <Crown className="w-10 h-10 text-amber-400" />
+                  </div>
+                )}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
@@ -91,6 +151,33 @@ export default function ProfilePage() {
                 </div>
                 <p className="text-text-muted text-sm">{profile.email}</p>
                 {level && <div className="badge bg-brand-500/20 text-brand-500 dark:text-brand-400 border-brand-500/30 mt-2">Level {level.level}</div>}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <label className="btn-ghost !px-3 !py-2 !rounded-xl text-[11px] cursor-pointer flex items-center gap-2">
+                    <Upload className="w-3.5 h-3.5" />
+                    {avatarUploading ? 'Uploading...' : 'Upload Avatar'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={avatarUploading}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        void handleAvatarUpload(file);
+                        e.currentTarget.value = '';
+                      }}
+                    />
+                  </label>
+                  {profile.avatar_url && (
+                    <button
+                      onClick={handleRemoveAvatar}
+                      disabled={avatarRemoving}
+                      className="btn-ghost !px-3 !py-2 !rounded-xl text-[11px] flex items-center gap-2"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {avatarRemoving ? 'Removing...' : 'Remove'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -205,11 +292,13 @@ export default function ProfilePage() {
                   href={`/profile/${u.username}`}
                   className="flex items-center gap-2 p-2 rounded-xl bg-surface-muted hover:bg-surface-elevated transition-colors border border-surface-border group"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center font-bold text-brand-500 text-xs">
-                    {u.avatar_url ? (
-                      <img src={u.avatar_url} alt={u.username} className="w-full h-full object-cover rounded-lg" />
-                    ) : u.username[0].toUpperCase()}
-                  </div>
+                  <Avatar
+                    username={u.username}
+                    avatarUrl={u.avatar_url}
+                    className="w-8 h-8 rounded-lg"
+                    fallbackClassName="bg-brand-500/20 text-brand-500"
+                    textClassName="text-xs"
+                  />
                   <span className="text-sm font-bold text-text-primary group-hover:text-brand-500 transition-colors">{u.username}</span>
                 </Link>
               ))}
