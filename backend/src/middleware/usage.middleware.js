@@ -23,22 +23,26 @@ const checkAILimits = async (req, res, next) => {
     }
 
     const { username, plan, ai_calls_today, last_ai_call_date } = result.rows[0];
+    const PRO_AI_LIMIT = 100;
 
-    // Owner account always bypasses unless they explicitly set themselves to 'free' for testing
+    // Owner account bypass
     if (username === 'jchamp101' && plan !== 'free') {
       res.set('X-AI-Calls-Used', '0');
       res.set('X-AI-Calls-Limit', 'Infinity');
       return next();
     }
 
-    // Pro and Legend users bypass limit completely
-    if (plan === 'pro' || plan === 'legend') {
+    // Legend users bypass limit completely
+    if (plan === 'legend') {
       res.set('X-AI-Calls-Used', '0');
       res.set('X-AI-Calls-Limit', 'Infinity');
       return next();
     }
 
-    // Free users logic
+    // Current Tier Limit
+    const currentLimit = (plan === 'pro') ? PRO_AI_LIMIT : FREE_AI_LIMIT;
+    
+    // Free & Pro users logic
     const today = new Date().toISOString().split('T')[0];
     const lastCallDate = last_ai_call_date ? last_ai_call_date.toISOString().split('T')[0] : null;
 
@@ -49,16 +53,16 @@ const checkAILimits = async (req, res, next) => {
         [req.user.id]
       );
       res.set('X-AI-Calls-Used', '1');
-      res.set('X-AI-Calls-Limit', String(FREE_AI_LIMIT));
+      res.set('X-AI-Calls-Limit', String(currentLimit));
       return next();
     }
 
-    if (ai_calls_today >= FREE_AI_LIMIT) {
+    if (ai_calls_today >= currentLimit) {
       return res.status(403).json({ 
         error: 'REQUIRES_UPGRADE', 
-        message: `Daily AI limit reached (${FREE_AI_LIMIT}/${FREE_AI_LIMIT} used). Upgrade to Legend for unlimited AI!`,
+        message: `Daily AI limit reached (${currentLimit}/${currentLimit} used). Upgrade to Legend for unlimited AI!`,
         ai_calls_today,
-        ai_limit: FREE_AI_LIMIT,
+        ai_limit: currentLimit,
       });
     }
 
@@ -70,7 +74,7 @@ const checkAILimits = async (req, res, next) => {
 
     // Attach usage info to response header so frontend can read it
     res.set('X-AI-Calls-Used', String((ai_calls_today || 0) + 1));
-    res.set('X-AI-Calls-Limit', String(FREE_AI_LIMIT));
+    res.set('X-AI-Calls-Limit', String(currentLimit));
 
     next();
   } catch (err) {

@@ -30,6 +30,7 @@ export default function QuizPage() {
   }, []);
 
   const generateQuiz = async () => {
+    if (phase === 'generating') return;
     if (!topic.trim() && !selectedDeckId && !pdfFile) {
       return toast.error('Enter a topic, select a deck, or upload a PDF!');
     }
@@ -111,98 +112,87 @@ export default function QuizPage() {
     }
   };
 
+  const [focusMode, setFocusMode] = useState(false);
+
+  useEffect(() => {
+    if (focusMode) document.body.classList.add('focus-mode');
+    else document.body.classList.remove('focus-mode');
+    return () => document.body.classList.remove('focus-mode');
+  }, [focusMode]);
+
   if (phase === 'setup') return (
     <AppLayout>
-      <div className="max-w-md mx-auto space-y-6 pt-4">
-        <div className="text-center">
-           <div className="w-16 h-16 bg-duo-yellow rounded-2xl border-b-4 border-duo-yellowShadow flex items-center justify-center mx-auto mb-4">
-             <Zap className="w-8 h-8 text-white" />
+      <div className="max-w-xl mx-auto space-y-8 pt-8 pb-20">
+        <header className="text-center">
+           <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/20 bg-brand-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-brand-500 mb-6">
+              <Zap className="w-3.5 h-3.5" /> High Performance Quiz
            </div>
-           <h1 className="text-3xl font-extrabold mb-2 text-text-primary">Quick Quiz</h1>
-           <p className="text-text-muted font-bold">Generate a 5-question AI quiz to test your memory.</p>
-        </div>
+           <h1 className="text-4xl font-black mb-2 tracking-tight">Challenge Your Memory</h1>
+           <p className="text-slate-500 font-medium">Generate an AI-powered quiz to solidify your recall.</p>
+        </header>
 
-        <div className="card space-y-6">
-           <div>
-              <label className="block text-sm font-bold mb-2">What do you want to practice?</label>
-              <input 
-                value={topic}
-                onChange={e => { setTopic(e.target.value); setSelectedDeckId(''); }}
-                placeholder="e.g. World War II, React Hooks"
-                className="input mb-3"
-              />
-              {decks.length > 0 && (
-                <>
-                  <div className="text-center text-text-muted font-bold text-xs mb-3">OR SELECT DECK</div>
-                  <select 
-                    className="input" 
-                    value={selectedDeckId} 
-                    onChange={e => { setSelectedDeckId(e.target.value); setTopic(''); setPdfFile(null); }}
-                  >
-                    <option value="">-- Choose a Deck --</option>
-                    {decks.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
-                  </select>
-                </>
-              )}
-              
-              <div className="text-center text-text-muted font-bold text-xs my-3 uppercase">OR UPLOAD PDF</div>
-              <label 
-                className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${pdfFile ? 'border-brand-400 bg-brand-500/10' : 'border-surface-border hover:border-brand-400'}`}
-              >
+        <div className="card !p-8 space-y-8">
+           <section>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-4">Quiz Source</label>
+              <div className="space-y-4">
                 <input 
-                  type="file" 
-                  accept=".pdf" 
-                  className="hidden" 
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setPdfFile(file);
-                      setTopic('');
-                      setSelectedDeckId('');
-                    }
-                  }}
+                  value={topic}
+                  onChange={e => { setTopic(e.target.value); setSelectedDeckId(''); }}
+                  placeholder="Enter any topic (e.g., Quantum Physics)..."
+                  className="input !text-lg !py-4"
                 />
-                {pdfFile ? (
-                   <>
-                     <div className="text-brand-600 font-bold text-center">
-                        📄 {pdfFile.name}
-                     </div>
-                     <button 
-                       onClick={(e) => { e.preventDefault(); setPdfFile(null); }}
-                       className="text-xs text-text-muted hover:text-red-500 mt-2 font-bold underline"
-                     >
-                       Remove
-                     </button>
-                   </>
-                ) : (
-                   <>
-                     <div className="w-10 h-10 bg-surface-muted rounded-full flex items-center justify-center mb-2">
-                        <Zap className="w-5 h-5 text-text-muted" />
-                     </div>
-                     <div className="text-sm font-bold text-text-muted">Click to upload PDF</div>
-                     <div className="text-xs text-text-muted/60 mt-1">Up to 10MB</div>
-                   </>
+                
+                {decks.length > 0 && (
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <BookOpen className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <select 
+                      className="input !pl-11" 
+                      value={selectedDeckId} 
+                      onChange={e => { setSelectedDeckId(e.target.value); setTopic(''); setPdfFile(null); }}
+                    >
+                      <option value="">-- Or Select a Deck --</option>
+                      {decks.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
+                    </select>
+                  </div>
                 )}
-              </label>
-           </div>
 
-           <div>
-              <label className="block text-sm font-bold mb-2">Difficulty</label>
-              <div className="grid grid-cols-3 gap-2">
+                <label className={`relative border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all ${pdfFile ? 'border-brand-500 bg-brand-500/5' : 'border-slate-700 hover:border-slate-500'}`}>
+                   <input type="file" accept=".pdf" className="hidden" onChange={e => {
+                     const file = e.target.files?.[0];
+                     if (file) { setPdfFile(file); setTopic(''); setSelectedDeckId(''); }
+                   }} />
+                   {pdfFile ? (
+                      <div className="flex items-center gap-2 text-brand-500 font-bold">
+                        <FileText className="w-5 h-5" /> {pdfFile.name}
+                      </div>
+                   ) : (
+                      <div className="text-slate-500 flex items-center gap-2 font-medium">
+                        <Upload className="w-4 h-4" /> Upload PDF for Quiz
+                      </div>
+                   )}
+                </label>
+              </div>
+           </section>
+
+           <section>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-4">Intensity</label>
+              <div className="grid grid-cols-3 gap-3">
                  {['easy', 'medium', 'hard'].map(level => (
                    <button 
                      key={level}
                      onClick={() => setDifficulty(level)}
-                     className={`py-2 rounded-xl border-2 font-bold uppercase text-xs transition-colors ${difficulty === level ? 'bg-duo-blue/10 border-duo-blue text-duo-blue shadow-[0_4px_0_var(--brand-glow)]' : 'border-surface-border text-text-muted'}`}
+                     className={`py-3 rounded-2xl border-2 font-black uppercase text-[10px] tracking-widest transition-all ${difficulty === level ? 'border-brand-500 bg-brand-500/10 text-brand-500' : 'border-slate-700 text-slate-500'}`}
                    >
                      {level}
                    </button>
                  ))}
               </div>
-           </div>
+           </section>
 
-           <button onClick={generateQuiz} className="btn-primary w-full py-4 text-lg">
-             START QUIZ
+           <button onClick={generateQuiz} className="btn-primary w-full !py-5 text-base flex items-center justify-center gap-2">
+             Begin Session <Play className="w-4 h-4 fill-current" />
            </button>
         </div>
       </div>
@@ -211,9 +201,10 @@ export default function QuizPage() {
 
   if (phase === 'generating') return (
     <AppLayout>
-      <div className="max-w-md mx-auto flex flex-col items-center justify-center h-[60vh]">
-         <Loader2 className="w-16 h-16 text-brand-500 animate-spin mb-6" />
-         <h2 className="text-2xl font-extrabold text-center">Loading your quiz...</h2>
+      <div className="max-w-md mx-auto flex flex-col items-center justify-center h-[70vh] text-center">
+         <div className="w-20 h-20 rounded-full border-4 border-brand-500/20 border-t-brand-500 animate-spin mb-8 shadow-glow" />
+         <h2 className="text-3xl font-black mb-2">Preparing the Ritual</h2>
+         <p className="text-slate-500 font-medium">AI is crafting unique challenges for your mind.</p>
       </div>
     </AppLayout>
   );
@@ -224,65 +215,97 @@ export default function QuizPage() {
     
     return (
       <AppLayout>
-        <div className="max-w-xl mx-auto space-y-6 pt-4">
-           {/* Progress */}
-           <div className="flex items-center gap-4">
-              <div className="xp-bar flex-1">
-                 <motion.div 
-                   className="xp-bar-fill"
-                   initial={{ width: `${(currentIdx / questions.length) * 100}%` }}
-                   animate={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
-                 />
-              </div>
-           </div>
+        <div className={clsx("min-h-screen flex flex-col transition-all duration-700", focusMode ? "bg-slate-950 pt-10" : "pt-8")}>
+          <div className="max-w-3xl mx-auto w-full px-6 flex flex-col items-center">
+             
+             {/* Quiz Header */}
+             <div className="w-full mb-16 flex items-center justify-between">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">
+                  Challenge {currentIdx + 1} / {questions.length}
+                </div>
+                <button 
+                  onClick={() => setFocusMode(!focusMode)}
+                  className={clsx(
+                    "flex items-center gap-2 px-4 py-1.5 rounded-full border transition-all text-[10px] font-bold uppercase tracking-[0.2em]",
+                    focusMode ? "border-brand-500/50 bg-brand-500/10 text-brand-400" : "border-slate-700 text-slate-400"
+                  )}
+                >
+                  <Brain className="w-3.5 h-3.5" />
+                  {focusMode ? "Focus Active" : "Focus Mode"}
+                </button>
+             </div>
 
-           <h2 className="text-2xl font-extrabold leading-tight text-text-primary px-2">
-             {q.question}
-           </h2>
+             {/* Progress bar */}
+             <div className="w-full mb-16">
+               <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-brand-500 shadow-[0_0_12px_rgba(255,107,26,0.4)]"
+                    initial={{ width: `${(currentIdx / questions.length) * 100}%` }}
+                    animate={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
+                  />
+               </div>
+             </div>
 
-           <div className="grid grid-cols-1 gap-3">
-             {opts.map((opt, i) => {
-               const isSelected = selectedOpt === opt;
-               const isCorrectAnswer = opt === q.correct_answer;
-               
-               let classes = "card !p-4 border-2 border-b-4 font-bold text-lg text-left transition-all ";
-               
-               if (!isRevealed) {
-                 classes += isSelected 
-                   ? "bg-duo-blue/10 border-duo-blue text-duo-blue"
-                   : "border-surface-border text-text-primary hover:bg-surface-muted";
-               } else {
-                 if (isCorrectAnswer) classes += "bg-brand-500/20 border-brand-500 text-brand-600 dark:text-brand-400";
-                 else if (isSelected) classes += "bg-red-500/10 border-duo-red text-duo-red";
-                 else classes += "bg-surface border-surface-border opacity-50";
-               }
+             <AnimatePresence mode="wait">
+               <motion.div 
+                 key={currentIdx}
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 exit={{ opacity: 0, y: -20 }}
+                 className="w-full"
+               >
+                 <h2 className="text-3xl font-black leading-tight mb-12 text-center max-w-2xl mx-auto">
+                   {q.question}
+                 </h2>
 
-               return (
-                 <button 
-                   key={i} 
-                   onClick={() => !isRevealed && setSelectedOpt(opt)}
-                   disabled={isRevealed}
-                   className={classes}
-                 >
-                   <div className="flex items-center justify-between">
-                     <span>{opt}</span>
-                     {isRevealed && isCorrectAnswer && <CheckCircle2 className="w-6 h-6 text-brand-500" />}
-                     {isRevealed && isSelected && !isCorrectAnswer && <XCircle className="w-6 h-6 text-duo-red" />}
-                   </div>
-                 </button>
-               );
-             })}
-           </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                   {opts.map((opt, i) => {
+                     const isSelected = selectedOpt === opt;
+                     const isCorrectAnswer = opt === q.correct_answer;
+                     
+                     let bgClass = "bg-slate-900 border-slate-800 hover:border-slate-600";
+                     if (isRevealed) {
+                       if (isCorrectAnswer) bgClass = "bg-brand-500/20 border-brand-500 text-brand-400";
+                       else if (isSelected) bgClass = "bg-red-500/20 border-red-500 text-red-400";
+                       else bgClass = "bg-slate-900/50 border-slate-800 opacity-40";
+                     } else if (isSelected) {
+                       bgClass = "border-brand-500 bg-brand-500/5 text-brand-500 shadow-glow";
+                     }
 
-           <div className="fixed bottom-0 left-0 right-0 p-4 bg-surface/90 backdrop-blur-sm border-t-2 border-surface-border md:static md:bg-transparent md:border-0 md:p-0">
-             <button 
-               onClick={submitAnswer} 
-               disabled={!selectedOpt || isRevealed}
-               className={`btn-primary w-full py-4 text-lg ${!selectedOpt ? 'opacity-50 cursor-not-allowed' : ''}`}
-             >
-               CHECK
-             </button>
-           </div>
+                     return (
+                       <button 
+                         key={i} 
+                         onClick={() => !isRevealed && setSelectedOpt(opt)}
+                         disabled={isRevealed}
+                         className={clsx(
+                           "p-6 rounded-2xl border-2 text-lg font-bold text-left transition-all duration-300",
+                           bgClass
+                         )}
+                       >
+                         <div className="flex items-center justify-between">
+                            <span>{opt}</span>
+                            {isRevealed && isCorrectAnswer && <CheckCircle2 className="w-6 h-6 text-brand-500" />}
+                         </div>
+                       </button>
+                     );
+                   })}
+                 </div>
+               </motion.div>
+             </AnimatePresence>
+
+             <div className="mt-16 w-full max-w-md">
+               <button 
+                 onClick={submitAnswer} 
+                 disabled={!selectedOpt || isRevealed}
+                 className={clsx(
+                   "btn-primary w-full !py-5 text-base font-black tracking-widest transition-all",
+                   (!selectedOpt || isRevealed) && "opacity-20 grayscale cursor-not-allowed"
+                 )}
+               >
+                 VERIFY RECALL
+               </button>
+             </div>
+          </div>
         </div>
       </AppLayout>
     );
@@ -292,29 +315,31 @@ export default function QuizPage() {
     const accuracy = Math.round((quizResult.correct / quizResult.total) * 100);
     return (
       <AppLayout>
-        <div className="max-w-md mx-auto text-center pt-10 space-y-8 animate-bounce-pop">
-           <div className="w-32 h-32 mx-auto bg-brand-500/10 rounded-full border-4 border-brand-500 flex items-center justify-center relative overflow-hidden">
-             <Zap className="w-16 h-16 text-brand-500" />
+        <div className="max-w-2xl mx-auto text-center pt-16 space-y-12 pb-20">
+           <div className="relative inline-block">
+              <div className="w-32 h-32 mx-auto bg-brand-500/10 rounded-full border-4 border-brand-500 flex items-center justify-center shadow-glow">
+                <Zap className="w-16 h-16 text-brand-500 fill-current" />
+              </div>
            </div>
            
            <div>
-             <h1 className="text-4xl font-extrabold text-brand-500 mb-2">Quiz Complete!</h1>
-             <p className="text-xl font-bold text-text-muted">{accuracy}% Accuracy</p>
+             <h1 className="text-5xl font-black mb-4 tracking-tight">Session Over</h1>
+             <p className="text-xl font-medium text-slate-500">{accuracy}% Accuracy achieved.</p>
            </div>
 
-           <div className="flex gap-4 justify-center py-6">
-              <div className="card border-duo-blue bg-duo-blue/10 p-4 flex-1">
-                 <div className="text-3xl font-extrabold text-duo-blue">+{quizResult.xp?.xpGained || 0}</div>
-                 <div className="text-sm font-bold text-text-muted uppercase">XP Earned</div>
+           <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
+              <div className="card !p-6 border-brand-500/30 bg-brand-500/5">
+                 <div className="text-4xl font-black text-brand-500 mb-1">+{quizResult.xp?.xpGained || 0}</div>
+                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">XP Manifested</div>
               </div>
-              <div className="card border-brand-500/50 bg-brand-500/10 p-4 flex-1">
-                 <div className="text-3xl font-extrabold text-brand-600 dark:text-brand-400">{quizResult.correct}/{quizResult.total}</div>
-                 <div className="text-sm font-bold text-text-muted uppercase">Correct</div>
+              <div className="card !p-6 border-slate-700 bg-slate-800/20">
+                 <div className="text-4xl font-black mb-1">{quizResult.correct}/{quizResult.total}</div>
+                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Recalled</div>
               </div>
            </div>
 
-           <button onClick={() => { setPhase('setup'); setTopic(''); setSelectedDeckId(''); }} className="btn-primary w-full py-4 text-lg">
-             CONTINUE
+           <button onClick={() => { setPhase('setup'); setTopic(''); setSelectedDeckId(''); }} className="btn-primary !px-12 !py-5 text-base">
+             CONTINUE THE JOURNEY →
            </button>
         </div>
       </AppLayout>

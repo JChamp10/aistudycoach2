@@ -248,7 +248,7 @@ export default function HomeworkPage() {
   };
 
   const sendMessage = async () => {
-    if (!input.trim() && !file) return;
+    if (loading || (!input.trim() && !file)) return;
     const userMsg: Message = {
       role: 'user',
       content: input || `Please help me with this PDF: ${file?.name}`,
@@ -475,12 +475,27 @@ export default function HomeworkPage() {
                   {/* Input area */}
                   <div className="flex-shrink-0 p-4 border-t-2 border-surface-border bg-surface-card rounded-b-2xl">
                     <div className="flex gap-2">
-                      <button onClick={() => fileRef.current?.click()} className="w-14 h-14 rounded-2xl border-2 border-surface-border flex items-center justify-center hover:border-duo-blue hover:text-duo-blue transition-colors">
+                      <button 
+                        onClick={() => !loading && fileRef.current?.click()} 
+                        disabled={loading}
+                        className="w-14 h-14 rounded-2xl border-2 border-surface-border flex items-center justify-center hover:border-duo-blue hover:text-duo-blue transition-colors disabled:opacity-50"
+                      >
                         <Upload className="w-6 h-6" />
                       </button>
                       <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden" onChange={handleFile} />
-                      <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()} placeholder="Type your question..." className="input flex-1 h-14" disabled={loading} />
-                      <button onClick={sendMessage} disabled={loading || (!input.trim() && !file)} className="btn-primary w-14 h-14 !p-0 flex items-center justify-center disabled:opacity-50">
+                      <input 
+                        value={input} 
+                        onChange={e => setInput(e.target.value)} 
+                        onKeyDown={e => e.key === 'Enter' && !e.shiftKey && !loading && sendMessage()} 
+                        placeholder="Type your question..." 
+                        className="input flex-1 h-14" 
+                        disabled={loading} 
+                      />
+                      <button 
+                        onClick={sendMessage} 
+                        disabled={loading || (!input.trim() && !file)} 
+                        className="btn-primary w-14 h-14 !p-0 flex items-center justify-center disabled:opacity-50"
+                      >
                         <Send className="w-6 h-6" />
                       </button>
                     </div>

@@ -20,14 +20,19 @@ const navItems = [
   { href: '/profile',     icon: User,            label: 'Profile' },
 ];
 
-// ─── Phoenix SVG (levels up based on XP) ─────────────────────────────────────
-function Phoenix({ level }: { level: number }) {
+type PhoenixMood = 'neutral' | 'tired' | 'celebrating' | 'focused';
+
+// ─── Phoenix SVG (levels up and reacts to moods) ──────────────────────────────
+function Phoenix({ level, mood = 'neutral' }: { level: number; mood?: PhoenixMood }) {
   const stage = level <= 3 ? 'egg' : level <= 8 ? 'chick' : level <= 15 ? 'bird' : 'phoenix';
+  const isTired = mood === 'tired';
+  const isCelebrating = mood === 'celebrating';
+  const isFocused = mood === 'focused';
 
   if (stage === 'egg') return (
     <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <ellipse cx="30" cy="34" rx="16" ry="20" fill="#ffb570" />
-      <ellipse cx="30" cy="34" rx="16" ry="20" fill="url(#eggGrad)" />
+      <ellipse cx="30" cy="34" rx={isTired ? 17 : 16} ry={isTired ? 18 : 20} fill="#ffb570" />
+      <ellipse cx="30" cy="34" rx={isTired ? 17 : 16} ry={isTired ? 18 : 20} fill="url(#eggGrad)" />
       <ellipse cx="23" cy="28" rx="4" ry="6" fill="#ff8c3a" opacity="0.4" />
       <ellipse cx="25" cy="22" rx="2" ry="1.5" fill="white" opacity="0.6" />
       <defs>
@@ -41,26 +46,28 @@ function Phoenix({ level }: { level: number }) {
 
   if (stage === 'chick') return (
     <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      {/* Body */}
-      <ellipse cx="30" cy="38" rx="14" ry="12" fill="#ffb570" />
-      {/* Head */}
-      <circle cx="30" cy="22" r="11" fill="#ffb570" />
-      {/* Eyes */}
-      <circle cx="25" cy="20" r="3" fill="white" />
-      <circle cx="35" cy="20" r="3" fill="white" />
-      <circle cx="25.8" cy="20.5" r="1.5" fill="#2d1f0e" />
-      <circle cx="35.8" cy="20.5" r="1.5" fill="#2d1f0e" />
-      <circle cx="26.3" cy="19.8" r="0.5" fill="white" />
-      <circle cx="36.3" cy="19.8" r="0.5" fill="white" />
-      {/* Beak */}
+      <ellipse cx="30" cy={isTired ? 40 : 38} rx="14" ry="12" fill="#ffb570" />
+      <circle cx="30" cy={isTired ? 24 : 22} r="11" fill="#ffb570" />
+      <circle cx="25" cy={isTired ? 22 : 20} r="3" fill="white" />
+      <circle cx="35" cy={isTired ? 22 : 20} r="3" fill="white" />
+      {isTired ? (
+        <>
+          <rect x="22" y="21" width="6" height="1.5" rx="0.5" fill="#2d1f0e" />
+          <rect x="32" y="21" width="6" height="1.5" rx="0.5" fill="#2d1f0e" />
+        </>
+      ) : (
+        <>
+          <circle cx="25.8" cy="20.5" r="1.5" fill={isCelebrating ? '#ff6b1a' : '#2d1f0e'} />
+          <circle cx="35.8" cy="20.5" r="1.5" fill={isCelebrating ? '#ff6b1a' : '#2d1f0e'} />
+          <circle cx="26.3" cy="19.8" r="0.5" fill="white" />
+          <circle cx="36.3" cy="19.8" r="0.5" fill="white" />
+        </>
+      )}
       <path d="M28 25 L32 25 L30 28 Z" fill="#ff6b1a" />
-      {/* Tiny wings */}
       <ellipse cx="16" cy="36" rx="5" ry="8" fill="#ff8c3a" transform="rotate(-20 16 36)" />
       <ellipse cx="44" cy="36" rx="5" ry="8" fill="#ff8c3a" transform="rotate(20 44 36)" />
-      {/* Feet */}
       <path d="M24 50 L22 54 M24 50 L26 54 M24 50 L24 54" stroke="#ff6b1a" strokeWidth="2" strokeLinecap="round" />
       <path d="M36 50 L34 54 M36 50 L38 54 M36 50 L36 54" stroke="#ff6b1a" strokeWidth="2" strokeLinecap="round" />
-      {/* Tuft */}
       <path d="M28 11 Q30 6 32 11" stroke="#ff6b1a" strokeWidth="2" fill="none" strokeLinecap="round" />
       <path d="M25 13 Q27 8 29 13" stroke="#ffb570" strokeWidth="2" fill="none" strokeLinecap="round" />
     </svg>
@@ -68,32 +75,34 @@ function Phoenix({ level }: { level: number }) {
 
   if (stage === 'bird') return (
     <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      {/* Tail feathers */}
       <path d="M30 45 Q20 55 14 58 Q18 50 22 46" fill="#e85500" />
       <path d="M30 45 Q30 58 28 62 Q30 54 32 46" fill="#ff6b1a" />
       <path d="M30 45 Q40 55 46 58 Q42 50 38 46" fill="#e85500" />
-      {/* Body */}
       <ellipse cx="30" cy="36" rx="13" ry="11" fill="#ff8c3a" />
       <ellipse cx="30" cy="36" rx="13" ry="11" fill="url(#bodyGrad)" />
-      {/* Wings */}
       <path d="M17 32 Q8 24 10 14 Q16 22 20 30" fill="#e85500" />
       <path d="M43 32 Q52 24 50 14 Q44 22 40 30" fill="#e85500" />
       <path d="M17 32 Q10 28 12 20 Q16 26 20 30" fill="#ff6b1a" />
       <path d="M43 32 Q50 28 48 20 Q44 26 40 30" fill="#ff6b1a" />
-      {/* Head */}
       <circle cx="30" cy="22" r="10" fill="#ffb570" />
       <circle cx="30" cy="22" r="10" fill="url(#headGrad)" />
-      {/* Crest */}
       <path d="M26 12 Q28 4 30 8 Q32 4 34 12" fill="#ff6b1a" />
       <path d="M28 13 Q30 7 32 13" fill="#ffb570" />
-      {/* Eyes */}
       <circle cx="25" cy="21" r="3.5" fill="white" />
       <circle cx="35" cy="21" r="3.5" fill="white" />
-      <circle cx="25.8" cy="21.5" r="2" fill="#2d1f0e" />
-      <circle cx="35.8" cy="21.5" r="2" fill="#2d1f0e" />
-      <circle cx="26.3" cy="20.8" r="0.7" fill="white" />
-      <circle cx="36.3" cy="20.8" r="0.7" fill="white" />
-      {/* Beak */}
+      {isTired ? (
+        <>
+          <rect x="22" y="20" width="6" height="1.5" rx="0.5" fill="#2d1f0e" />
+          <rect x="32" y="20" width="6" height="1.5" rx="0.5" fill="#2d1f0e" />
+        </>
+      ) : (
+        <>
+          <circle cx="25.8" cy="21.5" r="2" fill={isCelebrating ? '#ff6b1a' : '#2d1f0e'} />
+          <circle cx="35.8" cy="21.5" r="2" fill={isCelebrating ? '#ff6b1a' : '#2d1f0e'} />
+          <circle cx="26.3" cy="20.8" r="0.7" fill="white" />
+          <circle cx="36.3" cy="20.8" r="0.7" fill="white" />
+        </>
+      )}
       <path d="M27 26 L33 26 L30 30 Z" fill="#e85500" />
       <defs>
         <radialGradient id="bodyGrad" cx="40%" cy="35%">
@@ -108,50 +117,47 @@ function Phoenix({ level }: { level: number }) {
     </svg>
   );
 
-  // Full phoenix
   return (
     <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      {/* Flame aura */}
-      <ellipse cx="30" cy="42" rx="20" ry="8" fill="#ff6b1a" opacity="0.15" />
-      {/* Tail flames */}
+      <ellipse cx="30" cy="42" rx="20" ry="8" fill="#ff6b1a" opacity={isFocused ? 0.4 : 0.15} />
       <path d="M30 46 Q16 58 8 62 Q14 52 20 46" fill="#ff6b1a" opacity="0.8" />
       <path d="M30 46 Q28 62 26 66 Q30 56 34 46" fill="#ffb570" />
       <path d="M30 46 Q44 58 52 62 Q46 52 40 46" fill="#ff6b1a" opacity="0.8" />
       <path d="M30 46 Q18 54 12 56 Q18 48 24 46" fill="#e85500" opacity="0.6" />
       <path d="M30 46 Q42 54 48 56 Q42 48 36 46" fill="#e85500" opacity="0.6" />
-      {/* Body */}
       <ellipse cx="30" cy="35" rx="12" ry="12" fill="url(#phoenixBody)" />
-      {/* Wing left */}
       <path d="M18 30 Q4 18 6 6 Q12 18 20 28" fill="#e85500" />
       <path d="M18 30 Q6 22 8 12 Q14 22 20 28" fill="#ff6b1a" />
       <path d="M18 30 Q8 26 10 18 Q14 24 20 28" fill="#ffb570" opacity="0.7" />
-      {/* Wing right */}
       <path d="M42 30 Q56 18 54 6 Q48 18 40 28" fill="#e85500" />
       <path d="M42 30 Q54 22 52 12 Q46 22 40 28" fill="#ff6b1a" />
       <path d="M42 30 Q52 26 50 18 Q46 24 40 28" fill="#ffb570" opacity="0.7" />
-      {/* Head */}
       <circle cx="30" cy="20" r="11" fill="url(#phoenixHead)" />
-      {/* Crown flames */}
       <path d="M24 9 Q22 2 26 6 Q28 0 30 5 Q32 0 34 6 Q38 2 36 9" fill="#ff6b1a" />
       <path d="M26 10 Q25 4 28 7 Q30 3 32 7 Q35 4 34 10" fill="#ffb570" />
-      {/* Eyes — glowing */}
-      <circle cx="25" cy="19" r="4" fill="white" />
-      <circle cx="35" cy="19" r="4" fill="white" />
-      <circle cx="25.5" cy="19.5" r="2.5" fill="#ff6b1a" />
-      <circle cx="35.5" cy="19.5" r="2.5" fill="#ff6b1a" />
-      <circle cx="25.5" cy="19.5" r="1.2" fill="#2d1f0e" />
-      <circle cx="35.5" cy="19.5" r="1.2" fill="#2d1f0e" />
-      <circle cx="26" cy="18.8" r="0.5" fill="white" />
-      <circle cx="36" cy="18.8" r="0.5" fill="white" />
-      {/* Beak */}
+      {isTired ? (
+        <>
+          <ellipse cx="25" cy="20" rx="4" ry="1.5" fill="#2d1f0e" />
+          <ellipse cx="35" cy="20" rx="4" ry="1.5" fill="#2d1f0e" />
+        </>
+      ) : (
+        <>
+          <circle cx="25" cy="19" r="4" fill="white" />
+          <circle cx="35" cy="19" r="4" fill="white" />
+          <circle cx="25.5" cy="19.5" r="2.5" fill="#ff6b1a" />
+          <circle cx="35.5" cy="19.5" r="2.5" fill="#ff6b1a" />
+          <circle cx="25.5" cy="19.5" r="1.2" fill={isFocused ? '#ffffff' : '#2d1f0e'} />
+          <circle cx="35.5" cy="19.5" r="1.2" fill={isFocused ? '#ffffff' : '#2d1f0e'} />
+          <circle cx="26" cy="18.8" r="0.5" fill="white" />
+          <circle cx="36" cy="18.8" r="0.5" fill="white" />
+        </>
+      )}
       <path d="M27 25 L33 25 L30 29 Z" fill="#e85500" />
-      {/* Chest marking */}
       <ellipse cx="30" cy="36" rx="6" ry="7" fill="#ffb570" opacity="0.5" />
-      {/* Sparkles */}
-      <circle cx="10" cy="15" r="1.5" fill="#ffb570" opacity="0.8" />
-      <circle cx="50" cy="12" r="1" fill="#ff6b1a" opacity="0.8" />
-      <circle cx="8" cy="30" r="1" fill="#ffb570" opacity="0.6" />
-      <circle cx="52" cy="28" r="1.5" fill="#ff6b1a" opacity="0.6" />
+      <circle cx="10" cy="15" r="1.5" fill="#ffb570" opacity={isCelebrating ? 1 : 0.8} />
+      <circle cx="50" cy="12" r="1" fill="#ff6b1a" opacity={isCelebrating ? 1 : 0.8} />
+      <circle cx="8" cy="30" r="1" fill="#ffb570" opacity={isCelebrating ? 1 : 0.6} />
+      <circle cx="52" cy="28" r="1.5" fill="#ff6b1a" opacity={isCelebrating ? 1 : 0.6} />
       <defs>
         <radialGradient id="phoenixBody" cx="40%" cy="35%">
           <stop offset="0%" stopColor="#ffb570" />
@@ -167,21 +173,42 @@ function Phoenix({ level }: { level: number }) {
 }
 
 export function PhoenixCompanion({ level, xp }: { level: number; xp: number }) {
+  const [mood, setMood] = useState<PhoenixMood>('neutral');
   const stage = level <= 3 ? 'egg' : level <= 8 ? 'chick' : level <= 15 ? 'bird' : 'phoenix';
+  
+  useEffect(() => {
+    // Breakthrough celebration
+    setMood('celebrating');
+    const timer = setTimeout(() => setMood('neutral'), 8000);
+    return () => clearTimeout(timer);
+  }, [xp]);
+
+  const isTired = mood === 'tired';
+  const isCelebrating = mood === 'celebrating';
+  const isFocused = mood === 'focused';
+
   const messages: Record<string, string[]> = {
     egg: ['Keep studying!', 'I\'m almost hatched!', 'You can do it!'],
-    chick: ['Great job!', 'Keep it up!', 'Learning is fun!'],
-    bird: ['You\'re on fire!', 'Amazing streak!', 'Keep soaring!'],
-    phoenix: ['Legendary!', 'Unstoppable!', 'Pure brilliance!'],
+    chick: isCelebrating ? ['WE DID IT!', 'SO HAPPY!'] : ['Great job!', 'Keep it up!', 'Learning is fun!'],
+    bird: isFocused ? ['Let\'s crush this.', 'Deep focus mode active.'] : ['You\'re on fire!', 'Amazing streak!', 'Keep soaring!'],
+    phoenix: isTired ? ['*yawn*... a short break?', 'We studied a lot.'] : ['Legendary!', 'Unstoppable!', 'Pure brilliance!'],
   };
-  const msg = messages[stage][Math.floor(Date.now() / 10000) % messages[stage].length];
+  
+  const category = messages[stage] || messages.phoenix;
+  const msg = category[Math.floor(Date.now() / 10000) % category.length];
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-8 h-8 animate-float flex-shrink-0">
-        <Phoenix level={level} />
+    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => setMood('celebrating')}>
+      <div className={clsx("w-8 h-8 animate-float flex-shrink-0 transition-all duration-500", 
+        isTired && "opacity-60 scale-90",
+        isCelebrating && "scale-110 brightness-110",
+        isFocused && "drop-shadow-[0_0_8px_rgba(255,107,26,0.6)]"
+      )}>
+        <Phoenix level={level} mood={mood} />
       </div>
-      <div className="text-xs italic" style={{ color: 'var(--text-muted)' }}>{msg}</div>
+      <div className="text-xs italic transition-all" style={{ color: isCelebrating ? 'var(--brand-500)' : 'var(--text-muted)' }}>
+        {msg}
+      </div>
     </div>
   );
 }

@@ -28,6 +28,7 @@ app.use('/api/notes',       require('./routes/notes.routes'));
 app.use('/api/study',       require('./routes/study.routes'));
 app.use('/api/quiz',        require('./routes/quiz.routes'));
 app.use('/api/social',      require('./routes/social.routes'));
+app.use('/api/billing',     require('./routes/billing.routes'));
 
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 app.use((err, req, res, next) => {

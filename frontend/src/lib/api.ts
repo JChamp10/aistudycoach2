@@ -142,3 +142,8 @@ export const socialApi = {
   follow: (id: string) => api.post(`/social/follow/${id}`),
   unfollow: (id: string) => api.delete(`/social/unfollow/${id}`),
 };
+
+export const billingApi = {
+  getPlans: () => api.get('/billing/plans'),
+  checkout: (planId: string) => api.post('/billing/checkout', { planId }),
+};
