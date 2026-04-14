@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import { userApi, socialApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
-import { Crown, Flame, Zap, UserPlus, UserMinus, ShieldCheck, Trophy, Target } from 'lucide-react';
+import { Crown, Flame, Zap, UserPlus, UserMinus, ShieldCheck, Trophy, Target, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Avatar from '@/components/ui/Avatar';
