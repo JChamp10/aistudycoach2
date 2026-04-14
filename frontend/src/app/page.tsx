@@ -4,33 +4,9 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useAuthStore } from '@/lib/store';
 import { getLevelFromXP } from '@/lib/utils';
 import Link from 'next/link';
-import { BookOpen, HelpCircle, Zap, Flame, Trophy, Play, Brain, ArrowRight } from 'lucide-react';
+import { BookOpen, HelpCircle, Zap, Flame, Trophy, Play, Brain, ArrowRight, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Avatar from '@/components/ui/Avatar';
-
-export default function DashboardPage() {
-  const { user } = useAuthStore();
-  const [loading, setLoading] = useState(true);
-
-  const level = user ? getLevelFromXP(user.xp || 0) : null;
-  const xpIntoGoal = (user?.xp || 0) % 50;
-  const goalPct = (xpIntoGoal / 50) * 100;
-
-  useEffect(() => {
-    setTimeout(() => {
-      setLoading(false);
-      if (user?.streak && user.streak > 0 && user.streak % 5 === 0) {
-        import('canvas-confetti').then((confetti) => {
-          confetti.default({
-            particleCount: 150,
-            spread: 90,
-            origin: { y: 0.6 },
-            colors: ['#dc7b1e', '#f4b940', '#ffcf7c', '#c65a1e'],
-          });
-        });
-      }
-    }, 400);
-  }, [user?.streak]);
 
 function ZenGarden({ level }: { level: number }) {
   const stones = level >= 5 ? 3 : level >= 2 ? 1 : 0;
