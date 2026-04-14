@@ -14,7 +14,7 @@ import { clsx } from 'clsx';
 
 interface Card { id: string; question: string; answer: string; memory_strength: number; }
 interface Deck { id: string; title: string; card_count: number; is_public?: boolean; share_token?: string; }
-interface Screen = 'home' | 'study' | 'create' | 'result' | 'view-cards' | 'hard-quiz' | 'recall';
+type Screen = 'home' | 'study' | 'create' | 'result' | 'view-cards' | 'hard-quiz' | 'recall';
 
 // ─── Swipe Card ───────────────────────────────────────────────────────────────
 function SwipeCard({ card, onSwipe, isTop }: {
