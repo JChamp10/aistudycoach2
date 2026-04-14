@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useSFX } from '@/lib/useSFX';
 import confetti from 'canvas-confetti';
+import { clsx } from 'clsx';
 
 export default function QuizPage() {
   const [decks, setDecks] = useState<any[]>([]);
