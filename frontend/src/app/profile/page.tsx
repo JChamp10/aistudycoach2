@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
-import { Zap, Flame, Trophy, BookOpen, Gift, Crown, Sparkles, Users, Upload, Trash2, ArrowRight, ShieldCheck, Mail, Database, Terminal } from 'lucide-react';
+import { Zap, Flame, Trophy, BookOpen, Gift, Crown, Sparkles, Users, Upload, Trash2, ArrowRight, ShieldCheck, Mail, Database, Terminal, Settings, User } from 'lucide-react';
 import { getLevelFromXP } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store';
 import api, { userApi, socialApi } from '@/lib/api';
@@ -16,15 +16,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Promo code state
-  const [promoCode, setPromoCode] = useState('');
-  const [redeeming, setRedeeming] = useState(false);
-  const [redeemed, setRedeemed] = useState(false);
-
   const [following, setFollowing] = useState<any[]>([]);
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarRemoving, setAvatarRemoving] = useState(false);
 
   useEffect(() => {
     Promise.all([userApi.profile(), userApi.achievements(), socialApi.following()])
@@ -35,69 +27,6 @@ export default function ProfilePage() {
       })
       .finally(() => setLoading(false));
   }, []);
-
-  const handleAvatarUpload = async (file?: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast.error('Invalid file format. Select an image.');
-      return;
-    }
-    if (file.size > 3 * 1024 * 1024) {
-      toast.error('File size exceeds the 3MB threshold.');
-      return;
-    }
-
-    setAvatarUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('avatar', file);
-      const res = await api.post('/users/avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setProfile((prev: any) => ({ ...prev, avatar_url: res.data.user.avatar_url }));
-      if (user) setUser({ ...user, avatar_url: res.data.user.avatar_url });
-      toast.success('System: Avatar Updated');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Uploader script failed.');
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
-
-  const handleRemoveAvatar = async () => {
-    setAvatarRemoving(true);
-    try {
-      await api.delete('/users/avatar');
-      setProfile((prev: any) => ({ ...prev, avatar_url: null }));
-      if (user) setUser({ ...user, avatar_url: undefined });
-      toast.success('System: Avatar Removed');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Deletion protocol failed.');
-    } finally {
-      setAvatarRemoving(false);
-    }
-  };
-
-  const handleRedeem = async () => {
-    if (!promoCode.trim()) return;
-    setRedeeming(true);
-    try {
-      const res = await userApi.redeemCode(promoCode.trim());
-      toast.success('Access Tier Upgraded Successfully');
-      setRedeemed(true);
-      setPromoCode('');
-      if (user) setUser({ ...user, plan: 'legend' });
-      const p = await userApi.profile();
-      setProfile(p.data);
-      import('canvas-confetti').then((confetti) => {
-        confetti.default({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#dc7b1e', '#f4b940', '#ffffff'] });
-      });
-    } catch (err: any) {
-      toast.error('Invalid terminal command or expired token.');
-    } finally {
-      setRedeeming(false);
-    }
-  };
 
   if (loading) return <AppLayout><div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-slate-200 dark:border-slate-800 border-t-brand-500 animate-spin" /></div></AppLayout>;
 
@@ -111,9 +40,12 @@ export default function ProfilePage() {
       <div className="max-w-4xl mx-auto space-y-10 py-10">
         <header className="flex items-center justify-between">
             <div>
-               <h1 className="text-3xl font-black uppercase tracking-tight mb-1">Account Management</h1>
-               <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Configure your member profile and system access.</p>
+               <h1 className="text-3xl font-black uppercase tracking-tight mb-1">Student Dossier</h1>
+               <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Global ranking and academic progression status.</p>
             </div>
+            <Link href="/settings" className="btn-ghost !px-6 !py-3 !text-[10px] !rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-2 font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-900 transition-all">
+               <Settings className="w-3.5 h-3.5" /> Configure System
+            </Link>
         </header>
 
         {profile && (
@@ -152,33 +84,11 @@ export default function ProfilePage() {
                    </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                  <label className="btn-primary !px-6 !py-3 !text-[10px] !rounded-xl cursor-pointer flex items-center gap-2">
-                    <Upload className="w-3.5 h-3.5" />
-                    {avatarUploading ? 'Processing...' : 'Upload Avatar'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={avatarUploading}
-                      onChange={e => {
-                        const file = e.target.files?.[0];
-                        void handleAvatarUpload(file);
-                        e.currentTarget.value = '';
-                      }}
-                    />
-                  </label>
-                  {profile.avatar_url && (
-                    <button
-                      onClick={handleRemoveAvatar}
-                      disabled={avatarRemoving}
-                      className="btn-ghost !px-6 !py-3 !text-[10px] !rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-2"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                      {avatarRemoving ? 'Purging...' : 'Delete Avatar'}
-                    </button>
-                  )}
-                </div>
+                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                    <Link href="/settings" className="btn-primary !px-6 !py-3 !text-[10px] !rounded-xl flex items-center gap-2">
+                      <User className="w-3.5 h-3.5" /> Edit Profile
+                    </Link>
+                 </div>
               </div>
             </div>
 
@@ -220,57 +130,6 @@ export default function ProfilePage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-           {/* Tier Activation */}
-           <div className="card !p-8 relative overflow-hidden flex flex-col justify-between">
-             <div className="relative z-10">
-               <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                 <Terminal className="w-4 h-4 text-brand-500" /> Operational Protocol
-               </h2>
-
-               {isLegend && !redeemed ? (
-                 <div className="flex items-center gap-4 p-5 rounded-2xl bg-brand-500/5 border border-brand-500/20">
-                   <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center border border-brand-500/40">
-                      <Crown className="w-5 h-5 text-brand-500" />
-                   </div>
-                   <div>
-                     <div className="font-black text-xs uppercase tracking-widest text-brand-600">Elite Access Verified</div>
-                     <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Unlimited systemic capacity.</div>
-                   </div>
-                 </div>
-               ) : redeemed ? (
-                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-4 p-5 rounded-2xl bg-green-500/5 border border-green-500/20">
-                   <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center border border-green-500/40">
-                      <ShieldCheck className="w-5 h-5 text-green-500" />
-                   </div>
-                   <div>
-                     <div className="font-black text-xs uppercase tracking-widest text-green-600">Tier Optimized</div>
-                     <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Protocol implementation successful.</div>
-                   </div>
-                 </motion.div>
-               ) : (
-                 <div className="space-y-4">
-                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Input Administrative Token</div>
-                   <div className="flex gap-2">
-                     <input
-                       value={promoCode}
-                       onChange={e => setPromoCode(e.target.value.toUpperCase())}
-                       onKeyDown={e => e.key === 'Enter' && handleRedeem()}
-                       placeholder="CODE-XXXX-XXXX"
-                       className="input flex-1 h-14 !rounded-xl font-mono tracking-widest text-center uppercase shadow-sm"
-                       maxLength={30}
-                     />
-                     <button
-                       onClick={handleRedeem}
-                       disabled={redeeming || !promoCode.trim()}
-                       className="px-8 h-14 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-widest shadow-xl transition-all hover:scale-105 disabled:opacity-30 disabled:scale-100"
-                     >
-                       {redeeming ? '---' : 'Execute'}
-                     </button>
-                   </div>
-                 </div>
-               )}
-             </div>
-           </div>
 
            {/* Following */}
            <div className="card !p-8">

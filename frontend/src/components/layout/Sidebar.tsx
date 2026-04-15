@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Calculator, Users, Moon, Sun, Brain, Shield, ChevronRight, Leaf, Sparkles
+  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Calculator, Users, Moon, Sun, Brain, Shield, ChevronRight, Leaf, Sparkles, Settings
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { getLevelFromXP } from '@/lib/utils';
@@ -17,6 +17,7 @@ const navItems = [
   { href: '/quiz',        icon: Zap,             label: 'Practice' },
   { href: '/leaderboard', icon: Trophy,          label: 'Leaderboard' },
   { href: '/profile',     icon: User,            label: 'Profile' },
+  { href: '/settings',    icon: Settings,        label: 'Settings' },
 ];
 
 // ─── AI Usage Widget ──────────────────────────────────────────────────────────
