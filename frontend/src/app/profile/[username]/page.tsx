@@ -123,7 +123,6 @@ export default function PublicProfilePage() {
                     avatarUrl={profile.avatar_url}
                     className="w-full h-full"
                     fallbackClassName="bg-slate-50 dark:bg-slate-900"
-                    style={{ color: 'var(--text-faint)' }}
                     textClassName="text-5xl font-black"
                   />
                 </div>
