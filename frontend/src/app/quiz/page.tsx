@@ -230,14 +230,13 @@ export default function QuizPage() {
           <div className="max-w-4xl mx-auto w-full px-6 flex flex-col items-center">
              
              <div className="w-full mb-12 flex items-center justify-between">
-              <div className="w-full mb-12 flex items-center justify-between">
-                <div className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: 'var(--text-faint)' }}>
+                <div className="text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: 'var(--text-faint)' }}>
                   Query {currentIdx + 1} / {questions.length}
                 </div>
                 <button 
                   onClick={() => setFocusMode(!focusMode)}
                   className={clsx(
-                    "flex items-center gap-2 px-5 py-2 rounded-full border transition-all text-[10px] font-black uppercase tracking-widest",
+                    "flex items-center gap-2 px-5 py-2 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-widest",
                     focusMode ? "border-brand-500/50 bg-brand-500/10 text-brand-500 shadow-[0_0_15px_rgba(220,123,30,0.1)]" : "text-slate-400 hover:border-slate-300 dark:hover:border-white"
                   )}
                   style={!focusMode ? { borderColor: 'var(--border-primary)', color: 'var(--text-faint)' } : {}}
