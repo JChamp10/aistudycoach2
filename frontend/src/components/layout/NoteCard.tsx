@@ -28,7 +28,7 @@ export function NoteCard({ note }: { note: Note }) {
 
   const handleTransmute = async () => {
     setIsTransmuting(true);
-    playSfx('phoenix');
+    playSfx('success_major');
     toast.loading('Transmuting into Flashcards...', { id: `transmute-${note.id}` });
     
     try {
