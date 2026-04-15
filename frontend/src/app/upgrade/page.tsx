@@ -7,6 +7,7 @@ import { Check, Zap, Sparkles, Crown, Loader2, ArrowRight, ShieldCheck, CreditCa
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { clsx } from 'clsx';
 
 export default function UpgradePage() {
   const [plans, setPlans] = useState<any[]>([]);
