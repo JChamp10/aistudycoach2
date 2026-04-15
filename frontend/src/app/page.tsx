@@ -30,7 +30,6 @@ export default function DashboardPage() {
                 username={user?.username}
                 avatarUrl={user?.avatar_url}
                 className="w-14 h-14 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
-                style={{ borderColor: 'var(--border-primary)' }}
                 fallbackClassName="bg-slate-100 dark:bg-slate-800 text-slate-500"
               />
               <div>
