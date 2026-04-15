@@ -217,7 +217,6 @@ export default function LeaderboardPage() {
                              avatarUrl={entry.avatar_url}
                              className="w-full h-full"
                              fallbackClassName="bg-slate-50 dark:bg-slate-950"
-                             style={{ color: 'var(--text-faint)' }}
                              textClassName="text-xl font-black"
                            />
                         </div>
