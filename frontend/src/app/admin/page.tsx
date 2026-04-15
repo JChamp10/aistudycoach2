@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/store';
 import { Shield, Zap, Flame, Crown, RotateCcw, Users, RefreshCw, Terminal, Activity, Database, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
 
 export default function AdminPage() {
   const { user, setUser } = useAuthStore();
