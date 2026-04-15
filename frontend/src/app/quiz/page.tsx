@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { quizApi, flashcardApi } from '@/lib/api';
-import { Zap, Play, CheckCircle2, XCircle, Loader2, BookOpen, FileText, Upload, Brain, ChevronRight } from 'lucide-react';
+import { Zap, Play, CheckCircle2, XCircle, Loader2, BookOpen, FileText, Upload, Brain, ChevronRight, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useSFX } from '@/lib/useSFX';
