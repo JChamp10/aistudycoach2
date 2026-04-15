@@ -40,15 +40,15 @@ export function UpgradeModal() {
         />
         
         <motion.div
-          ref={modalRef}
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className="relative w-full max-w-[1000px] rounded-[2rem] shadow-2xl flex flex-col md:flex-row overflow-hidden border"
-          style={{ background: 'var(--bg-card)', borderColor: 'rgba(245,158,11,0.3)', maxHeight: '90vh' }}
-        >
-          {/* Animated Glowing Gradient Overlay for the entire modal border */}
-          <div className="absolute inset-0 rounded-[2rem] pointer-events-none" style={{ boxShadow: 'inset 0 0 0 1px rgba(245, 158, 11, 0.4)' }} />
+           ref={modalRef}
+           initial={{ scale: 0.95, opacity: 0, y: 20 }}
+           animate={{ scale: 1, opacity: 1, y: 0 }}
+           exit={{ scale: 0.95, opacity: 0, y: 20 }}
+           className="relative w-full max-w-[1000px] rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden border"
+           style={{ background: 'var(--bg-card)', borderColor: 'var(--border-primary)', maxHeight: '90vh' }}
+         >
+           {/* Animated Glowing Gradient Overlay for the entire modal border */}
+           <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ boxShadow: 'inset 0 0 0 1px rgba(122, 157, 84, 0.2)' }} />
 
           <button 
             onClick={() => setShowUpgradeModal(false)}
@@ -60,7 +60,7 @@ export function UpgradeModal() {
 
           {/* Left Side: Hero Graphic & Sales Pitch */}
           <div className="relative w-full md:w-5/12 p-8 md:p-10 flex flex-col justify-center items-center text-center overflow-hidden shrink-0" 
-               style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' }}>
+               style={{ background: 'linear-gradient(135deg, #253018 0%, #3A4B27 100%)' }}>
             
             <div className="absolute inset-0 pointer-events-none opacity-40">
                {/* Starry background effect */}
@@ -74,10 +74,10 @@ export function UpgradeModal() {
             <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-purple-500 rounded-full blur-[100px] opacity-20 pointer-events-none" />
 
             <div className="relative z-10 w-24 h-24 mb-6 relative flex items-center justify-center group">
-              <div className="absolute inset-0 rounded-2xl bg-amber-400 rotate-3 group-hover:rotate-6 transition-transform opacity-30 blur-lg" />
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-amber-300 to-amber-600 shadow-xl" />
-              <div className="absolute inset-[2px] rounded-2xl bg-indigo-950 flex flex-col items-center justify-center">
-                 <Crown className="w-10 h-10 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)] animate-pulse" />
+              <div className="absolute inset-0 rounded-xl bg-brand-400 rotate-3 group-hover:rotate-6 transition-transform opacity-30 blur-lg" />
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-brand-300 to-brand-600 shadow-xl" />
+              <div className="absolute inset-[2px] rounded-xl bg-slate-900 flex flex-col items-center justify-center">
+                 <Crown className="w-10 h-10 text-brand-400 drop-shadow-[0_0_10px_rgba(161,195,125,0.6)] animate-pulse" />
               </div>
             </div>
 
@@ -100,20 +100,20 @@ export function UpgradeModal() {
             
             {/* Toggle */}
             <div className="flex justify-center mb-8 shrink-0">
-               <div className="p-1.5 rounded-2xl flex items-center shadow-inner relative" style={{ background: 'var(--bg-muted)' }}>
+               <div className="p-1 rounded-xl flex items-center shadow-inner relative" style={{ background: 'var(--bg-muted)' }}>
                   <button 
                     onClick={() => setIsAnnual(false)}
-                    className={`relative z-10 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors ${!isAnnual ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
+                    className={`relative z-10 px-5 py-2 rounded-lg text-sm font-bold transition-colors ${!isAnnual ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'}`}
                   >
                    Monthly
                  </button>
                   <button 
                     onClick={() => setIsAnnual(true)}
-                    className={`relative z-10 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center ${isAnnual ? 'text-white' : 'text-text-muted hover:text-text-primary'}`}
+                    className={`relative z-10 px-5 py-2 rounded-lg text-sm font-bold transition-colors flex items-center ${isAnnual ? 'text-white' : 'text-text-muted hover:text-text-primary'}`}
                   >
                    Annually
-                   <span className="ml-2 bg-amber-400 dark:bg-amber-500 text-amber-950 px-2 py-0.5 rounded-lg text-[10px] uppercase tracking-wider font-extrabold animate-pulse">Save 40%</span>
-                 </button>
+                   <span className="ml-2 bg-brand-400 dark:bg-brand-500 text-white px-2 py-0.5 rounded-md text-[9px] uppercase tracking-wider font-extrabold animate-pulse">Save 40%</span>
+                  </button>
                  
                   {/* Sliding Background Indicator */}
                   <div className={`absolute top-1.5 bottom-1.5 w-[calc(50%-1.5px)] rounded-xl transition-all duration-300 shadow-sm ${isAnnual ? 'left-1/2 bg-ink dark:bg-surface-elevated' : 'left-1.5 bg-surface-card shadow-sm'}`} />
@@ -150,8 +150,8 @@ export function UpgradeModal() {
               
               <button 
                 onClick={() => alert(`Stripe checkout for ${isAnnual ? 'Annual' : 'Monthly'} StudyCoach Legend coming soon!`)}
-                className="w-full py-4 rounded-xl text-lg font-extrabold text-white shadow-xl hover:-translate-y-1 hover:shadow-amber-500/30 transition-all duration-300 relative overflow-hidden group"
-                style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)' }}
+                className="w-full py-4 rounded-lg text-lg font-extrabold text-white shadow-xl hover:-translate-y-1 hover:shadow-brand-500/30 transition-all duration-300 relative overflow-hidden group"
+                style={{ background: 'linear-gradient(135deg, #7A9D54 0%, #658245 50%, #4F6636 100%)' }}
               >
                 <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
                 Go Legendary Now

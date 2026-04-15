@@ -2,14 +2,15 @@
 import { useState, useRef, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { homeworkApi } from '@/lib/api';
-import { HelpCircle, Send, Upload, X, FileText, Clock, ChevronLeft, Trash2, Calculator, LineChart, MessageSquare } from 'lucide-react';
+import { HelpCircle, Send, Upload, X, FileText, Clock, ChevronLeft, Trash2, Calculator, LineChart, MessageSquare, Brain, Search, Sparkles, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSFX } from '@/lib/useSFX';
 import { TypewriterText, ThinkingPulse } from '@/components/layout/TypewriterText';
 import { useAuthStore } from '@/lib/store';
+import { clsx } from 'clsx';
 
-// ─── Desmos Graphing & Equation Solver ──────────────────────────────────────
+// ─── Math Suite ──────────────────────────────────────
 function MathSuite() {
   const containerRef = useRef<HTMLDivElement>(null);
   const calculatorRef = useRef<any>(null);
@@ -28,7 +29,6 @@ function MathSuite() {
     const initDesmos = () => {
       if (!containerRef.current) return;
       const Desmos = (window as any).Desmos;
-      // If already initialized, destroy first
       if (calculatorRef.current) {
         calculatorRef.current.destroy();
       }
@@ -85,7 +85,6 @@ function MathSuite() {
       const res = await homeworkApi.ask({ question: `Please solve this mathematical equation step-by-step and show the final answer prominently: ${eqInput}` });
       setEqResult(res.data.answer || res.data.explanation || 'No response.');
     } catch (err: any) {
-      console.error('solveEquation error:', err);
       toast.error(err.response?.data?.error || err.message || 'Failed to solve equation');
     } finally {
       setSolving(false);
@@ -100,12 +99,11 @@ function MathSuite() {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 h-full">
-      {/* Settings & Solver Panel */}
-      <div className="w-full md:w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
-        <div className="card !rounded-2xl p-4 bg-surface-card border-2 border-surface-border space-y-4">
-           <h3 className="font-extrabold flex items-center gap-2 text-text-primary">
-             <Calculator className="w-5 h-5 text-duo-yellow" /> AI Equation Solver
+    <div className="flex flex-col md:flex-row gap-6 h-full">
+      <div className="w-full md:w-80 flex-shrink-0 flex flex-col gap-6 overflow-y-auto pr-2">
+        <div className="card !p-6 space-y-6">
+           <h3 className="text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+             <Calculator className="w-4 h-4 text-brand-500" /> Analytical Solver
            </h3>
            <textarea 
              value={eqInput}
@@ -116,29 +114,30 @@ function MathSuite() {
                  solveEquation();
                }
              }}
-             placeholder="e.g. 2x + 5 = 15"
-             className="w-full input !rounded-xl !py-2 text-sm font-mono h-24 resize-none"
+             placeholder="Equation input (Latex supported)..."
+             className="w-full input !rounded-lg !py-4 text-sm font-mono h-28 resize-none"
            />
            <button 
              onClick={solveEquation} 
              disabled={solving || !eqInput.trim()}
-             className="btn-primary w-full py-2.5 text-sm"
+             className="btn-primary w-full py-4 text-[10px] font-bold uppercase tracking-widest"
            >
-             {solving ? 'Solving...' : 'Solve Step-by-Step'}
+             {solving ? 'Processing...' : 'Solve Equation'}
            </button>
 
            {eqResult && (
-             <div className="mt-4 p-3 bg-surface border-2 border-surface-border rounded-xl text-sm font-medium text-text-primary whitespace-pre-wrap max-h-64 overflow-y-auto w-full break-words">
+             <div className="mt-4 p-5 rounded-xl text-sm font-medium leading-relaxed max-h-80 overflow-y-auto"
+               style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-primary)', border: '1px solid var(--border-primary)' }}>
                <TypewriterText text={eqResult} speed={10} />
              </div>
            )}
         </div>
 
-        <div className="card !rounded-2xl p-4 bg-surface-card border-2 border-surface-border flex-1 flex flex-col min-h-0">
-          <h3 className="font-extrabold flex items-center gap-2 text-text-primary mb-3 text-sm">
-             <LineChart className="w-4 h-4 text-brand-500" /> Graphing Presets
+        <div className="card !p-6 flex-1 flex flex-col min-h-0 space-y-6">
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
+             <LineChart className="w-4 h-4 text-brand-500" /> Plot Libraries
           </h3>
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2">
             {presets.map(p => (
               <button key={p.label} onClick={() => {
                 const eq = p.eq;
@@ -150,22 +149,24 @@ function MathSuite() {
                 setEquations(newEqs);
                 if (calculatorRef.current) calculatorRef.current.setExpression({ id: `eq${targetIdx}`, latex: eq });
               }}
-                className="px-3 py-1.5 rounded-lg border-2 border-surface-border text-xs font-bold text-text-muted hover:border-brand-500 hover:text-brand-500 transition-colors">
+                className="px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest hover:border-brand-500 hover:text-brand-500 transition-all"
+                style={{ borderColor: 'var(--border-primary)', color: 'var(--text-faint)' }}>
                 {p.label}
               </button>
             ))}
           </div>
 
-          <div className="space-y-2 overflow-y-auto flex-1 pr-1">
-            <div className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Active Scripts</div>
+          <div className="space-y-3 overflow-y-auto flex-1">
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Active Functions</div>
             {equations.map((eq, i) => (
               <div key={i} className="flex gap-2 items-center">
                 <input value={eq} onChange={e => updateEquation(i, e.target.value)}
-                  placeholder={`Equation ${i + 1}`}
-                  className="input flex-1 !h-9 !text-sm font-mono" />
+                  placeholder={`f(x) ${i + 1}`}
+                  className="input flex-1 !h-10 !text-sm font-mono" />
                 {equations.length > 1 && (
                   <button onClick={() => removeEquation(i)}
-                    className="text-text-muted hover:text-red-500 p-1 bg-surface rounded-lg">
+                    className="p-2 rounded-lg transition-all"
+                    style={{ backgroundColor: 'var(--bg-muted)', color: 'var(--text-faint)' }}>
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
@@ -175,11 +176,11 @@ function MathSuite() {
         </div>
       </div>
 
-      {/* Desmos Container */}
-      <div className="flex-1 card !rounded-2xl border-2 border-surface-border overflow-hidden relative min-h-[400px]">
+      <div className="flex-1 card !p-0 border-2 overflow-hidden relative min-h-[500px] shadow-2xl">
         {!loaded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-surface-card z-10">
-            <div className="w-8 h-8 rounded-full border-4 border-surface-border border-t-brand-500 animate-spin" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 space-y-4" style={{ backgroundColor: 'var(--bg-primary)' }}>
+            <div className="w-10 h-10 rounded-full border-4 border-t-brand-500 animate-spin" style={{ borderColor: 'var(--bg-muted)' }} />
+            <div className="text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: 'var(--text-faint)' }}>Initializing Engine</div>
           </div>
         )}
         <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
@@ -235,10 +236,10 @@ export default function HomeworkPage() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.type !== 'application/pdf' && !f.type.startsWith('image/')) return toast.error('Only PDF and image files are supported');
-    if (f.size > 10 * 1024 * 1024) return toast.error('File must be under 10MB');
+    if (f.type !== 'application/pdf' && !f.type.startsWith('image/')) return toast.error('Only PDF and image files supported');
+    if (f.size > 10 * 1024 * 1024) return toast.error('Limit: 10MB');
     setFile(f);
-    toast.success(`${f.name} attached!`);
+    toast.success(`${f.name} uploaded.`);
   };
 
   const removeFile = () => {
@@ -251,7 +252,7 @@ export default function HomeworkPage() {
     if (loading || (!input.trim() && !file)) return;
     const userMsg: Message = {
       role: 'user',
-      content: input || `Please help me with this PDF: ${file?.name}`,
+      content: input || `Analyzing document: ${file?.name}`,
       fileName: file?.name,
     };
     setMessages(prev => [...prev, userMsg]);
@@ -263,20 +264,15 @@ export default function HomeworkPage() {
     try {
       let res;
       if (file) {
-        setPdfProgress('Reading doc...');
-        await new Promise(r => setTimeout(r, 400));
+        setPdfProgress('Extracting data...');
         const formData = new FormData();
         if (file.type.startsWith('image/')) {
-          setPdfProgress('Analyzing image...');
-          await new Promise(r => setTimeout(r, 400));
           formData.append('image', file);
           formData.append('question', sentInput || 'Explain and solve the problem in this image.');
           res = await homeworkApi.askImage(formData);
         } else {
-          setPdfProgress('Extracting text...');
-          await new Promise(r => setTimeout(r, 400));
           formData.append('pdf', file);
-          formData.append('question', sentInput || 'Please explain and help me understand this document');
+          formData.append('question', sentInput || 'Please analyze this document and provide a summary.');
           res = await homeworkApi.askPdf(formData);
         }
         setFile(null);
@@ -285,12 +281,12 @@ export default function HomeworkPage() {
       } else {
         res = await homeworkApi.ask({ question: sentInput });
       }
-      const answer = res.data.answer || res.data.explanation || 'No response received.';
+      const answer = res.data.answer || res.data.explanation || 'Protocol response unavailable.';
       setMessages(prev => [...prev, { role: 'assistant', content: answer, isNew: true }]);
       playSfx('pop');
       loadHistory();
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to get answer');
+      toast.error('Connection timeout or logic error.');
       setMessages(prev => prev.slice(0, -1));
       setPdfProgress('');
     } finally {
@@ -316,207 +312,168 @@ export default function HomeworkPage() {
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const suggestions = [
-    'Explain the Pythagorean theorem',
-    'How does photosynthesis work?',
-    'What caused World War I?',
-  ];
-
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto flex flex-col h-[calc(100vh-4rem)] pt-4 pb-4 px-2 sm:px-0">
+      <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-4rem)] pt-6 pb-6 px-4 md:px-8">
         
-        {/* Top Header / Tabs */}
-        <div className="flex flex-col sm:flex-row items-center justify-between p-4 mb-4 bg-surface-card rounded-2xl border-b-4 border-x-2 border-t-2 border-surface-border shadow-sm">
-          <div className="flex items-center gap-3 mb-4 sm:mb-0">
-            <div className="w-12 h-12 rounded-xl bg-duo-blue border-b-4 border-duo-blueShadow flex items-center justify-center">
-              {tab === 'chat' ? <HelpCircle className="w-6 h-6 text-white" /> : <Calculator className="w-6 h-6 text-white" />}
-            </div>
-            <div>
-              <h1 className="text-2xl font-extrabold text-text-primary">
-                {tab === 'chat' ? 'AI Homework Helper' : 'Math Suite'}
-              </h1>
-              <p className="text-xs font-bold text-text-muted">
-                {tab === 'chat' ? 'Your personal tutor for any subject' : 'Graphing calculator & equation solver'}
-              </p>
-            </div>
-          </div>
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
+           <div>
+              <div className="flex items-center gap-3 mb-1">
+                 <h1 className="text-3xl font-extrabold uppercase tracking-tight">AI Assistant</h1>
+                 <div className="h-px w-12 bg-slate-200 dark:bg-slate-800" />
+                 <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-500">Live Node</span>
+              </div>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Multi-modal problem solving & mathematical verification.</p>
+           </div>
 
-          <div className="flex gap-2 p-1 bg-surface-muted rounded-xl border-2 border-surface-border">
-            <button 
-              onClick={() => setTab('chat')}
-              className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
-                tab === 'chat' 
-                  ? 'bg-brand-500 text-white shadow-sm' 
-                  : 'text-text-muted hover:text-text-primary hover:bg-surface-elevated'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" /> Chat
-            </button>
-            <button 
-              onClick={() => setTab('math')}
-              className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${
-                tab === 'math' 
-                  ? 'bg-brand-500 text-white shadow-sm' 
-                  : 'text-text-muted hover:text-text-primary hover:bg-surface-elevated'
-              }`}
-            >
-              <LineChart className="w-4 h-4" /> Math
-            </button>
-          </div>
+           <div className="flex gap-2 p-1.5 backdrop-blur rounded-xl border shadow-sm w-full md:w-auto" style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-primary)' }}>
+             <button 
+               onClick={() => setTab('chat')}
+               className={clsx(
+                 "flex-1 md:flex-initial flex items-center justify-center gap-3 px-8 py-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                 tab === 'chat' ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+               )}
+               style={tab !== 'chat' ? { color: 'var(--text-muted)' } : {}}
+             >
+               <MessageSquare className="w-4 h-4" /> Synthesis
+             </button>
+             <button 
+               onClick={() => setTab('math')}
+               className={clsx(
+                 "flex-1 md:flex-initial flex items-center justify-center gap-3 px-8 py-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                 tab === 'math' ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+               )}
+               style={tab !== 'math' ? { color: 'var(--text-muted)' } : {}}
+             >
+               <LineChart className="w-4 h-4" /> Computation
+             </button>
+           </div>
         </div>
 
-        {/* Tab Content */}
-        <div className="flex-1 min-h-0 flex gap-4 overflow-hidden relative">
-          
+        {/* Workspace */}
+        <div className="flex-1 min-h-0 relative">
           <AnimatePresence mode="wait">
             {tab === 'chat' && (
               <motion.div 
                 key="chat"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="w-full h-full flex gap-4"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="w-full h-full flex gap-6"
               >
-                {/* History panel inside chat tab */}
+                {/* Secondary Sidebar (History) */}
                 <AnimatePresence>
                   {historyOpen && (
-                    <>
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/40 z-20 md:hidden"
-                        onClick={() => setHistoryOpen(false)} />
-
-                      <motion.aside
-                        initial={{ x: -280, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: -280, opacity: 0 }}
-                        className="w-72 flex-shrink-0 flex flex-col card !rounded-2xl z-30 absolute md:relative h-full overflow-hidden border-2 border-surface-border">
-                        <div className="flex items-center justify-between px-4 py-4 border-b-2 border-surface-border">
-                          <h2 className="font-extrabold flex items-center gap-2 text-text-primary">
-                            <Clock className="w-5 h-5 text-duo-yellow" /> History
-                          </h2>
-                          <button onClick={() => setHistoryOpen(false)} className="text-text-muted p-1 rounded-xl">
-                            <ChevronLeft className="w-5 h-5" />
-                          </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                          {historyLoading ? (
-                            <div className="skeleton h-16 rounded-xl" />
-                          ) : history.map(item => (
-                            <button key={item.id} onClick={() => loadFromHistory(item)} className="w-full text-left px-3 py-3 rounded-xl hover:bg-surface-elevated border-2 border-transparent hover:border-surface-border transition-all">
-                              <div className="text-sm font-bold text-text-primary truncate">{item.question}</div>
+                    <motion.aside
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: 300, opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      className="hidden lg:flex flex-col card !p-0 overflow-hidden"
+                    >
+                      <div className="p-6 border-b flex items-center justify-between" style={{ borderColor: 'var(--border-primary)' }}>
+                         <h2 className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Interaction Log</h2>
+                         <button onClick={() => setHistoryOpen(false)} className="hover:text-slate-900 dark:hover:text-white" style={{ color: 'var(--text-faint)' }}><X className="w-4 h-4" /></button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                         {history.map(item => (
+                            <button key={item.id} onClick={() => loadFromHistory(item)} className="w-full text-left p-4 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all group">
+                               <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate mb-1">{item.question}</div>
+                               <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Retrieve Protocol</div>
                             </button>
-                          ))}
-                        </div>
-                      </motion.aside>
-                    </>
+                         ))}
+                      </div>
+                    </motion.aside>
                   )}
                 </AnimatePresence>
 
-                {/* Main chat UI */}
-                <div className="flex-1 flex flex-col min-w-0 card !rounded-2xl border-2 border-surface-border relative">
-                  
-                  <div className="flex-shrink-0 pb-3 pt-3 px-4 border-b-2 border-surface-border flex items-center gap-3">
-                    <button onClick={() => setHistoryOpen(!historyOpen)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border-2 font-bold transition-all ${
-                        historyOpen ? 'bg-brand-500/10 border-brand-500/30 text-brand-500' : 'border-surface-border text-text-muted'
-                      }`}>
-                      <Clock className="w-4 h-4" /> History
-                    </button>
-                    <div className="flex-1" />
-                    {messages.length > 0 && (
-                      <button onClick={newChat} className="text-sm px-3 py-1.5 rounded-xl border-2 border-surface-border text-text-muted font-bold">
-                        Clear
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto space-y-6 px-4 py-4">
-                    {messages.length === 0 && (
-                      <div className="text-center py-16">
-                        <div className="text-7xl animate-bounce-pop mb-6">🤖</div>
-                        <h2 className="text-2xl font-extrabold text-text-primary">Stuck on a problem?</h2>
-                        <p className="text-text-muted font-bold mb-6 max-w-sm mx-auto">Upload an image of your homework, or type out the question below.</p>
+                {/* Main Interaction Area */}
+                <div className="flex-1 flex flex-col min-w-0 card !p-0 shadow-2xl relative overflow-hidden">
+                   {/* Top Toolbar */}
+                   <div className="flex-shrink-0 px-6 py-4 border-b border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-950/20 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                         <button onClick={() => setHistoryOpen(!historyOpen)} className={clsx("flex items-center gap-2 px-4 py-2 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all", historyOpen ? "bg-brand-500/10 border-brand-500/30 text-brand-500" : "border-slate-200 dark:border-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white")}>
+                            <Clock className="w-3.5 h-3.5" /> Log
+                         </button>
+                         <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+                         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 opacity-60">System Ready</span>
                       </div>
-                    )}
-                    
-                    {messages.map((msg, i) => (
-                      <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        {msg.role === 'assistant' && (
-                          <div className="w-8 h-8 rounded-lg bg-duo-blue flex items-center justify-center flex-shrink-0 mr-3 mt-1">
-                            <HelpCircle className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                        <div className={`max-w-[75%] rounded-2xl px-5 py-4 text-[15px] font-medium leading-relaxed border-2 border-b-4 ${
-                          msg.role === 'user' ? 'bg-brand-500 border-brand-600 text-white rounded-tr-sm' : 'rounded-tl-sm'
-                        }`} style={msg.role === 'assistant' ? { background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' } : {}}>
-                          {msg.role === 'assistant' && msg.isNew ? (
-                            <TypewriterText text={msg.content} speed={15} onComplete={() => setMessages(prev => prev.map((m, idx) => idx === i ? { ...m, isNew: false } : m))} />
-                          ) : (
-                            <div className="whitespace-pre-wrap">{msg.content}</div>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-                    
-                    {loading && (
-                      <div className="flex justify-start">
-                        <div className="w-8 h-8 rounded-lg bg-duo-blue flex items-center justify-center flex-shrink-0 mr-3 mt-1">
-                          <HelpCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <ThinkingPulse />
-                      </div>
-                    )}
-                    <div ref={bottomRef} />
-                  </div>
+                      <button onClick={newChat} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors">Clear Interface</button>
+                   </div>
 
-                  {/* Input area */}
-                  <div className="flex-shrink-0 p-4 border-t-2 border-surface-border bg-surface-card rounded-b-2xl">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => !loading && fileRef.current?.click()} 
-                        disabled={loading}
-                        className="w-14 h-14 rounded-2xl border-2 border-surface-border flex items-center justify-center hover:border-duo-blue hover:text-duo-blue transition-colors disabled:opacity-50"
-                      >
-                        <Upload className="w-6 h-6" />
-                      </button>
-                      <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden" onChange={handleFile} />
-                      <input 
-                        value={input} 
-                        onChange={e => setInput(e.target.value)} 
-                        onKeyDown={e => e.key === 'Enter' && !e.shiftKey && !loading && sendMessage()} 
-                        placeholder="Type your question..." 
-                        className="input flex-1 h-14" 
-                        disabled={loading} 
-                      />
-                      <button 
-                        onClick={sendMessage} 
-                        disabled={loading || (!input.trim() && !file)} 
-                        className="btn-primary w-14 h-14 !p-0 flex items-center justify-center disabled:opacity-50"
-                      >
-                        <Send className="w-6 h-6" />
-                      </button>
-                    </div>
-                  </div>
+                   {/* Dialogue Thread */}
+                   <div className="flex-1 overflow-y-auto px-10 py-10 space-y-12">
+                      {messages.length === 0 && (
+                        <div className="h-full flex flex-col items-center justify-center text-center space-y-8 max-w-md mx-auto">
+                           <div className="w-20 h-20 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center border border-slate-100 dark:border-slate-800 shadow-inner">
+                              <Brain className="w-10 h-10 text-brand-500" />
+                           </div>
+                           <div>
+                              <h2 className="text-2xl font-extrabold uppercase tracking-tight mb-2">Initialize Consult</h2>
+                              <p className="text-sm text-slate-500 font-bold uppercase tracking-widest leading-relaxed">Present a complex problem or upload a primary source document for synthesis.</p>
+                           </div>
+                        </div>
+                      )}
+
+                      {messages.map((msg, i) => (
+                        <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={clsx("flex gap-6", msg.role === 'user' ? "flex-row-reverse" : "flex-row")}>
+                           <div className={clsx("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 border shadow-sm", msg.role === 'user' ? "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800" : "bg-slate-950 dark:bg-white border-slate-950 dark:border-white")}>
+                              {msg.role === 'user' ? <Search className="w-5 h-5 text-slate-400" /> : <Sparkles className="w-5 h-5 text-brand-500" />}
+                           </div>
+                           <div className={clsx("flex-1 max-w-2xl px-8 py-6 rounded-2xl border text-sm font-medium leading-relaxed", msg.role === 'user' ? "bg-slate-50/50 dark:bg-slate-900/30 border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-sm")}>
+                              {msg.role === 'assistant' && msg.isNew ? (
+                                <TypewriterText text={msg.content} speed={12} onComplete={() => setMessages(prev => prev.map((m, idx) => idx === i ? { ...m, isNew: false } : m))} />
+                              ) : (
+                                <div className="whitespace-pre-wrap">{msg.content}</div>
+                              )}
+                           </div>
+                        </motion.div>
+                      ))}
+
+                      {loading && (
+                        <div className="flex gap-6">
+                           <div className="w-10 h-10 rounded-lg bg-slate-900 dark:bg-white flex items-center justify-center flex-shrink-0 animate-pulse">
+                              <Sparkles className="w-5 h-5 text-brand-500" />
+                           </div>
+                           <ThinkingPulse />
+                        </div>
+                      )}
+                      <div ref={bottomRef} />
+                   </div>
+
+                   {/* Input Terminal */}
+                   <div className="flex-shrink-0 p-8 border-t border-slate-100 dark:border-slate-900 bg-white/50 dark:bg-slate-950/50 backdrop-blur-xl">
+                      <div className="flex gap-4 items-center">
+                         <div className="relative">
+                            <button onClick={() => !loading && fileRef.current?.click()} className="w-14 h-14 rounded-lg border-2 border-slate-200 dark:border-slate-800 flex items-center justify-center hover:border-brand-500 transition-all group">
+                               <Upload className="w-6 h-6 text-slate-400 group-hover:text-brand-500" />
+                            </button>
+                            {file && <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-500 rounded-full border-2 border-white dark:border-slate-950" />}
+                         </div>
+                         <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden" onChange={handleFile} />
+                         <input 
+                           value={input} 
+                           onChange={e => setInput(e.target.value)} 
+                           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && !loading && sendMessage()}
+                           placeholder={pdfProgress || "Enter analytical query..."}
+                           className="input flex-1 !h-14 !rounded-lg !py-0 !px-8 text-base shadow-sm"
+                           disabled={loading} 
+                         />
+                         <button onClick={sendMessage} disabled={loading || (!input.trim() && !file)} className="w-14 h-14 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-30 disabled:scale-100">
+                            <Send className="w-6 h-6" />
+                         </button>
+                      </div>
+                   </div>
                 </div>
               </motion.div>
             )}
 
             {tab === 'math' && (
-              <motion.div 
-                key="math"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="w-full h-full"
-              >
+              <motion.div key="math" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }} className="w-full h-full">
                 <MathSuite />
               </motion.div>
             )}
           </AnimatePresence>
-
         </div>
       </div>
     </AppLayout>

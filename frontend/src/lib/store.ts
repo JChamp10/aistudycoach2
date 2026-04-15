@@ -59,10 +59,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initTheme: () => {
     if (typeof window === 'undefined') return;
-    const saved = localStorage.getItem('dark_mode');
-    const isDark = saved === 'true';
+    
+    // Dark mode
+    const savedDark = localStorage.getItem('dark_mode');
+    const isDark = savedDark === 'true';
     if (isDark) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
+
     set({ darkMode: isDark });
   },
 

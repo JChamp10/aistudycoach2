@@ -4,53 +4,9 @@ import AppLayout from '@/components/layout/AppLayout';
 import { useAuthStore } from '@/lib/store';
 import { getLevelFromXP } from '@/lib/utils';
 import Link from 'next/link';
-import { BookOpen, HelpCircle, Zap, Flame, Trophy, Play, Brain, ArrowRight, Moon } from 'lucide-react';
+import { BookOpen, HelpCircle, Zap, Flame, Trophy, Play, Brain, ArrowRight, Moon, LayoutDashboard, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Avatar from '@/components/ui/Avatar';
-
-function ZenGarden({ level }: { level: number }) {
-  const stones = level >= 5 ? 3 : level >= 2 ? 1 : 0;
-  const showPlant = level >= 10;
-  const showRelic = level >= 15;
-
-  return (
-    <div className="relative w-full h-48 mb-8 overflow-hidden rounded-3xl zen-garden border-2 border-slate-200/50 shadow-inner flex items-center justify-center">
-      {/* Sand patterns (SVG) */}
-      <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
-        <path d="M0 20 Q50 10 100 20 T200 20 T300 20 T400 20" stroke="#64748b" fill="none" strokeWidth="0.5" />
-        <path d="M0 40 Q50 30 100 40 T200 40 T300 40 T400 40" stroke="#64748b" fill="none" strokeWidth="0.5" />
-        <path d="M0 60 Q50 50 100 60 T200 60 T300 60 T400 60" stroke="#64748b" fill="none" strokeWidth="0.5" />
-        <path d="M0 80 Q50 70 100 80 T200 80 T300 80 T400 80" stroke="#64748b" fill="none" strokeWidth="0.5" />
-      </svg>
-
-      <div className="relative flex gap-8 items-end pb-4">
-        {stones > 0 && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-12 h-8 zen-stone" />}
-        {stones > 1 && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1 }} className="w-16 h-10 zen-stone -mb-2" />}
-        {stones > 2 && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 }} className="w-10 h-6 zen-stone" />}
-        
-        {showPlant && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="absolute -right-12 bottom-4">
-            <div className="w-1 h-12 bg-emerald-800 rounded-full" />
-            <div className="w-8 h-8 bg-emerald-500 rounded-full -mt-10 -ml-3 blur-[2px] opacity-60" />
-          </motion.div>
-        )}
-
-        {showRelic && (
-          <motion.div 
-            animate={{ opacity: [0.4, 0.8, 0.4] }} 
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="absolute -left-16 top-0 w-6 h-6 bg-amber-400 rounded-full blur-md" 
-          />
-        )}
-      </div>
-
-      <div className="absolute top-4 left-6">
-        <div className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-400">Zen Garden</div>
-        <div className="text-xs text-slate-500 font-medium">Lvl {level} Sanctuary</div>
-      </div>
-    </div>
-  );
-}
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
@@ -61,118 +17,132 @@ export default function DashboardPage() {
   const goalPct = (xpIntoGoal / 50) * 100;
 
   useEffect(() => {
-    setTimeout(() => {
-      setLoading(false);
-      if (user?.streak && user.streak > 0 && user.streak % 5 === 0) {
-        import('canvas-confetti').then((confetti) => {
-          confetti.default({
-            particleCount: 150,
-            spread: 90,
-            origin: { y: 0.6 },
-            colors: ['#dc7b1e', '#f4b940', '#ffcf7c', '#c65a1e'],
-          });
-        });
-      }
-    }, 400);
-  }, [user?.streak]);
+    setLoading(false);
+  }, []);
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-8 pt-6 pb-20">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="max-w-5xl mx-auto space-y-10 pt-10 pb-24">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200/60 dark:border-slate-800 pb-10" style={{ borderColor: 'var(--border-primary)' }}>
           <div>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-4 mb-3">
               <Avatar
                 username={user?.username}
                 avatarUrl={user?.avatar_url}
-                className="w-12 h-12 rounded-xl border-2 border-white shadow-sm"
-                fallbackClassName="bg-brand-500/15 text-brand-500"
+                className="w-14 h-14 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
+                style={{ borderColor: 'var(--border-primary)' }}
+                fallbackClassName="bg-slate-100 dark:bg-slate-800 text-slate-500"
               />
-              <h1 className="text-4xl font-black tracking-tight">
-                Hello, {user?.username || 'Seeker'}
-              </h1>
+              <div>
+                <h1 className="text-3xl font-black tracking-tight uppercase">
+                  {user?.username || 'Guest'}
+                </h1>
+                <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                  Performance Dashboard
+                </p>
+              </div>
             </div>
-            <p className="text-lg text-slate-500 font-medium">Your sanctuary is ready for session.</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-8">
              <div className="text-right">
-                <div className="text-xs uppercase tracking-widest font-bold text-slate-400">Current Streak</div>
-                <div className="text-2xl font-black text-orange-500 flex items-center justify-end gap-1">
-                  <Flame className="w-5 h-5" /> {user?.streak || 0}
+                <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400 mb-1">Active Streak</div>
+                <div className="text-2xl font-black text-brand-500 flex items-center justify-end gap-2">
+                  <Flame className="w-5 h-5 fill-current" /> {user?.streak || 0}
+                </div>
+             </div>
+             <div className="w-px h-10 bg-slate-200 dark:bg-slate-800" />
+             <div className="text-right">
+                <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400 mb-1">Current Level</div>
+                <div className="text-2xl font-black text-slate-900 dark:text-white">
+                  {level?.level || 1}
                 </div>
              </div>
           </div>
         </header>
 
-        <ZenGarden level={level?.level || 1} />
+        <div className="grid lg:grid-cols-[1fr_350px] gap-10">
+          <section className="space-y-10">
+            <div>
+               <div className="flex items-center gap-2 mb-6">
+                 <LayoutDashboard className="w-4 h-4 text-slate-400" />
+                 <h2 className="text-xs uppercase tracking-[0.3em] font-bold text-slate-400">Primary Objectives</h2>
+               </div>
 
-        <div className="grid lg:grid-cols-[1.5fr_1fr] gap-8">
-          <section className="space-y-6">
-            <div className="text-xs uppercase tracking-[0.25em] font-bold text-slate-400">Dominant Task</div>
-            <div className="card !p-8 relative overflow-hidden group hover:border-brand-400 transition-all duration-500">
-              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                 <Brain className="w-32 h-32" />
-              </div>
-              <h2 className="text-3xl font-black mb-4">Today&apos;s Mission</h2>
-              <p className="text-slate-500 mb-8 max-w-md">
-                Focus on the cards that challenge you most. Review 50 XP worth of material to maintain your growth.
-              </p>
-              
-              <div className="flex flex-wrap gap-4">
-                <Link href="/flashcards" className="btn-primary !px-8 !py-4 text-base flex items-center gap-2">
-                  <BookOpen className="w-5 h-5" /> Review Cards
-                </Link>
-                <Link href="/quiz" className="btn-ghost !px-8 !py-4 text-base flex items-center gap-2">
-                  <Zap className="w-5 h-5" /> Take Quiz
-                </Link>
-              </div>
+               <div className="card !p-10 relative overflow-hidden group border-brand-500/20 shadow-xl shadow-brand-500/5">
+                 <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity grayscale">
+                    <Brain className="w-40 h-40" />
+                 </div>
+                 <div className="relative z-10">
+                    <h2 className="text-4xl font-black mb-4 tracking-tight">Daily Learning Goal</h2>
+                    <p className="text-slate-500 mb-10 max-w-lg text-lg leading-relaxed">
+                      Optimize your recall through targeted review. Complete your daily session to maintain peak performance and progression.
+                    </p>
+                    
+                    <div className="flex flex-wrap gap-4">
+                      <Link href="/flashcards" className="btn-primary !px-10 !py-4 text-sm flex items-center gap-2">
+                        <BookOpen className="w-4 h-4" /> Start Review
+                      </Link>
+                      <Link href="/quiz" className="btn-ghost !px-10 !py-4 text-sm flex items-center gap-2">
+                        <Zap className="w-4 h-4" /> Assessment
+                      </Link>
+                    </div>
+                 </div>
+               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Link href="/homework" className="card group hover:bg-slate-50 transition-colors">
-                <HelpCircle className="w-8 h-8 text-brand-500 mb-4" />
-                <h3 className="text-xl font-bold">AI Helper</h3>
-                <p className="text-sm text-slate-500 mt-1">Get step-by-step guidance on any topic.</p>
+            <div className="grid sm:grid-cols-2 gap-6">
+              <Link href="/homework" className="card group hover:scale-[1.02] transition-all">
+                <HelpCircle className="w-6 h-6 text-slate-400 mb-6 group-hover:text-brand-500 transition-colors" />
+                <h3 className="text-lg font-black uppercase tracking-tight">AI Assistant</h3>
+                <p className="text-sm text-slate-500 mt-2 font-medium">Technical guidance and problem solving.</p>
               </Link>
-              <Link href="/leaderboard" className="card group hover:bg-slate-50 transition-colors">
-                <Trophy className="w-8 h-8 text-amber-500 mb-4" />
-                <h3 className="text-xl font-bold">Leaderboard</h3>
-                <p className="text-sm text-slate-500 mt-1">See how you rank against other seekers.</p>
+              <Link href="/leaderboard" className="card group hover:scale-[1.02] transition-all">
+                <Trophy className="w-6 h-6 text-slate-400 mb-6 group-hover:text-amber-500 transition-colors" />
+                <h3 className="text-lg font-black uppercase tracking-tight">Global Rankings</h3>
+                <p className="text-sm text-slate-500 mt-2 font-medium">Competitive status among elite members.</p>
               </Link>
             </div>
           </section>
 
-          <aside className="space-y-6">
-            <div className="text-xs uppercase tracking-[0.25em] font-bold text-slate-400">Progression</div>
-            <div className="card !bg-white/50 backdrop-blur-sm border-dashed">
-              <div className="flex items-center justify-between mb-6">
-                <div className="text-lg font-bold">Goal Progress</div>
-                <div className="text-sm font-black bg-brand-100 text-brand-700 px-3 py-1 rounded-full">{xpIntoGoal}/50 XP</div>
-              </div>
-              
-              <div className="xp-bar h-6 mb-4">
-                <motion.div 
-                  className="xp-bar-fill" 
-                  initial={{ width: 0 }} 
-                  animate={{ width: `${goalPct}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                />
-              </div>
-              
-              <p className="text-xs text-slate-400 italic">
-                Each session adds a stone to your sanctuary. 50 XP to place the next one.
-              </p>
+          <aside className="space-y-10">
+            <div>
+               <div className="flex items-center gap-2 mb-6">
+                 <Clock className="w-4 h-4 text-slate-400" />
+                 <h2 className="text-xs uppercase tracking-[0.3em] font-bold text-slate-400">Metrics</h2>
+               </div>
+               
+               <div className="card !bg-white/40 dark:!bg-slate-900/40 backdrop-blur-md border-slate-200/50 dark:border-slate-800">
+                 <div className="flex items-center justify-between mb-8">
+                   <div className="text-sm font-black uppercase tracking-widest text-slate-400">Progression</div>
+                   <div className="text-[10px] font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-3 py-1 rounded-lg border border-slate-200/50 dark:border-slate-700">
+                     {xpIntoGoal} / 50 XP
+                   </div>
+                 </div>
+                 
+                 <div className="xp-bar mb-6 shadow-inner">
+                   <motion.div 
+                     className="xp-bar-fill shadow-[0_0_12px_rgba(220,123,30,0.2)]" 
+                     initial={{ width: 0 }} 
+                     animate={{ width: `${goalPct}%` }}
+                     transition={{ duration: 1.2, ease: "circOut" }}
+                   />
+                 </div>
+                 
+                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center mt-4">
+                   50 XP required for next milestone
+                 </p>
+               </div>
             </div>
 
-            <div className="card bg-slate-900 border-none relative overflow-hidden">
-               <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20" />
+            <div className="card !bg-slate-900 border-none relative overflow-hidden group shadow-lg">
+               <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-emerald-500/10 group-hover:opacity-100 opacity-60 transition-opacity" />
                <div className="relative z-10">
-                  <h3 className="text-white text-lg font-bold flex items-center gap-2 mb-2">
-                    <Moon className="w-4 h-4" /> Night Study
+                  <h3 className="text-white text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
+                    <Moon className="w-4 h-4 text-brand-400" /> Interface Status
                   </h3>
-                  <p className="text-slate-400 text-sm mb-4">The garden is peaceful at night. Perfect for deep concentration.</p>
-                  <button onClick={() => useAuthStore.getState().toggleDarkMode()} className="w-full py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-colors">
-                    Switch Mode
+                  <p className="text-slate-400 text-xs mb-8 font-medium leading-relaxed">Adjust system luminosity for optimal cognitive performance during deep work cycles.</p>
+                  <button onClick={() => useAuthStore.getState().toggleDarkMode()} className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-lg text-[10px] font-bold uppercase tracking-[0.2em] transition-all shadow-sm">
+                    Toggle Vision Mode
                   </button>
                </div>
             </div>

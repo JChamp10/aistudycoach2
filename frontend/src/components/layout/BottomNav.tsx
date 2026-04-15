@@ -2,16 +2,17 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, Users, Brain
+  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, Users, Brain, Search, Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
 
 const navItems = [
-  { href: '/',            icon: LayoutDashboard, label: 'Learn' },
-  { href: '/flashcards',  icon: BookOpen,        label: 'Cards' },
-  { href: '/homework',    icon: HelpCircle,      label: 'Help' },
-  { href: '/leaderboard', icon: Trophy,          label: 'Rank' },
+  { href: '/',            icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/flashcards',  icon: BookOpen,        label: 'Repository' },
+  { href: '/homework',    icon: Sparkles,        label: 'Assistant' },
+  { href: '/leaderboard', icon: Trophy,          label: 'Ranking' },
   { href: '/profile',     icon: User,            label: 'Profile' },
 ];
 
@@ -23,44 +24,45 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 w-full z-50"
+      className="md:hidden fixed bottom-0 left-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-900"
       style={{
-        background: 'rgba(var(--bg-card-rgb), 0.75)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        borderTop: '1px solid var(--border-primary)',
-        boxShadow: '0 -4px 30px rgba(0,0,0,0.2)',
+        boxShadow: '0 -4px 30px rgba(0,0,0,0.05)',
       }}
     >
-      <div className="flex items-center justify-around h-16 px-1 pb-safe relative">
+      <div className="flex items-center justify-around h-16 pb-safe relative">
         {navItems.map(item => {
           const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
-              href={item.href}
-              className="flex flex-col items-center justify-center w-full h-full gap-0.5 relative z-10"
+              href={item.href === '/profile' ? `/profile/${user.username}` : item.href}
+              className="flex flex-col items-center justify-center w-full h-full gap-1 relative z-10"
             >
               {active && (
                 <motion.div
                   layoutId="bottomNavIndicator"
-                  className="absolute -top-0.5 w-8 h-1 rounded-full bg-brand-500 shadow-[0_0_12px_var(--brand-glow)]"
+                  className="absolute top-0 w-8 h-1 rounded-full"
+                  style={{ backgroundColor: 'var(--brand-900)' }}
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
               <motion.div
-                animate={active ? { scale: 1.15, y: -2 } : { scale: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                animate={active ? { scale: 1.1, y: -1 } : { scale: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
               >
                 <item.icon
-                  className="w-5 h-5 transition-colors duration-200"
-                  style={{ color: active ? 'var(--brand-400)' : 'var(--text-faint)' }}
+                  className={clsx(
+                    "w-5 h-5 transition-colors duration-300"
+                  )}
+                  style={active ? { color: 'var(--brand-500)' } : { color: 'var(--text-faint)' }}
                   strokeWidth={active ? 2.5 : 2}
                 />
               </motion.div>
               <span
-                className="text-[10px] font-medium tracking-tight transition-colors duration-200"
-                style={{ color: active ? 'var(--brand-400)' : 'var(--text-faint)' }}
+                className={clsx(
+                  "text-[9px] font-bold uppercase tracking-widest transition-colors duration-300"
+                )}
+                style={active ? { color: 'var(--text-primary)' } : { color: 'var(--text-faint)' }}
               >
                 {item.label}
               </span>

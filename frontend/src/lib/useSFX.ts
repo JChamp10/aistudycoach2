@@ -17,7 +17,7 @@ export function useSFX() {
     localStorage.setItem('sfx_enabled', String(next));
   };
 
-  const playSfx = useCallback((type: 'success' | 'pop' | 'error' | 'flip' | 'send' | 'click' | 'phoenix') => {
+  const playSfx = useCallback((type: 'success' | 'pop' | 'error' | 'flip' | 'send' | 'click' | 'success_major') => {
     if (!enabled) return;
     try {
       const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
@@ -80,8 +80,8 @@ export function useSFX() {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
         osc.start();
         osc.stop(ctx.currentTime + 0.03);
-      } else if (type === 'phoenix') {
-        // Majestic ascending arpeggio: C5 → E5 → G5 → C6
+      } else if (type === 'success_major') {
+        // Sophisticated ascending chime: C5 → E5 → G5 → C6
         osc.type = 'triangle';
         const t = ctx.currentTime;
         osc.frequency.setValueAtTime(523.25, t);       // C5
