@@ -147,3 +147,11 @@ export const billingApi = {
   getPlans: () => api.get('/billing/plans'),
   checkout: (planId: string) => api.post('/billing/checkout', { planId }),
 };
+
+export const calendarApi = {
+  getEvents: () => api.get('/calendar'),
+  createEvent: (data: { title: string; description?: string; event_type: string; event_date: string }) => api.post('/calendar', data),
+  deleteEvent: (id: string) => api.delete("/calendar/$id"),
+  getToken: () => api.post('/calendar/token'),
+};
+

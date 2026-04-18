@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Calculator, Users, Moon, Sun, Brain, Shield, ChevronRight, Leaf, Sparkles, Settings
+  LayoutDashboard, BookOpen, HelpCircle, Trophy, User, LogOut, Zap, Calculator, Users, Brain, Shield, ChevronRight, Leaf, Sparkles, Settings, Calendar
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { getLevelFromXP } from '@/lib/utils';
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/homework',    icon: HelpCircle,      label: 'AI Helper' },
   { href: '/quiz',        icon: Zap,             label: 'Practice' },
   { href: '/leaderboard', icon: Trophy,          label: 'Leaderboard' },
+  { href: '/calendar',    icon: Calendar,        label: 'Calendar' },
   { href: '/profile',     icon: User,            label: 'Profile' },
   { href: '/settings',    icon: Settings,        label: 'Settings' },
 ];
@@ -133,17 +134,7 @@ export default function Sidebar() {
         <div className="p-6 border-t border-slate-100 dark:border-slate-900 space-y-6">
           <AiUsageWidget user={user} />
 
-          {/* Theme & Display Controls */}
-          <div className="flex gap-2">
-             <button 
-               onClick={toggleDarkMode}
-               className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all shadow-sm"
-               title="Toggle Contrast"
-             >
-               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-               <span className="text-[10px] font-bold uppercase tracking-widest">{darkMode ? 'Light' : 'Dark'}</span>
-             </button>
-          </div>
+
 
           <div className="flex items-center gap-4">
             <Avatar
