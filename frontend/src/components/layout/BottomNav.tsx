@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 const navItems = [
-  { href: '/',            icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/flashcards',  icon: BookOpen,        label: 'Repository' },
   { href: '/homework',    icon: Sparkles,        label: 'Assistant' },
   { href: '/leaderboard', icon: Trophy,          label: 'Ranking' },
@@ -31,7 +31,7 @@ export default function BottomNav() {
     >
       <div className="flex items-center justify-around h-16 pb-safe relative">
         {navItems.map(item => {
-          const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+          const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}

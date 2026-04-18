@@ -28,7 +28,7 @@ import Avatar from '@/components/ui/Avatar';
 import { clsx } from 'clsx';
 
 export default function SettingsPage() {
-  const { user, setUser, darkMode, toggleDarkMode } = useAuthStore();
+  const { user, setUser, darkMode, toggleDarkMode, theme, setTheme } = useAuthStore();
   
   // Promo code state
   const [promoCode, setPromoCode] = useState('');
@@ -267,6 +267,31 @@ export default function SettingsPage() {
                     </div>
                  </button>
                </div>
+
+              {/* Colour Palette */}
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mt-8 mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+                Colour Palette
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                {([
+                  { id: 'matcha', label: 'Matcha Café', swatch: ['#88B34A', '#F4F8EB', '#D1E5B9'], desc: 'Earthy & calm' },
+                  { id: 'classic', label: 'Classic Lab', swatch: ['#7C3AED', '#F8F9FA', '#DEE2E6'], desc: 'Academic purple' },
+                  { id: 'navy', label: 'AI Navy', swatch: ['#0EA5E9', '#F0F4FF', '#C7D5FF'], desc: 'Tech-focused blue' },
+                ] as const).map(t => (
+                  <button key={t.id} onClick={() => setTheme(t.id)}
+                    className={clsx('p-4 rounded-2xl border-2 flex flex-col gap-3 transition-all text-left group',
+                      theme === t.id ? 'border-brand-500 bg-brand-500/5 shadow-lg' : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
+                    )}>
+                    <div className="flex gap-1">
+                      {t.swatch.map((c, i) => <div key={i} className="w-5 h-5 rounded-full" style={{ backgroundColor: c }} />)}
+                    </div>
+                    <div>
+                      <div className={clsx('text-[10px] font-black uppercase tracking-widest', theme === t.id ? 'text-brand-500' : 'text-slate-500')}>{t.label}</div>
+                      <div className="text-[9px] font-bold text-slate-400 mt-0.5">{t.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </motion.section>
             )}
 

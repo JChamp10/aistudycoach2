@@ -92,6 +92,106 @@ html.dark {
   --border-rgb: 58, 69, 51;
 }
 
+/* ─── Classic Theme ──────────────────────────────────────────────────────────── */
+[data-theme="classic"] {
+  --bg-primary: #F8F9FA;
+  --bg-secondary: #FFFFFF;
+  --bg-muted: #F1F3F5;
+  --bg-card: #FFFFFF;
+  --bg-elevated: #F0F2F5;
+  --border-primary: #DEE2E6;
+  --border-brand: rgba(99, 102, 241, 0.3);
+  --text-primary: #1A1B2E;
+  --text-secondary: #2D2E4A;
+  --text-muted: #6C757D;
+  --text-light: #9CA3AF;
+  --text-faint: #CDD5DF;
+  --brand-50: #F5F3FF;
+  --brand-100: #EDE9FE;
+  --brand-200: #DDD6FE;
+  --brand-300: #C4B5FD;
+  --brand-400: #A78BFA;
+  --brand-500: #7C3AED;
+  --brand-600: #6D28D9;
+  --brand-700: #5B21B6;
+  --brand-800: #4C1D95;
+  --brand-900: #2E1065;
+  --brand-glow: rgba(124, 58, 237, 0.2);
+  --brand-glow-hover: rgba(124, 58, 237, 0.35);
+  --surface-shadow: rgba(30, 27, 75, 0.08);
+  --gradient-card: linear-gradient(135deg, #FFFFFF 0%, #F8F7FF 100%);
+  --gradient-sidebar: linear-gradient(180deg, #FAFAFE 0%, #F0EFF9 100%);
+  --input-bg: #FFFFFF;
+  --bg-card-rgb: 255, 255, 255;
+  --border-rgb: 222, 226, 230;
+}
+
+html.dark[data-theme="classic"] {
+  --bg-primary: #0F0E1A;
+  --bg-secondary: #16152A;
+  --bg-muted: #1E1D33;
+  --bg-card: #1A1929;
+  --bg-elevated: #221F37;
+  --border-primary: #2D2B4A;
+  --text-primary: #E9E8FF;
+  --text-muted: #9B99C8;
+  --text-faint: #4F4D7A;
+  --brand-500: #A78BFA;
+  --brand-400: #C4B5FD;
+  --input-bg: #1E1D33;
+  --gradient-card: linear-gradient(135deg, #1A1929 0%, #0F0E1A 100%);
+}
+
+/* ─── Navy / AI Theme ────────────────────────────────────────────────────────── */
+[data-theme="navy"] {
+  --bg-primary: #F0F4FF;
+  --bg-secondary: #FAFBFF;
+  --bg-muted: #E8EEFF;
+  --bg-card: #FFFFFF;
+  --bg-elevated: #EDF1FF;
+  --border-primary: #C7D5FF;
+  --border-brand: rgba(56, 189, 248, 0.35);
+  --text-primary: #0C1445;
+  --text-secondary: #1A2675;
+  --text-muted: #4B6097;
+  --text-light: #7B96C8;
+  --text-faint: #A8BFEA;
+  --brand-50: #F0FAFF;
+  --brand-100: #E0F5FE;
+  --brand-200: #BAE8FD;
+  --brand-300: #7DD3FC;
+  --brand-400: #38BDF8;
+  --brand-500: #0EA5E9;
+  --brand-600: #0284C7;
+  --brand-700: #0369A1;
+  --brand-800: #075985;
+  --brand-900: #0C4A6E;
+  --brand-glow: rgba(14, 165, 233, 0.2);
+  --brand-glow-hover: rgba(14, 165, 233, 0.4);
+  --surface-shadow: rgba(12, 20, 69, 0.08);
+  --gradient-card: linear-gradient(135deg, #FFFFFF 0%, #F5F8FF 100%);
+  --gradient-sidebar: linear-gradient(180deg, #F6F9FF 0%, #EBF0FF 100%);
+  --input-bg: #FFFFFF;
+  --bg-card-rgb: 255, 255, 255;
+  --border-rgb: 199, 213, 255;
+}
+
+html.dark[data-theme="navy"] {
+  --bg-primary: #050D1A;
+  --bg-secondary: #0C1628;
+  --bg-muted: #0F2040;
+  --bg-card: #0D1B35;
+  --bg-elevated: #142042;
+  --border-primary: #1E357A;
+  --text-primary: #E0EEFF;
+  --text-muted: #6B8EC4;
+  --text-faint: #2A4A82;
+  --brand-500: #38BDF8;
+  --brand-400: #7DD3FC;
+  --input-bg: #0F2040;
+  --gradient-card: linear-gradient(135deg, #0D1B35 0%, #050D1A 100%);
+}
+
 @layer base {
   body {
     @apply antialiased;

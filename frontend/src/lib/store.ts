@@ -45,6 +45,8 @@ interface AuthState {
   aiUsage: { used: number; limit: number };
   setUsage: (used: number, limit: number) => void;
   setNotes: (notes: Note[]) => void;
+  theme: 'classic' | 'matcha' | 'navy';
+  setTheme: (theme: 'classic' | 'matcha' | 'navy') => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -55,6 +57,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   darkMode: false,
   showUpgradeModal: false,
   aiUsage: { used: 0, limit: 10 },
+  theme: (typeof window !== 'undefined' ? (localStorage.getItem('app_theme') as 'classic' | 'matcha' | 'navy') : null) || 'matcha',
   setShowUpgradeModal: (show) => set({ showUpgradeModal: show }),
 
   initTheme: () => {
@@ -66,7 +69,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (isDark) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
 
-    set({ darkMode: isDark });
+    // App theme
+    const savedTheme = (localStorage.getItem('app_theme') as 'classic' | 'matcha' | 'navy') || 'matcha';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    set({ darkMode: isDark, theme: savedTheme });
   },
 
   toggleDarkMode: () => {
@@ -181,4 +188,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   })),
   setNotes: (notes) => set({ notes }),
   setUser: (user) => set({ user }),
+  setTheme: (theme) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('app_theme', theme);
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    set({ theme });
+  },
 }));

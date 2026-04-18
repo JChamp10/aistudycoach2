@@ -11,7 +11,7 @@ import { clsx } from 'clsx';
 import Avatar from '@/components/ui/Avatar';
 
 const navItems = [
-  { href: '/',            icon: LayoutDashboard, label: 'Learn' },
+  { href: '/dashboard',            icon: LayoutDashboard, label: 'Learn' },
   { href: '/flashcards',  icon: BookOpen,        label: 'Flashcards' },
   { href: '/homework',    icon: HelpCircle,      label: 'AI Helper' },
   { href: '/quiz',        icon: Zap,             label: 'Practice' },
@@ -98,7 +98,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-4 py-8 space-y-1 overflow-y-auto">
         <div className="px-4 mb-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 opacity-60">General</div>
         {navItems.map(item => {
-          const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+          const active = item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href}
               className={clsx(
