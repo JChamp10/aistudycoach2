@@ -5,31 +5,31 @@
 
 /* ─── Theme Variables (Matcha Cafe Default) ────────────────────────────────── */
 :root {
-  --bg-primary: #F0F4E8;
-  --bg-secondary: #F7FAF2;
-  --bg-muted: #E2EAD3;
+  --bg-primary: #F4F8EB;
+  --bg-secondary: #FAFCF6;
+  --bg-muted: #E6ECCF;
   --bg-card: #FFFFFF;
-  --bg-elevated: #EEF3E4;
+  --bg-elevated: #F1F6DF;
 
-  --border-primary: #D1DCC0;
-  --border-brand: rgba(122, 157, 84, 0.3);
+  --border-primary: #D1E5B9;
+  --border-brand: rgba(135, 198, 79, 0.4);
 
-  --text-primary: #2C3325;
-  --text-secondary: #4A5540;
-  --text-muted: #6B7A5D;
-  --text-light: #8CA07A;
-  --text-faint: #ACBBA1;
+  --text-primary: #252D1B;
+  --text-secondary: #394A28;
+  --text-muted: #5B753A;
+  --text-light: #83A15D;
+  --text-faint: #A0B980;
 
-  --brand-50:  #F7FAF2;
-  --brand-100: #EBF2DF;
-  --brand-200: #D8E7C4;
-  --brand-300: #C2D9A4;
-  --brand-400: #A1C37D;
-  --brand-500: #7A9D54;
-  --brand-600: #658245;
-  --brand-700: #4F6636;
-  --brand-800: #3A4B27;
-  --brand-900: #253018;
+  --brand-50:  #FAFCF6;
+  --brand-100: #EDF3DC;
+  --brand-200: #DDF1B8;
+  --brand-300: #C2E887;
+  --brand-400: #9ECB5C;
+  --brand-500: #88B34A; /* Brighter matcha */
+  --brand-600: #719A3B;
+  --brand-700: #557827;
+  --brand-800: #3E5B18;
+  --brand-900: #253A0A;
 
   --surface-shadow: rgba(44, 51, 37, 0.08);
   --brand-glow: rgba(122, 157, 84, 0.2);

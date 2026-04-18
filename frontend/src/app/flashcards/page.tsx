@@ -87,6 +87,30 @@ export default function FlashcardsPage() {
     } catch { toast.error('Failed to load cards'); } finally { setLoading(false); }
   };
 
+  const loadQuiz = async (deck: Deck, hardOnly: boolean = false) => {
+    setLoading(true);
+    try {
+      const res = await flashcardApi.deckCards(deck.id);
+      let c: Card[] = res.data.cards || [];
+      if (c.length === 0) {
+        toast.error('Deck is empty'); return;
+      }
+      if (hardOnly) {
+        c = c.filter(card => (card.memory_strength || 0) < 0.6);
+        if (c.length === 0) {
+          toast.success('No weak areas! You know this deck well.');
+          return;
+        }
+      }
+      if (c.length < 4) {
+        toast.error('Need at least 4 cards to generate a quiz.');
+        return;
+      }
+      setCards(c); setSelectedDeck(deck);
+      setScreen('hard-quiz');
+    } catch { toast.error('Failed to load quiz'); } finally { setLoading(false); }
+  };
+
   const openViewCards = async (deck: Deck) => {
     setSelectedDeck(deck); setCardsLoading(true); setScreen('view-cards');
     try {
@@ -109,7 +133,10 @@ export default function FlashcardsPage() {
 
     const newStack = swipeStack.slice(0, -1);
     setSwipeStack(newStack);
-    if (newStack.length === 0) setScreen('result');
+    if (newStack.length === 0) {
+      setFocusMode(false);
+      setScreen('result');
+    }
 
     flashcardApi.reviewCard(card.id, difficulty).then(res => {
       setSessionXP(prev => prev + (res.data.xp?.xpGained || 0));
@@ -188,10 +215,11 @@ export default function FlashcardsPage() {
                      <Layers3 className="w-3.5 h-3.5" />
                      <span className="text-[10px] font-bold uppercase tracking-widest">{deck.card_count} Knowledge Nodes</span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 mb-2">
                      <button onClick={() => loadDeckCards(deck)} className="btn-primary flex-1 text-[10px] py-3 uppercase tracking-widest">Study All</button>
                      <button onClick={() => loadDeckCards(deck, true)} className="flex-1 text-[10px] py-3 uppercase tracking-widest border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-xl font-black transition-all">Weak Links</button>
                   </div>
+                  <button onClick={() => loadQuiz(deck, true)} className="w-full text-[10px] py-3 uppercase tracking-widest border border-brand-500/30 text-brand-500 hover:bg-brand-500/10 rounded-xl font-black transition-all">Quiz Weak Links</button>
                </div>
             </div>
           ))}
@@ -203,7 +231,7 @@ export default function FlashcardsPage() {
   // ── STUDY ─────────────────────────────────────────────────────────────────
   if (screen === 'study') return (
     <AppLayout>
-      <div className={clsx("min-h-screen flex flex-col transition-all duration-700 pt-10")}
+      <div className={clsx("flex flex-col transition-all duration-700 pt-10", focusMode ? "fixed inset-0 z-[100] h-screen overflow-hidden" : "min-h-screen")}
            style={focusMode ? { backgroundImage: 'url(/cafe_pixel_bg.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'rgba(0,0,0,0.6)', backgroundBlendMode: 'darken' } : {}}>
         <div className="max-w-4xl mx-auto w-full px-6 flex flex-col items-center">
           
@@ -257,6 +285,18 @@ export default function FlashcardsPage() {
   // ── RECALL ────────────────────────────────────────────────────────────────
   if (screen === 'recall') return (
      <AppLayout><div className="max-w-xl mx-auto py-10"><button onClick={() => setScreen('home')} className="mb-10 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:opacity-80" style={{ color: 'var(--text-muted)' }}><ChevronLeft className="w-4 h-4" /> Cancel Vectoring</button>{recallDeck && <RecallMode deck={recallDeck} onDone={() => setScreen('home')} />}</div></AppLayout>
+  );
+
+  // ── HARD QUIZ ─────────────────────────────────────────────────────────────
+  if (screen === 'hard-quiz') return (
+    <AppLayout>
+      <div className="max-w-3xl mx-auto py-10">
+        <button onClick={() => setScreen('home')} className="mb-10 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
+          <ChevronLeft className="w-4 h-4" /> Cancel Quiz
+        </button>
+        <HardQuiz cards={cards} onDone={() => setScreen('home')} />
+      </div>
+    </AppLayout>
   );
 
   // ── VIEW CARDS ────────────────────────────────────────────────────────────
