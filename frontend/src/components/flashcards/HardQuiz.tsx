@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, Brain, CheckCircle2, ChevronRight, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Card } from './types';
+import { flashcardApi } from '@/lib/api';
 
 interface HardQuizProps {
   cards: Card[];
@@ -107,7 +108,12 @@ export function HardQuiz({ cards, onDone }: HardQuizProps) {
                 if (!confirmed) { 
                   setSelected(opt); 
                   setConfirmed(true); 
-                  if (opt === card.answer) setScore(s => s + 1); 
+                  if (opt === card.answer) {
+                    setScore(s => s + 1); 
+                    flashcardApi.reviewCard(card.id, 'easy').catch(() => {});
+                  } else {
+                    flashcardApi.reviewCard(card.id, 'hard').catch(() => {});
+                  }
                 } 
               }} disabled={confirmed} className={cls}>
               {opt}
