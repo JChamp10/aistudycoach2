@@ -35,6 +35,9 @@ export default function SettingsPage() {
   const [redeeming, setRedeeming] = useState(false);
   const [redeemed, setRedeemed] = useState(false);
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState('profile');
+
   // Avatar state
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarRemoving, setAvatarRemoving] = useState(false);
@@ -123,16 +126,16 @@ export default function SettingsPage() {
             <div className="card !p-4 border-l-4 border-brand-500">
                <nav className="space-y-1">
                   {[
-                    { icon: User, label: 'Profile Settings', active: true },
-                    { icon: Monitor, label: 'Display & UI', active: false },
-                    { icon: Bell, label: 'Notifications', active: false },
-                    { icon: Lock, label: 'Security', active: false },
-                    { icon: Globe, label: 'Data & Privacy', active: false },
-                    { icon: Database, label: 'Subscription', active: false },
+                    { icon: User, label: 'Profile Settings', id: 'profile' },
+                    { icon: Monitor, label: 'Display & UI', id: 'display' },
+                    { icon: Database, label: 'Subscription', id: 'subscription' },
                   ].map(item => (
-                    <button key={item.label} className={clsx(
+                    <button 
+                      key={item.label} 
+                      onClick={() => setActiveTab(item.id)}
+                      className={clsx(
                       "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all",
-                      item.active ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl" : "text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-600 dark:hover:text-slate-200"
+                      activeTab === item.id ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl" : "text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:text-slate-600 dark:hover:text-slate-200"
                     )}>
                       <item.icon className="w-4 h-4" />
                       {item.label}
@@ -161,7 +164,8 @@ export default function SettingsPage() {
           <div className="lg:col-span-2 space-y-8">
             
             {/* Identity Card */}
-            <section className="card !p-8">
+            {activeTab === 'profile' && (
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card !p-8">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
                 <User className="w-4 h-4 text-brand-500" /> Identity Module
               </h2>
@@ -214,10 +218,12 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-            </section>
+            </motion.section>
+            )}
 
             {/* Visual Interface */}
-            <section className="card !p-8">
+            {activeTab === 'display' && (
+            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card !p-8">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
                 <Monitor className="w-4 h-4 text-brand-500" /> Visual Interface
               </h2>
@@ -260,12 +266,15 @@ export default function SettingsPage() {
                       <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dark Protocol</div>
                     </div>
                  </button>
-              </div>
-            </section>
+               </div>
+            </motion.section>
+            )}
 
             {/* System Access Card */}
-            {!isLegend && (
-              <section className="card !p-8 relative overflow-hidden bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-950 dark:to-slate-900/50">
+            {activeTab === 'subscription' && (
+             <>
+              {!isLegend ? (
+              <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card !p-8 relative overflow-hidden bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-950 dark:to-slate-900/50">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/5 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
                 
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
@@ -315,7 +324,15 @@ export default function SettingsPage() {
                     </div>
                   )}
                 </div>
-              </section>
+              </motion.section>
+              ) : (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card !p-8 bg-brand-500/5 border-brand-500/30 text-center space-y-4">
+                  <Crown className="w-12 h-12 text-brand-500 mx-auto" />
+                  <h3 className="text-xl font-black uppercase tracking-tight text-brand-500">Elite Legend Active</h3>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">You have unlocked unrestricted lifetime administrative permissions.</p>
+                </motion.div>
+              )}
+             </>
             )}
 
             {/* Log Out Section */}
