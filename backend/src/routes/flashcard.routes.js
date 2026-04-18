@@ -260,7 +260,10 @@ router.post('/:id/review', async (req, res) => {
     else if (interval === 1) interval = 6;
     else interval = Math.round(interval * ef);
 
-    const memoryStrength = Math.min(1.0, (parseFloat(card.memory_strength) || 0) + (q / 20));
+    let memoryStrength = parseFloat(card.memory_strength) || 0;
+    if (difficulty === 'hard') memoryStrength = Math.max(0, memoryStrength - 0.2);
+    else memoryStrength = Math.min(1.0, memoryStrength + 0.2);
+    
     const nextReview = new Date();
     nextReview.setDate(nextReview.getDate() + interval);
 

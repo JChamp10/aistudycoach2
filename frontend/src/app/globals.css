@@ -291,3 +291,15 @@ body.focus-mode .study-surface {
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+
+/* ─── Animated Focus Background ────────────────────────────────────── */
+@keyframes panBackground {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+.focus-bg-animated {
+  background-size: 120% 120%;
+  animation: panBackground 40s ease-in-out infinite;
+}

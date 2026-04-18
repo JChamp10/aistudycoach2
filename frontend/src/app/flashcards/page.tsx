@@ -231,8 +231,8 @@ export default function FlashcardsPage() {
   // ── STUDY ─────────────────────────────────────────────────────────────────
   if (screen === 'study') return (
     <AppLayout>
-      <div className={clsx("flex flex-col transition-all duration-700 pt-10", focusMode ? "fixed inset-0 z-[100] h-screen overflow-hidden" : "min-h-screen")}
-           style={focusMode ? { backgroundImage: 'url(/cafe_pixel_bg.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'rgba(0,0,0,0.6)', backgroundBlendMode: 'darken' } : {}}>
+      <div className={clsx("flex flex-col transition-all duration-700 pt-10", focusMode ? "fixed inset-0 z-[100] h-screen overflow-hidden focus-bg-animated" : "min-h-screen")}
+           style={focusMode ? { backgroundImage: 'url(/cafe_pixel_bg.png)', backgroundColor: 'rgba(0,0,0,0.6)', backgroundBlendMode: 'darken' } : {}}>
         <div className="max-w-4xl mx-auto w-full px-6 flex flex-col items-center">
           
           <div className="w-full mb-12 flex items-center justify-between">
@@ -325,9 +325,10 @@ export default function FlashcardsPage() {
                <div className="text-4xl font-black" style={{ color: 'var(--text-primary)' }}>{hardCount}</div>
             </div>
          </div>
-         <div className="flex justify-center gap-6">
-            <button onClick={() => setScreen('home')} className="btn-ghost !px-12 !py-4 text-xs tracking-widest uppercase">Repository</button>
-            <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary !px-12 !py-4 text-xs tracking-widest uppercase">Re-iterate</button>
+         <div className="flex justify-center gap-4">
+            <button onClick={() => setScreen('home')} className="btn-ghost !px-8 !py-4 text-xs tracking-widest uppercase">Repository</button>
+            <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary !px-8 !py-4 text-xs tracking-widest uppercase">Re-iterate</button>
+            <button onClick={() => loadQuiz(selectedDeck!, true)} className="btn-primary !px-8 !py-4 text-xs tracking-widest uppercase" style={{ backgroundColor: 'var(--color-danger, #ef4444)', borderColor: 'rgba(239, 68, 68, 0.4)' }}>Quiz Weak Links</button>
          </div>
       </div>
     </AppLayout>
