@@ -28,6 +28,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     useAuthStore.getState().initTheme();
+    // Immediately mark as authenticated if we have a token
+    // to prevent flash-redirect before fetchMe resolves
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) {
+      useAuthStore.setState({ isAuthenticated: true });
+    }
     fetchMe().then(() => {
       const { isAuthenticated } = useAuthStore.getState();
       if (!isAuthenticated) router.push('/login');
