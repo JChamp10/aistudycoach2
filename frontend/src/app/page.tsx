@@ -1,12 +1,14 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Zap, Brain, Calendar, Calculator, Trophy,
   ArrowRight, CheckCircle2, Sparkles, ChevronRight, Star,
   Menu, X, MessageSquare, Flame, Target, Clock
 } from 'lucide-react';
+import { useAuthStore } from '@/lib/store';
 
 // ─── Animated Typewriter ─────────────────────────────────────────────────────
 function Typewriter({ texts }: { texts: string[] }) {
@@ -154,6 +156,18 @@ function DemoChat() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
+  const { isAuthenticated, fetchMe } = useAuthStore();
+
+  useEffect(() => {
+    // If already logged in, skip the landing page entirely
+    useAuthStore.getState().initTheme();
+    fetchMe().then(() => {
+      if (useAuthStore.getState().isAuthenticated) {
+        router.replace('/dashboard');
+      }
+    });
+  }, []);
 
   const features = [
     { icon: Brain, title: 'AI Homework Helper', desc: 'Ask any question. Get a clear, step-by-step explanation — not just an answer.' },
