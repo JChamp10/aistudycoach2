@@ -25,11 +25,29 @@ export function HardQuiz({ cards, onDone }: HardQuizProps) {
   }));
 
   const card = cards[idx];
-  const next = () => {
-    if (idx + 1 >= cards.length) { setFinished(true); return; }
-    setIdx(i => i + 1);
-    setSelected(null);
-    setConfirmed(false);
+  const handleAnswer = (opt: string) => {
+    if (confirmed) return;
+    setSelected(opt);
+    setConfirmed(true);
+
+    if (opt === card.answer) {
+      setScore(s => s + 1);
+      flashcardApi.reviewCard(card.id, 'easy').catch(() => {});
+    } else {
+      flashcardApi.reviewCard(card.id, 'hard').catch(() => {});
+    }
+
+    setTimeout(() => {
+      setIdx(prevIdx => {
+        if (prevIdx + 1 >= cards.length) {
+          setFinished(true);
+          return prevIdx;
+        }
+        setSelected(null);
+        setConfirmed(false);
+        return prevIdx + 1;
+      });
+    }, 1200);
   };
 
   if (finished) return (
@@ -104,18 +122,7 @@ export function HardQuiz({ cards, onDone }: HardQuizProps) {
             }
           }
           return (
-            <button key={opt} style={style} onClick={() => { 
-                if (!confirmed) { 
-                  setSelected(opt); 
-                  setConfirmed(true); 
-                  if (opt === card.answer) {
-                    setScore(s => s + 1); 
-                    flashcardApi.reviewCard(card.id, 'easy').catch(() => {});
-                  } else {
-                    flashcardApi.reviewCard(card.id, 'hard').catch(() => {});
-                  }
-                } 
-              }} disabled={confirmed} className={cls}>
+            <button key={opt} style={style} onClick={() => handleAnswer(opt)} disabled={confirmed} className={cls}>
               {opt}
             </button>
           );
@@ -129,9 +136,6 @@ export function HardQuiz({ cards, onDone }: HardQuizProps) {
             {selected === card.answer ? <CheckCircle2 className="w-4 h-4" /> : <X className="w-4 h-4" />}
             {selected === card.answer ? 'Validation Successful' : `Correction: ${card.answer}`}
           </div>
-          <button onClick={next} className="btn-primary !px-12 flex items-center gap-2">
-            Proceed <ChevronRight className="w-4 h-4" />
-          </button>
         </motion.div>
       )}
     </div>
