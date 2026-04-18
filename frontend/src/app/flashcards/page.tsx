@@ -59,22 +59,29 @@ export default function FlashcardsPage() {
   const startDueSession = () => {
     setCards(dueCardsData);
     setSelectedDeck({ id: 'due', title: 'Due Today', card_count: dueCardsData.length });
-    setSwipeStack([...dueCardsData].sort(() => Math.random() - 0.5));
+    setSwipeStack([...dueCardsData].sort((a, b) => (b.memory_strength || 0) - (a.memory_strength || 0)));
     setHardCards([]); setEasyCount(0); setHardCount(0); setSessionXP(0);
     setScreen('study');
   };
 
-  const loadDeckCards = async (deck: Deck) => {
+  const loadDeckCards = async (deck: Deck, hardOnly: boolean = false) => {
     setLoading(true);
     try {
       const res = await flashcardApi.deckCards(deck.id);
-      const c = res.data.cards || [];
+      let c = res.data.cards || [];
       if (c.length === 0) {
         setSelectedDeck(deck); setScreen('create');
         return;
       }
+      if (hardOnly) {
+        c = c.filter(card => (card.memory_strength || 0) < 0.6);
+        if (c.length === 0) {
+          toast.success('No weak areas! You know this deck well.');
+          return;
+        }
+      }
       setCards(c); setSelectedDeck(deck);
-      setSwipeStack([...c].sort(() => Math.random() - 0.5));
+      setSwipeStack([...c].sort((a, b) => (b.memory_strength || 0) - (a.memory_strength || 0)));
       setHardCards([]); setEasyCount(0); setHardCount(0); setSessionXP(0);
       setScreen('study');
     } catch { toast.error('Failed to load cards'); } finally { setLoading(false); }
@@ -94,18 +101,19 @@ export default function FlashcardsPage() {
     try { await flashcardApi.deleteDeck(deck.id); loadDecks(); } finally { setDeletingDeck(null); }
   };
 
-  const handleSwipe = async (dir: 'left' | 'right') => {
+  const handleSwipe = (dir: 'left' | 'right') => {
     const card = swipeStack[swipeStack.length - 1];
     const difficulty = dir === 'right' ? 'easy' : 'hard';
     if (dir === 'right') setEasyCount(e => e + 1);
     else { setHardCount(h => h + 1); setHardCards(prev => [...prev, card]); }
-    try {
-      const res = await flashcardApi.reviewCard(card.id, difficulty);
-      setSessionXP(prev => prev + (res.data.xp?.xpGained || 0));
-    } catch {}
+
     const newStack = swipeStack.slice(0, -1);
     setSwipeStack(newStack);
     if (newStack.length === 0) setScreen('result');
+
+    flashcardApi.reviewCard(card.id, difficulty).then(res => {
+      setSessionXP(prev => prev + (res.data.xp?.xpGained || 0));
+    }).catch(() => {});
   };
 
   const saveCard = async (id: string, question: string, answer: string) => {
@@ -180,7 +188,10 @@ export default function FlashcardsPage() {
                      <Layers3 className="w-3.5 h-3.5" />
                      <span className="text-[10px] font-bold uppercase tracking-widest">{deck.card_count} Knowledge Nodes</span>
                   </div>
-                  <button onClick={() => loadDeckCards(deck)} className="btn-primary w-full text-xs py-3 uppercase tracking-widest">Study Now</button>
+                  <div className="flex gap-2">
+                     <button onClick={() => loadDeckCards(deck)} className="btn-primary flex-1 text-[10px] py-3 uppercase tracking-widest">Study All</button>
+                     <button onClick={() => loadDeckCards(deck, true)} className="flex-1 text-[10px] py-3 uppercase tracking-widest border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-xl font-black transition-all">Weak Links</button>
+                  </div>
                </div>
             </div>
           ))}
@@ -192,7 +203,8 @@ export default function FlashcardsPage() {
   // ── STUDY ─────────────────────────────────────────────────────────────────
   if (screen === 'study') return (
     <AppLayout>
-      <div className={clsx("min-h-screen flex flex-col transition-all duration-700", focusMode ? "bg-slate-950 pt-10" : "pt-10")}>
+      <div className={clsx("min-h-screen flex flex-col transition-all duration-700 pt-10")}
+           style={focusMode ? { backgroundImage: 'url(/cafe_pixel_bg.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: 'rgba(0,0,0,0.6)', backgroundBlendMode: 'darken' } : {}}>
         <div className="max-w-4xl mx-auto w-full px-6 flex flex-col items-center">
           
           <div className="w-full mb-12 flex items-center justify-between">
