@@ -231,9 +231,9 @@ export default function FlashcardsPage() {
   // ── STUDY ─────────────────────────────────────────────────────────────────
   if (screen === 'study') return (
     <AppLayout>
-      <div className={clsx("flex flex-col transition-all duration-700 pt-10", focusMode ? "fixed inset-0 z-[100] h-screen overflow-hidden focus-bg-animated" : "min-h-screen")}
-           style={focusMode ? { backgroundImage: 'url(/cafe_pixel_bg.png)', backgroundColor: 'rgba(0,0,0,0.6)', backgroundBlendMode: 'darken' } : {}}>
-        <div className="max-w-4xl mx-auto w-full px-6 flex flex-col items-center">
+      <div className={clsx("flex flex-col transition-all duration-700 pt-10", focusMode ? "fixed inset-0 z-[100] h-screen overflow-hidden" : "min-h-screen")}>
+        {focusMode && <div className="absolute inset-0 z-0 focus-bg-animated" style={{ backgroundImage: 'url(/cafe_pixel_bg.png)', backgroundColor: 'rgba(0,0,0,0.6)', backgroundBlendMode: 'darken' }} />}
+        <div className="max-w-4xl mx-auto w-full px-6 flex flex-col items-center relative z-10">
           
           <div className="w-full mb-12 flex items-center justify-between">
             <button onClick={() => { setFocusMode(false); setScreen('home'); }}

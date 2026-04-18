@@ -39,8 +39,6 @@ function MathSuite() {
         zoomButtons: true,
         expressionsTopbar: true,
         border: false,
-        backgroundColor: darkMode ? '#0f1115' : '#ffffff',
-        textColor: darkMode ? '#ffffff' : '#000000',
         invertedColors: darkMode,
         fontSize: 14,
       });
