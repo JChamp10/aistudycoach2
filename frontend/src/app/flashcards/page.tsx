@@ -68,7 +68,7 @@ export default function FlashcardsPage() {
     setLoading(true);
     try {
       const res = await flashcardApi.deckCards(deck.id);
-      let c = res.data.cards || [];
+      let c: Card[] = res.data.cards || [];
       if (c.length === 0) {
         setSelectedDeck(deck); setScreen('create');
         return;
