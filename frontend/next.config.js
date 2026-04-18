@@ -8,7 +8,6 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      { source: '/dashboard', destination: '/', permanent: true },
       { source: '/brain', destination: '/', permanent: true },
       { source: '/math', destination: '/', permanent: true },
       { source: '/progress', destination: '/', permanent: true },
