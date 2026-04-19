@@ -196,11 +196,15 @@ export default function LandingPage() {
       {/* ── Nav ──────────────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 md:px-12 h-16 border-b border-white/5"
         style={{ background: 'rgba(6, 14, 28, 0.85)', backdropFilter: 'blur(24px)' }}>
-        <Link href="/" className="flex items-center gap-2.5">
-          <Logo className="!gap-2" /
-          <a href="#demo" className="hover:text-white transition-colors">Demo</a>
-          <a href="#how" className="hover:text-white transition-colors">How It Works</a>
-          <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Logo className="!gap-2" />
+          </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <a href="#demo" className="hover:text-white transition-colors">Demo</a>
+            <a href="#how" className="hover:text-white transition-colors">How It Works</a>
+            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+          </div>
         </div>
         <div className="hidden md:flex items-center gap-3">
           <Link href="/login" className="text-[11px] font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest px-4 py-2">Sign In</Link>

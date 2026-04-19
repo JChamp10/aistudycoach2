@@ -178,12 +178,8 @@ export default function Sidebar() {
             <Avatar
               username={user.username}
               avatarUrl={user.avatar_url}
-              className="w-10 h-10 rounded-xl border"
+              className="w-10 h-10 rounded-xl border border-[var(--border-primary)] bg-[var(--surface-muted)]"
               fallbackClassName="text-text-muted"
-              style={{
-                borderColor: 'var(--border-primary)',
-                backgroundColor: 'var(--surface-muted)',
-              }}
             />
             <div className="flex-1 min-w-0">
               <div className="text-sm font-black uppercase tracking-tight text-text-primary truncate">{user.username}</div>

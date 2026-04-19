@@ -34,12 +34,8 @@ export default function DashboardPage() {
               <Avatar
                 username={user?.username}
                 avatarUrl={user?.avatar_url}
-                className="w-14 h-14 rounded-2xl border"
+                className="w-14 h-14 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-muted)]"
                 fallbackClassName="text-text-muted"
-                style={{
-                  borderColor: 'var(--border-primary)',
-                  backgroundColor: 'var(--surface-muted)',
-                }}
               />
               <div>
                 <h1 className="text-3xl font-black tracking-tight uppercase text-text-primary">
