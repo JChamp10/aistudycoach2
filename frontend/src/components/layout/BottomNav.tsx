@@ -24,8 +24,10 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-100 dark:border-slate-900"
+      className="md:hidden fixed bottom-0 left-0 w-full z-50 backdrop-blur-xl border-t"
       style={{
+        backgroundColor: 'rgba(244, 247, 236, 0.8)',
+        borderColor: 'var(--border-primary)',
         boxShadow: '0 -4px 30px rgba(0,0,0,0.05)',
       }}
     >
@@ -42,7 +44,7 @@ export default function BottomNav() {
                 <motion.div
                   layoutId="bottomNavIndicator"
                   className="absolute top-0 w-8 h-1 rounded-full"
-                  style={{ backgroundColor: 'var(--brand-900)' }}
+                  style={{ backgroundColor: 'var(--brand-500)' }}
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}

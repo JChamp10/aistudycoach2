@@ -4,8 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import { UpgradeModal } from '@/components/layout/UpgradeModal';
 
 export const metadata: Metadata = {
-  title: 'AI Study Coach – Learn Smarter',
-  description: 'AI-powered study platform using spaced repetition, free recall, and personalized learning plans.',
+  title: 'zenithAI – Retro Arcade Learning',
+  description: 'zenithAI is a neon arcade-inspired learning platform with AI-powered practice, flashcards, and spaced repetition.',
 };
 
 export default function RootLayout({

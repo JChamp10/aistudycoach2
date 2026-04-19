@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { verifyAuth } = require('../middleware/auth.middleware');
+const { authenticate } = require('../middleware/auth.middleware');
 const { query } = require('../db/pool');
 const crypto = require('crypto');
 
 // Get all events for user
-router.get('/', verifyAuth, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
     const events = await query(
       'SELECT * FROM calendar_events WHERE user_id = $1 ORDER BY event_date ASC',
@@ -19,7 +19,7 @@ router.get('/', verifyAuth, async (req, res) => {
 });
 
 // Create event
-router.post('/', verifyAuth, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   const { title, description, event_type, event_date } = req.body;
   if (!title || !event_date) return res.status(400).json({ error: 'Title and event_date required.' });
   
@@ -36,7 +36,7 @@ router.post('/', verifyAuth, async (req, res) => {
 });
 
 // Delete event
-router.delete('/:id', verifyAuth, async (req, res) => {
+router.delete('/:id', authenticate, async (req, res) => {
   try {
     const result = await query(
       'DELETE FROM calendar_events WHERE id = $1 AND user_id = $2 RETURNING *',
@@ -51,7 +51,7 @@ router.delete('/:id', verifyAuth, async (req, res) => {
 });
 
 // Generate Sync Token
-router.post('/token', verifyAuth, async (req, res) => {
+router.post('/token', authenticate, async (req, res) => {
   try {
     const userRes = await query('SELECT calendar_token FROM users WHERE id = $1', [req.user.id]);
     let token = userRes.rows[0]?.calendar_token;
@@ -80,10 +80,10 @@ router.get('/ical/:token', async (req, res) => {
     let ical = '';
     ical += 'BEGIN:VCALENDAR\r\n';
     ical += 'VERSION:2.0\r\n';
-    ical += 'PRODID:-//StudyCafe//EN\r\n';
+    ical += 'PRODID:-//zenithAI//EN\r\n';
     ical += 'CALSCALE:GREGORIAN\r\n';
     ical += 'METHOD:PUBLISH\r\n';
-    ical += 'X-WR-CALNAME:StudyCafe Assignments & Tests\r\n';
+    ical += 'X-WR-CALNAME:zenithAI Assignments & Tests\r\n';
     ical += 'X-WR-TIMEZONE:UTC\r\n';
     
     const formatDate = (date) => {
@@ -98,7 +98,7 @@ router.get('/ical/:token', async (req, res) => {
 
     events.rows.forEach(e => {
       ical += 'BEGIN:VEVENT\r\n';
-      ical += `UID:${e.id}@studycafe\r\n`;
+      ical += `UID:${e.id}@zenithAI\r\n`;
       ical += `DTSTAMP:${formatDate(e.created_at)}\r\n`;
       // We'll set these as all-day events
       ical += `DTSTART;VALUE=DATE:${formatDateOnly(e.event_date)}\r\n`;
@@ -112,7 +112,7 @@ router.get('/ical/:token', async (req, res) => {
     ical += 'END:VCALENDAR\r\n';
     
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="studycafe.ics"');
+    res.setHeader('Content-Disposition', 'attachment; filename="zenithAI.ics"');
     res.send(ical);
   } catch (err) {
     console.error(err);

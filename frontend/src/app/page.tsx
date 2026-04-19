@@ -9,6 +9,7 @@ import {
   Menu, X, MessageSquare, Flame, Target, Clock
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
+import Logo from '@/components/layout/Logo';
 
 // ─── Animated Typewriter ─────────────────────────────────────────────────────
 function Typewriter({ texts }: { texts: string[] }) {
@@ -92,7 +93,7 @@ function DemoChat() {
         <div className="w-3 h-3 rounded-full bg-red-500/70" />
         <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
         <div className="w-3 h-3 rounded-full bg-green-500/70" />
-        <span className="ml-3 text-[10px] font-mono text-slate-500 uppercase tracking-widest">StudyCafe AI Assistant</span>
+        <span className="ml-3 text-[10px] font-mono text-slate-500 uppercase tracking-widest">zenithAI Assistant</span>
         <div className="ml-auto flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
           <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest">Live</span>
@@ -196,13 +197,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 md:px-12 h-16 border-b border-white/5"
         style={{ background: 'rgba(6, 14, 28, 0.85)', backdropFilter: 'blur(24px)' }}>
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-cyan-400 flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-slate-900" />
-          </div>
-          <span className="font-black text-white tracking-tight text-sm uppercase">StudyCafe</span>
-        </Link>
-        <div className="hidden md:flex items-center gap-8 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
+          <Logo className="!gap-2" /
           <a href="#demo" className="hover:text-white transition-colors">Demo</a>
           <a href="#how" className="hover:text-white transition-colors">How It Works</a>
           <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
@@ -297,7 +292,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-2 px-6 py-4 border-b border-white/5" style={{ background: '#080F1E' }}>
               {['#EF4444','#F59E0B','#22C55E'].map(c => <div key={c} className="w-3 h-3 rounded-full" style={{ background: c, opacity: 0.7 }} />)}
               <div className="flex-1 mx-4 h-6 rounded-lg flex items-center px-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <span className="text-[10px] font-mono text-slate-500">studycafe.app/dashboard</span>
+                <span className="text-[10px] font-mono text-slate-500">zenithAI.app/dashboard</span>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-0 divide-x divide-white/5" style={{ minHeight: 200 }}>
@@ -326,7 +321,7 @@ export default function LandingPage() {
             {/* Without */}
             <div className="rounded-2xl p-8 border border-red-500/20" style={{ background: 'rgba(239,68,68,0.05)' }}>
               <div className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-8 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-400" /> Without StudyCafe
+                <div className="w-2 h-2 rounded-full bg-red-400" /> Without zenithAI
               </div>
               <div className="space-y-4">
                 {[
@@ -345,7 +340,7 @@ export default function LandingPage() {
             {/* With */}
             <div className="rounded-2xl p-8 border border-cyan-400/20" style={{ background: 'rgba(14,165,233,0.05)' }}>
               <div className="text-[10px] font-black uppercase tracking-widest text-cyan-400 mb-8 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-cyan-400" /> With StudyCafe
+                <div className="w-2 h-2 rounded-full bg-cyan-400" /> With zenithAI
               </div>
               <div className="space-y-4">
                 {[
@@ -540,14 +535,14 @@ export default function LandingPage() {
             <div className="w-7 h-7 rounded-lg bg-cyan-400 flex items-center justify-center">
               <BookOpen className="w-3.5 h-3.5 text-slate-900" />
             </div>
-            <span className="font-black text-white tracking-tight text-sm uppercase">StudyCafe</span>
+            <span className="font-black text-white tracking-tight text-sm uppercase">zenithAI</span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 text-[10px] font-bold uppercase tracking-widest text-slate-500">
             {['Features', 'Pricing', 'Login', 'Register'].map(l => (
               <Link key={l} href={`/${l.toLowerCase()}`} className="hover:text-slate-300 transition-colors">{l}</Link>
             ))}
           </div>
-          <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">© 2025 StudyCafe. All rights reserved.</p>
+          <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">© 2025 zenithAI. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -49,16 +49,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [user?.plan]);
 
   if (!isAuthenticated) return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <div className="w-10 h-10 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{
+        backgroundColor: 'var(--surface-bg)',
+        transition: 'background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
+    >
+      <div
+        className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
+        style={{
+          borderColor: 'var(--border-muted)',
+          borderTopColor: 'var(--brand-500)',
+        }}
+      />
     </div>
   );
 
   return (
     <div
-      className="flex min-h-screen pb-16 md:pb-0 bg-white dark:bg-slate-950"
+      className="flex min-h-screen pb-16 md:pb-0"
       style={{
-        backgroundColor: 'var(--bg-primary)',
+        backgroundColor: 'var(--surface-bg)',
         transition: 'background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
