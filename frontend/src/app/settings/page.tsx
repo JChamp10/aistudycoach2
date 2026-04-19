@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { 
   Settings, 
@@ -28,7 +28,7 @@ import Avatar from '@/components/ui/Avatar';
 import { clsx } from 'clsx';
 
 export default function SettingsPage() {
-  const { user, setUser, darkMode, toggleDarkMode, theme, setTheme } = useAuthStore();
+  const { user, setUser, darkMode, toggleDarkMode } = useAuthStore();
   
   // Promo code state
   const [promoCode, setPromoCode] = useState('');
@@ -41,6 +41,18 @@ export default function SettingsPage() {
   // Avatar state
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarRemoving, setAvatarRemoving] = useState(false);
+
+  const [draftUsername, setDraftUsername] = useState(user?.username || '');
+  const [draftEmail, setDraftEmail] = useState(user?.email || '');
+  const [draftRegion, setDraftRegion] = useState(user?.region || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setDraftUsername(user.username);
+    setDraftEmail(user.email);
+    setDraftRegion(user.region || '');
+  }, [user]);
 
   const handleAvatarUpload = async (file?: File | null) => {
     if (!file) return;
@@ -79,6 +91,24 @@ export default function SettingsPage() {
       toast.error(err.response?.data?.error || 'Deletion protocol failed.');
     } finally {
       setAvatarRemoving(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSavingProfile(true);
+    try {
+      const res = await userApi.updateProfile({
+        username: draftUsername,
+        email: draftEmail,
+        region: draftRegion,
+      });
+      setUser(res.data.user);
+      toast.success('Profile builder saved successfully.');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to save profile.');
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -166,55 +196,92 @@ export default function SettingsPage() {
             {/* Identity Card */}
             {activeTab === 'profile' && (
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card !p-8">
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
-                <User className="w-4 h-4 text-brand-500" /> Identity Module
-              </h2>
-              
-              <div className="flex flex-col sm:flex-row items-center gap-8">
-                <div className="relative group">
-                   <Avatar
-                     username={user?.username || ''}
-                     avatarUrl={user?.avatar_url}
-                     className={clsx(
-                       "w-24 h-24 rounded-2xl border-2 transition-all duration-500",
-                       isLegend ? "border-brand-500 shadow-[0_0_20px_rgba(220,123,30,0.2)]" : "border-slate-100 dark:border-slate-800"
-                     )}
-                     fallbackClassName="bg-slate-50 dark:bg-slate-900 text-slate-400"
-                     textClassName="text-3xl font-black"
-                   />
-                   <label className="absolute -bottom-2 -right-2 w-8 h-8 rounded-lg bg-slate-900 dark:bg-white flex items-center justify-center cursor-pointer shadow-xl border border-slate-700 dark:border-slate-200 hover:scale-110 transition-transform">
-                      <Upload className="w-4 h-4 text-white dark:text-slate-900" />
-                      <input type="file" accept="image/*" className="hidden" onChange={e => handleAvatarUpload(e.target.files?.[0])} />
-                   </label>
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
+                  <User className="w-4 h-4 text-brand-500" /> Profile Builder
                 </div>
+                <p className="text-sm text-slate-400 max-w-2xl">Build your study profile here. Update your display name, contact email, region, and avatar so your account feels complete.</p>
+                <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
+                  <div className="space-y-6">
+                    <div className="relative group">
+                      <Avatar
+                        username={user?.username || ''}
+                        avatarUrl={user?.avatar_url}
+                        className={clsx(
+                          'w-24 h-24 rounded-2xl border-2 transition-all duration-500',
+                          isLegend ? 'border-brand-500 shadow-[0_0_20px_rgba(220,123,30,0.2)]' : 'border-slate-200 dark:border-slate-800'
+                        )}
+                        fallbackClassName="bg-slate-50 dark:bg-slate-900 text-slate-400"
+                        textClassName="text-3xl font-black"
+                      />
+                      <label className="absolute -bottom-2 -right-2 w-9 h-9 rounded-xl bg-brand-500 text-white flex items-center justify-center cursor-pointer shadow-xl border border-white/10 hover:scale-110 transition-transform">
+                        <Upload className="w-4 h-4" />
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleAvatarUpload(e.target.files?.[0])} />
+                      </label>
+                    </div>
 
-                <div className="flex-1 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Username</label>
-                      <input 
-                        className="input h-10 !rounded-lg text-xs font-bold" 
-                        value={user?.username || ''} 
-                        readOnly 
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Network Entity</label>
-                      <input 
-                        className="input h-10 !rounded-lg text-xs font-bold" 
-                        value={user?.email || ''} 
-                        readOnly 
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={handleRemoveAvatar}
                       disabled={avatarRemoving || !user?.avatar_url}
-                      className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600 disabled:opacity-0 transition-all flex items-center gap-1.5"
+                      className="w-full text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600 disabled:opacity-40 transition-all flex items-center justify-center gap-2 py-3 rounded-xl border border-red-500/10"
                     >
-                      <Trash2 className="w-3 h-3" /> Purge Digital Image
+                      <Trash2 className="w-3.5 h-3.5" /> Remove Avatar
                     </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Display Name</label>
+                        <input
+                          className="input h-12 !rounded-2xl text-sm font-bold"
+                          value={draftUsername}
+                          onChange={e => setDraftUsername(e.target.value)}
+                          placeholder="Enter a display name"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Contact Email</label>
+                        <input
+                          className="input h-12 !rounded-2xl text-sm font-bold"
+                          value={draftEmail}
+                          onChange={e => setDraftEmail(e.target.value)}
+                          placeholder="you@example.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Region</label>
+                      <input
+                        className="input h-12 !rounded-2xl text-sm font-bold"
+                        value={draftRegion}
+                        onChange={e => setDraftRegion(e.target.value)}
+                        placeholder="City, State / Province"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-4">
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={savingProfile || !user}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-500 text-white uppercase text-[11px] font-black tracking-widest shadow-lg hover:bg-brand-400 transition-all disabled:opacity-50"
+                      >
+                        {savingProfile ? 'Saving...' : 'Save Profile'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!user) return;
+                          setDraftUsername(user.username);
+                          setDraftEmail(user.email);
+                          setDraftRegion(user.region || '');
+                        }}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-slate-200 text-slate-500 uppercase text-[11px] font-black tracking-widest hover:bg-slate-100 transition-all"
+                      >
+                        Reset Details
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -224,10 +291,10 @@ export default function SettingsPage() {
             {/* Visual Interface */}
             {activeTab === 'display' && (
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card !p-8">
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                 <Monitor className="w-4 h-4 text-brand-500" /> Visual Interface
               </h2>
-              
+              <p className="text-sm text-slate-400 max-w-2xl mb-8">Choose between the new arcade light mode and the classic neon dark mode. Theme palettes are removed from this page.</p>
               <div className="grid grid-cols-2 gap-4">
                  <button 
                    onClick={() => darkMode && toggleDarkMode()}
@@ -243,8 +310,8 @@ export default function SettingsPage() {
                       <Sun className="w-6 h-6" />
                     </div>
                     <div>
-                      <div className={clsx("text-xs font-black uppercase tracking-widest", !darkMode ? "text-brand-700" : "text-slate-500")}>High Contrast</div>
-                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Light Protocol</div>
+                      <div className={clsx("text-xs font-black uppercase tracking-widest", !darkMode ? "text-brand-700" : "text-slate-500")}>Light Mode</div>
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Arcade Day</div>
                     </div>
                  </button>
 
@@ -262,36 +329,11 @@ export default function SettingsPage() {
                       <Moon className="w-6 h-6" />
                     </div>
                     <div>
-                      <div className={clsx("text-xs font-black uppercase tracking-widest", darkMode ? "text-brand-700 dark:text-brand-500" : "text-slate-500")}>Night Vision</div>
-                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dark Protocol</div>
+                      <div className={clsx("text-xs font-black uppercase tracking-widest", darkMode ? "text-brand-700 dark:text-brand-500" : "text-slate-500")}>Dark Mode</div>
+                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Arcade Night</div>
                     </div>
                  </button>
                </div>
-
-              {/* Colour Palette */}
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mt-8 mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
-                Colour Palette
-              </h3>
-              <div className="grid grid-cols-3 gap-3">
-                {([
-                  { id: 'matcha', label: 'Matcha Café', swatch: ['#88B34A', '#F4F8EB', '#D1E5B9'], desc: 'Earthy & calm' },
-                  { id: 'classic', label: 'Classic Lab', swatch: ['#7C3AED', '#F8F9FA', '#DEE2E6'], desc: 'Academic purple' },
-                  { id: 'navy', label: 'AI Navy', swatch: ['#0EA5E9', '#F0F4FF', '#C7D5FF'], desc: 'Tech-focused blue' },
-                ] as const).map(t => (
-                  <button key={t.id} onClick={() => setTheme(t.id)}
-                    className={clsx('p-4 rounded-2xl border-2 flex flex-col gap-3 transition-all text-left group',
-                      theme === t.id ? 'border-brand-500 bg-brand-500/5 shadow-lg' : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
-                    )}>
-                    <div className="flex gap-1">
-                      {t.swatch.map((c, i) => <div key={i} className="w-5 h-5 rounded-full" style={{ backgroundColor: c }} />)}
-                    </div>
-                    <div>
-                      <div className={clsx('text-[10px] font-black uppercase tracking-widest', theme === t.id ? 'text-brand-500' : 'text-slate-500')}>{t.label}</div>
-                      <div className="text-[9px] font-bold text-slate-400 mt-0.5">{t.desc}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
             </motion.section>
             )}
 

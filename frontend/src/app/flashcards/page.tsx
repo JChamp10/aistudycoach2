@@ -5,7 +5,7 @@ import { flashcardApi } from '@/lib/api';
 import {
   BookOpen, Plus, ChevronLeft,
   Trash2, Eye, Brain,
-  Clock3, Layers3, Frown, Smile, Trophy, ChevronRight, X
+  Clock3, Layers3, Smile, Trophy, ChevronRight, X, Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -25,12 +25,14 @@ export default function FlashcardsPage() {
   const [dueCardsData, setDueCardsData] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [cardsLoading, setCardsLoading] = useState(false);
-  const [deletingDeck, setDeletingDeck] = useState<string | null>(null);
+  const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
+  const [confirmDeleteDeck, setConfirmDeleteDeck] = useState<string | null>(null);
   const [recallDeck, setRecallDeck] = useState<Deck | null>(null);
 
   const [deckTitle, setDeckTitle] = useState('');
   const [cardQ, setCardQ] = useState('');
   const [cardA, setCardA] = useState('');
+  const [addingCard, setAddingCard] = useState(false);
 
   const [swipeStack, setSwipeStack] = useState<Card[]>([]);
   const [hardCards, setHardCards] = useState<Card[]>([]);
@@ -46,6 +48,31 @@ export default function FlashcardsPage() {
   }, [focusMode]);
 
   useEffect(() => { loadDecks(); }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (screen !== 'study') return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        const flipBtn = document.querySelector('[data-flip-btn]') as HTMLButtonElement;
+        if (flipBtn) flipBtn.click();
+      }
+      if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        const rightBtn = document.querySelector('[data-swipe-right]') as HTMLButtonElement;
+        if (rightBtn) rightBtn.click();
+      }
+      if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        const leftBtn = document.querySelector('[data-swipe-left]') as HTMLButtonElement;
+        if (leftBtn) leftBtn.click();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [screen]);
 
   const loadDecks = async () => {
     setLoading(true);
@@ -120,9 +147,13 @@ export default function FlashcardsPage() {
   };
 
   const deleteDeck = async (deck: Deck) => {
-    if (!confirm(`Delete "${deck.title}"?`)) return;
-    setDeletingDeck(deck.id);
-    try { await flashcardApi.deleteDeck(deck.id); loadDecks(); } finally { setDeletingDeck(null); }
+    if (confirmDeleteDeck !== deck.id) {
+      setConfirmDeleteDeck(deck.id);
+      setTimeout(() => setConfirmDeleteDeck(null), 3000);
+      return;
+    }
+    setDeletingDeckId(deck.id);
+    try { await flashcardApi.deleteDeck(deck.id); loadDecks(); } finally { setDeletingDeckId(null); setConfirmDeleteDeck(null); }
   };
 
   const handleSwipe = (dir: 'left' | 'right') => {
@@ -160,9 +191,12 @@ export default function FlashcardsPage() {
   };
 
   const addCard = async () => {
-    if (!selectedDeck) return;
-    const res = await flashcardApi.createCard({ deck_id: selectedDeck.id, question: cardQ, answer: cardA });
-    setDeckCards(prev => [...prev, res.data.card]); setCardQ(''); setCardA(''); loadDecks();
+    if (!selectedDeck || !cardQ.trim() || !cardA.trim()) return;
+    await flashcardApi.createCard({ deck_id: selectedDeck.id, question: cardQ, answer: cardA });
+    setCardQ(''); setCardA('');
+    loadDecks();
+    toast.success('Card added!');
+    setAddingCard(false);
   };
 
   // ── HOME ──────────────────────────────────────────────────────────────────
@@ -171,11 +205,11 @@ export default function FlashcardsPage() {
       <div className="max-w-5xl mx-auto space-y-10 pt-10">
         <header className="flex items-center justify-between">
            <div>
-              <h1 className="text-4xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>Knowledge Decks</h1>
-              <p className="text-sm font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Repository management</p>
+              <h1 className="text-4xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>My Flashcards</h1>
+              <p className="text-sm font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Your card collection</p>
            </div>
            <button onClick={() => { setSelectedDeck(null); setScreen('create'); }} className="btn-primary flex items-center gap-2 !px-6 !py-3">
-             <Plus className="w-4 h-4" /> Initialize Deck
+             <Plus className="w-4 h-4" /> New Deck
            </button>
         </header>
 
@@ -186,12 +220,25 @@ export default function FlashcardsPage() {
                 <Clock3 className="w-6 h-6 text-brand-500" />
               </div>
               <div>
-                <h2 className="text-xl font-black uppercase tracking-tight text-white mb-1">Scheduled Reviews</h2>
-                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--brand-300)' }}>{dueCardsData.length} cards require attention</p>
+                <h2 className="text-xl font-black uppercase tracking-tight text-white mb-1">Cards Due Today</h2>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--brand-300)' }}>{dueCardsData.length} cards ready for review</p>
               </div>
             </div>
             <button onClick={startDueSession} className="btn-primary !bg-white !text-slate-900 border-none !px-8 flex items-center gap-2">
-              Start Session <ChevronRight className="w-4 h-4" />
+              Start Review <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {!loading && decks.length === 0 && (
+          <div className="card text-center py-16 px-8">
+            <div className="w-16 h-16 rounded-2xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20 mx-auto mb-6">
+              <Sparkles className="w-8 h-8 text-brand-500" />
+            </div>
+            <h2 className="text-2xl font-black uppercase tracking-tight mb-3" style={{ color: 'var(--text-primary)' }}>No decks yet</h2>
+            <p className="text-sm font-medium mb-8 max-w-sm mx-auto" style={{ color: 'var(--text-muted)' }}>Create your first deck to start adding flashcards and building your knowledge.</p>
+            <button onClick={() => { setSelectedDeck(null); setScreen('create'); }} className="btn-primary !px-8 !py-4 inline-flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Create Your First Deck
             </button>
           </div>
         )}
@@ -202,24 +249,37 @@ export default function FlashcardsPage() {
                <div className="h-24 p-6 flex items-center justify-between" style={{ backgroundColor: 'var(--bg-muted)' }}>
                   <div className="flex items-center gap-3">
                     <BookOpen className="text-brand-500 w-5 h-5" />
-                    <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Archived Node</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Deck</div>
                   </div>
                   <div className="flex gap-2">
                      <button title="View Cards" onClick={() => openViewCards(deck)} className="w-9 h-9 rounded-lg flex items-center justify-center transition-all border border-transparent hover:border-slate-300" style={{ color: 'var(--text-muted)' }}><Eye className="w-4 h-4" /></button>
-                     <button title="Delete Deck" onClick={() => deleteDeck(deck)} className="w-9 h-9 rounded-lg hover:bg-red-500/10 flex items-center justify-center transition-all border border-transparent hover:border-red-200" style={{ color: 'var(--text-muted)' }}><Trash2 className="w-4 h-4" /></button>
+                     <button
+                       title={confirmDeleteDeck === deck.id ? "Click again to confirm" : "Delete Deck"}
+                       onClick={() => deleteDeck(deck)}
+                       className={clsx("w-9 h-9 rounded-lg flex items-center justify-center transition-all border", confirmDeleteDeck === deck.id
+                         ? "bg-red-500/20 border-red-500/50 text-red-500"
+                         : "border-transparent hover:border-red-200 hover:bg-red-500/10 text-red-500/60")}
+                       style={{}}
+                     >
+                       {deletingDeckId === deck.id ? (
+                         <div className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                       ) : (
+                         confirmDeleteDeck === deck.id ? <Sparkles className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />
+                       )}
+                     </button>
                   </div>
                </div>
                <div className="p-6">
                   <h3 className="text-xl font-black tracking-tight mb-1 uppercase" style={{ color: 'var(--text-primary)' }}>{deck.title}</h3>
                   <div className="flex items-center gap-3 mb-8" style={{ color: 'var(--text-muted)' }}>
                      <Layers3 className="w-3.5 h-3.5" />
-                     <span className="text-[10px] font-bold uppercase tracking-widest">{deck.card_count} Knowledge Nodes</span>
+                     <span className="text-[10px] font-bold uppercase tracking-widest">{deck.card_count} cards</span>
                   </div>
                   <div className="flex gap-2 mb-2">
-                     <button onClick={() => loadDeckCards(deck)} className="btn-primary flex-1 text-[10px] py-3 uppercase tracking-widest">Study All</button>
-                     <button onClick={() => loadDeckCards(deck, true)} className="flex-1 text-[10px] py-3 uppercase tracking-widest border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-xl font-black transition-all">Weak Links</button>
+                     <button onClick={() => loadDeckCards(deck)} className="btn-primary flex-1 text-[10px] py-3 uppercase tracking-widest">Study</button>
+                     <button onClick={() => loadDeckCards(deck, true)} className="flex-1 text-[10px] py-3 uppercase tracking-widest border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-xl font-black transition-all">Practice More</button>
                   </div>
-                  <button onClick={() => loadQuiz(deck, true)} className="w-full text-[10px] py-3 uppercase tracking-widest border border-brand-500/30 text-brand-500 hover:bg-brand-500/10 rounded-xl font-black transition-all">Quiz Weak Links</button>
+                  <button onClick={() => loadQuiz(deck, true)} className="w-full text-[10px] py-3 uppercase tracking-widest border border-brand-500/30 text-brand-500 hover:bg-brand-500/10 rounded-xl font-black transition-all">Quiz Mode</button>
                </div>
             </div>
           ))}
@@ -234,32 +294,39 @@ export default function FlashcardsPage() {
       <div className={clsx("flex flex-col transition-all duration-700 pt-10", focusMode ? "fixed inset-0 z-[100] h-screen overflow-hidden" : "min-h-screen")}>
         {focusMode && <div className="absolute inset-0 z-0 focus-bg-animated" style={{ backgroundImage: 'url(/cafe_pixel_bg.png)', backgroundColor: 'rgba(0,0,0,0.6)', backgroundBlendMode: 'darken' }} />}
         <div className="max-w-4xl mx-auto w-full px-6 flex flex-col items-center relative z-10">
-          
-          <div className="w-full mb-12 flex items-center justify-between">
-            <button onClick={() => { setFocusMode(false); setScreen('home'); }}
-              className="flex items-center gap-2 transition-all font-black uppercase tracking-[0.2em] text-[10px]" style={{ color: 'var(--text-muted)' }}>
-              <ChevronLeft className="w-3.5 h-3.5" /> Terminate Session
-            </button>
-            
+
+          {/* Floating exit button - top right, always accessible */}
+          <button onClick={() => { setFocusMode(false); setScreen('home'); }}
+            className="absolute top-6 right-6 z-20 flex items-center gap-2 px-4 py-2 rounded-full border transition-all font-black uppercase tracking-widest text-[10px]"
+            style={{
+              borderColor: 'var(--border-primary)',
+              backgroundColor: 'rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(8px)',
+              color: 'var(--text-muted)'
+            }}>
+            <X className="w-3.5 h-3.5" /> End Review
+          </button>
+
+          <div className="w-full mb-12 mt-8">
             <div className="flex items-center gap-8">
                <div className="flex gap-6 text-[11px] font-black tracking-widest uppercase items-center">
                 <span className="flex items-center gap-1.5" style={{ color: 'var(--color-danger, #ef4444)' }}><X className="w-4 h-4" /> {hardCount}</span>
                 <span className="flex items-center gap-1.5" style={{ color: 'var(--color-success, #22c55e)' }}><Smile className="w-4 h-4" /> {easyCount}</span>
               </div>
-              <button onClick={() => setFocusMode(!focusMode)} className={clsx("flex items-center gap-2 px-5 py-2 rounded-full border transition-all text-[10px] font-black uppercase tracking-widest")} style={{
+              <button onClick={() => setFocusMode(!focusMode)} className={clsx("flex items-center gap-2 px-5 py-2 rounded-full border transition-all text-[10px] font-black uppercase tracking-widest ml-auto")} style={{
                   borderColor: focusMode ? 'var(--brand-500)' : 'var(--border-primary)',
                   backgroundColor: focusMode ? 'var(--brand-500-alpha, rgba(220,123,30,0.1))' : 'transparent',
                   color: focusMode ? 'var(--brand-500)' : 'var(--text-muted)'
               }}>
-                <Brain className="w-3.5 h-3.5" /> {focusMode ? "Isolation On" : "Isolation Mode"}
+                <Brain className="w-3.5 h-3.5" /> {focusMode ? "Exit Focus" : "Focus Mode"}
               </button>
             </div>
           </div>
 
           <div className="w-full max-w-xl mb-16">
             <div className="flex justify-between items-end mb-3">
-              <div className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: 'var(--text-faint)' }}>Knowledge Propagation</div>
-              <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{swipeStack.length} nodes remaining</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: 'var(--text-faint)' }}>Progress</div>
+              <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{swipeStack.length} cards left</div>
             </div>
             <div className="h-1.5 rounded-full overflow-hidden shadow-inner" style={{ backgroundColor: 'var(--bg-muted)' }}>
               <motion.div className="h-full bg-brand-500 shadow-[0_0_10px_rgba(220,123,30,0.3)]" initial={{ width: 0 }} animate={{ width: `${((cards.length - swipeStack.length) / cards.length) * 100}%` }} />
@@ -277,6 +344,11 @@ export default function FlashcardsPage() {
               );
             })}
           </div>
+
+          {/* Keyboard hint */}
+          <div className="mt-8 text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>
+            Space to flip &nbsp;·&nbsp; Arrow keys to swipe
+          </div>
         </div>
       </div>
     </AppLayout>
@@ -284,7 +356,7 @@ export default function FlashcardsPage() {
 
   // ── RECALL ────────────────────────────────────────────────────────────────
   if (screen === 'recall') return (
-     <AppLayout><div className="max-w-xl mx-auto py-10"><button onClick={() => setScreen('home')} className="mb-10 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:opacity-80" style={{ color: 'var(--text-muted)' }}><ChevronLeft className="w-4 h-4" /> Cancel Vectoring</button>{recallDeck && <RecallMode deck={recallDeck} onDone={() => setScreen('home')} />}</div></AppLayout>
+     <AppLayout><div className="max-w-xl mx-auto py-10"><button onClick={() => setScreen('home')} className="mb-10 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:opacity-80" style={{ color: 'var(--text-muted)' }}><ChevronLeft className="w-4 h-4" /> Back</button>{recallDeck && <RecallMode deck={recallDeck} onDone={() => setScreen('home')} />}</div></AppLayout>
   );
 
   // ── HARD QUIZ ─────────────────────────────────────────────────────────────
@@ -292,7 +364,7 @@ export default function FlashcardsPage() {
     <AppLayout>
       <div className="max-w-3xl mx-auto py-10">
         <button onClick={() => setScreen('home')} className="mb-10 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
-          <ChevronLeft className="w-4 h-4" /> Cancel Quiz
+          <ChevronLeft className="w-4 h-4" /> Exit Quiz
         </button>
         <HardQuiz cards={cards} onDone={() => setScreen('home')} />
       </div>
@@ -301,7 +373,27 @@ export default function FlashcardsPage() {
 
   // ── VIEW CARDS ────────────────────────────────────────────────────────────
   if (screen === 'view-cards') return (
-     <AppLayout><div className="max-w-3xl mx-auto space-y-10 py-10"><button onClick={() => setScreen('home')} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-80" style={{ color: 'var(--text-muted)' }}><ChevronLeft className="w-4 h-4" /> Back to Repository</button><div><h1 className="text-3xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>{selectedDeck?.title}</h1><p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Database entry verification</p></div><div className="grid gap-4">{deckCards.map(c => <CardRow key={c.id} card={c} onSave={saveCard} onDelete={deleteCard} />)}</div></div></AppLayout>
+     <AppLayout><div className="max-w-3xl mx-auto space-y-10 py-10">
+       <button onClick={() => setScreen('home')} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-80" style={{ color: 'var(--text-muted)' }}><ChevronLeft className="w-4 h-4" /> Back to My Flashcards</button>
+       <div>
+         <h1 className="text-3xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>{selectedDeck?.title}</h1>
+         <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>{deckCards.length} cards in this deck</p>
+       </div>
+       {cardsLoading ? (
+         <div className="space-y-4">
+           {[1,2,3].map(i => <div key={i} className="skeleton h-32 rounded-2xl" />)}
+         </div>
+       ) : deckCards.length === 0 ? (
+         <div className="card text-center py-12">
+           <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>No cards in this deck yet.</p>
+           <button onClick={() => setScreen('create')} className="btn-primary mt-4 !px-6 !py-3 inline-flex items-center gap-2">
+             <Plus className="w-4 h-4" /> Add Cards
+           </button>
+         </div>
+       ) : (
+         <div className="grid gap-4">{deckCards.map(c => <CardRow key={c.id} card={c} onSave={saveCard} onDelete={deleteCard} />)}</div>
+       )}
+     </div></AppLayout>
   );
 
   // ── RESULT ────────────────────────────────────────────────────────────────
@@ -313,22 +405,24 @@ export default function FlashcardsPage() {
                <Trophy className="w-10 h-10 text-brand-500" />
             </div>
          </div>
-         <h1 className="text-5xl font-black uppercase tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>Session Summarized</h1>
-         <p className="text-lg font-medium mb-12" style={{ color: 'var(--text-muted)' }}>Performance analysis for this learning cycle.</p>
+         <h1 className="text-5xl font-black uppercase tracking-tight mb-4" style={{ color: 'var(--text-primary)' }}>Review Complete!</h1>
+         <p className="text-lg font-medium mb-12" style={{ color: 'var(--text-muted)' }}>Great work. Here's how your session went.</p>
          <div className="grid grid-cols-2 gap-6 max-w-sm mx-auto mb-16">
             <div className="card" style={{ borderColor: 'var(--border-primary)', backgroundColor: 'var(--bg-primary)' }}>
-               <div className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--color-success, #22c55e)' }}>Validated</div>
+               <div className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--color-success, #22c55e)' }}>Got It</div>
                <div className="text-4xl font-black" style={{ color: 'var(--text-primary)' }}>{easyCount}</div>
             </div>
             <div className="card" style={{ borderColor: 'var(--border-primary)', backgroundColor: 'var(--bg-primary)' }}>
-               <div className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--color-danger, #ef4444)' }}>Requires Review</div>
+               <div className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--color-danger, #ef4444)' }}>Need Practice</div>
                <div className="text-4xl font-black" style={{ color: 'var(--text-primary)' }}>{hardCount}</div>
             </div>
          </div>
-         <div className="flex justify-center gap-4">
-            <button onClick={() => setScreen('home')} className="btn-ghost !px-8 !py-4 text-xs tracking-widest uppercase">Repository</button>
-            <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary !px-8 !py-4 text-xs tracking-widest uppercase">Re-iterate</button>
-            <button onClick={() => loadQuiz(selectedDeck!, true)} className="btn-primary !px-8 !py-4 text-xs tracking-widest uppercase" style={{ backgroundColor: 'var(--color-danger, #ef4444)', borderColor: 'rgba(239, 68, 68, 0.4)' }}>Quiz Weak Links</button>
+         <div className="flex justify-center gap-4 flex-wrap">
+            <button onClick={() => setScreen('home')} className="btn-ghost !px-8 !py-4 text-xs tracking-widest uppercase">My Flashcards</button>
+            <button onClick={() => loadDeckCards(selectedDeck!)} className="btn-primary !px-8 !py-4 text-xs tracking-widest uppercase">Study Again</button>
+            {hardCount > 0 && (
+              <button onClick={() => loadQuiz(selectedDeck!, true)} className="btn-primary !px-8 !py-4 text-xs tracking-widest uppercase" style={{ backgroundColor: 'var(--color-danger, #ef4444)', borderColor: 'rgba(239, 68, 68, 0.4)' }}>Practice More</button>
+            )}
          </div>
       </div>
     </AppLayout>
@@ -341,28 +435,43 @@ export default function FlashcardsPage() {
           <button onClick={() => setScreen('home')} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-80" style={{ color: 'var(--text-muted)' }}><ChevronLeft className="w-4 h-4" /> Back</button>
           <div className="card space-y-8 !p-10" style={{ borderColor: 'var(--border-primary)', backgroundColor: 'var(--bg-primary)' }}>
              <div>
-               <h2 className="text-2xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>Module Addition</h2>
-               <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Add new knowledge nodes to {selectedDeck?.title || 'System Repository'}.</p>
+               <h2 className="text-2xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>{selectedDeck ? 'Add Cards' : 'Create New Deck'}</h2>
+               <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+                 {selectedDeck
+                   ? `Add cards to "${selectedDeck.title}".`
+                   : 'Give your deck a name to get started.'}
+               </p>
              </div>
-             
+
              {/* If we're creating a new deck, prompt for title */}
              {!selectedDeck ? (
                <div>
-                 <label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{ color: 'var(--text-faint)' }}>Repository Title</label>
-                 <input value={deckTitle} onChange={e => setDeckTitle(e.target.value)} placeholder="E.g. Advanced AI Concepts" className="input" />
-                 <button onClick={createDeck} className="btn-primary w-full py-4 tracking-widest uppercase text-xs mt-6">Initialize Repository</button>
+                 <label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{ color: 'var(--text-faint)' }}>Deck Name</label>
+                 <input value={deckTitle} onChange={e => setDeckTitle(e.target.value)} placeholder="e.g. Biology Chapter 5" className="input" onKeyDown={e => e.key === 'Enter' && deckTitle.trim() && createDeck()} />
+                 <button onClick={createDeck} disabled={!deckTitle.trim()} className="btn-primary w-full py-4 tracking-widest uppercase text-xs mt-6">Create Deck</button>
                </div>
              ) : (
                <div className="space-y-4">
                   <div>
-                     <label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{ color: 'var(--text-faint)' }}>Query</label>
-                     <input value={cardQ} onChange={e => setCardQ(e.target.value)} placeholder="Enter knowledge query..." className="input" />
+                     <label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{ color: 'var(--text-faint)' }}>Front (Question)</label>
+                     <input value={cardQ} onChange={e => setCardQ(e.target.value)} placeholder="What do you want to be asked?" className="input" />
                   </div>
                   <div>
-                     <label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{ color: 'var(--text-faint)' }}>Solution</label>
-                     <input value={cardA} onChange={e => setCardA(e.target.value)} placeholder="Enter solution vector..." className="input" onKeyDown={e => e.key === 'Enter' && addCard()} />
+                     <label className="text-[10px] font-black uppercase tracking-widest block mb-2" style={{ color: 'var(--text-faint)' }}>Back (Answer)</label>
+                     <input value={cardA} onChange={e => setCardA(e.target.value)} placeholder="The answer" className="input" onKeyDown={e => e.key === 'Enter' && cardQ.trim() && cardA.trim() && addCard()} />
                   </div>
-                  <button onClick={addCard} className="btn-primary w-full py-4 tracking-widest uppercase text-xs mt-4">Commit Card</button>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => { if (cardQ.trim() && cardA.trim()) { addCard(); setAddingCard(true); } }}
+                      disabled={!cardQ.trim() || !cardA.trim()}
+                      className="btn-primary flex-1 py-4 tracking-widest uppercase text-xs"
+                    >
+                      Add Card
+                    </button>
+                    <button onClick={() => setScreen('home')} className="btn-ghost !px-6 py-4 text-xs tracking-widest uppercase">
+                      Done
+                    </button>
+                  </div>
                </div>
              )}
           </div>

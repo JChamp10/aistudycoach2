@@ -63,11 +63,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initTheme: () => {
     if (typeof window === 'undefined') return;
     
-    // Dark mode
+    // Dark / light mode
     const savedDark = localStorage.getItem('dark_mode');
-    const isDark = savedDark === 'true';
-    if (isDark) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    const isDark = savedDark === null ? true : savedDark === 'true';
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
 
     // App theme
     const savedTheme = (localStorage.getItem('app_theme') as 'classic' | 'matcha' | 'navy') || 'matcha';
@@ -80,8 +85,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const next = !get().darkMode;
     if (typeof window !== 'undefined') {
       localStorage.setItem('dark_mode', String(next));
-      if (next) document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
+      if (next) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+      } else {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+      }
     }
     set({ darkMode: next });
   },

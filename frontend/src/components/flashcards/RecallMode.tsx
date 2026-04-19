@@ -72,14 +72,14 @@ export function RecallMode({ deck, onDone }: RecallModeProps) {
   if (phase === 'upload') return (
     <div className="card space-y-6" style={{ borderColor: 'var(--border-primary)', backgroundColor: 'var(--bg-primary)' }}>
       <div>
-        <h2 className="text-2xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>Recall Vectoring</h2>
-        <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Input study material to begin the assessment.</p>
+        <h2 className="text-2xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>AI Recall Generator</h2>
+        <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Upload or paste study material to generate flashcards.</p>
       </div>
       <input ref={pdfRef} type="file" accept=".pdf" className="hidden" onChange={handlePdf} />
       <button onClick={() => pdfRef.current?.click()} className="w-full py-12 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-3 transition-all group hover:bg-brand-500/5 hover:border-brand-500/50" style={{ borderColor: 'var(--border-primary)' }}>
         <Upload className="w-8 h-8 group-hover:text-brand-500" style={{ color: 'var(--text-muted)' }} />
         <span className="text-xs font-black uppercase tracking-widest group-hover:text-brand-600" style={{ color: 'var(--text-faint)' }}>
-           {pdfLoading ? 'Analyzing Data...' : pdfFile ? pdfFile.name : 'Upload Source PDF'}
+           {pdfLoading ? 'Reading PDF...' : pdfFile ? pdfFile.name : 'Upload PDF'}
         </span>
       </button>
       <div className="space-y-4">

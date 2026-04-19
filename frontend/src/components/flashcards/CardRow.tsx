@@ -56,7 +56,7 @@ export function CardRow({ card, onSave, onDelete }: CardRowProps) {
       ) : (
         <div className="flex items-start gap-4">
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-1">Knowledge Node</div>
+            <div className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-1">Card</div>
             <div className="text-sm font-bold leading-relaxed" style={{ color: 'var(--text-primary)' }}>{card.question}</div>
             <div className="text-sm mt-2 font-medium" style={{ color: 'var(--text-muted)' }}>{card.answer}</div>
             <div className="mt-4 flex items-center gap-3">
@@ -64,7 +64,7 @@ export function CardRow({ card, onSave, onDelete }: CardRowProps) {
                 <div className="h-full rounded-full bg-brand-500"
                   style={{ width: `${(card.memory_strength || 0) * 100}%` }} />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Strength: {Math.round((card.memory_strength || 0) * 100)}%</span>
+              <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Memory: {Math.round((card.memory_strength || 0) * 100)}%</span>
             </div>
           </div>
           <div className="flex gap-2 flex-shrink-0">

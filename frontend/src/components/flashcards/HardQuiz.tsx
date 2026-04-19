@@ -58,15 +58,15 @@ export function HardQuiz({ cards, onDone }: HardQuizProps) {
         </div>
       </div>
       <div>
-        <h3 className="text-3xl font-black uppercase tracking-tight" style={{ color: 'var(--text-primary)' }}>Assessment Complete</h3>
-        <p className="mt-2 font-medium" style={{ color: 'var(--text-muted)' }}>Session metrics summarized below.</p>
+        <h3 className="text-3xl font-black uppercase tracking-tight" style={{ color: 'var(--text-primary)' }}>Quiz Complete!</h3>
+        <p className="mt-2 font-medium" style={{ color: 'var(--text-muted)' }}>Here's how you did.</p>
       </div>
       <div className="card max-w-xs mx-auto">
         <div className="text-xs font-black uppercase tracking-[0.3em] mb-2" style={{ color: 'var(--text-faint)' }}>Final Accuracy</div>
         <div className="text-5xl font-black mb-2" style={{ color: 'var(--text-primary)' }}>{Math.round((score/cards.length)*100)}%</div>
         <div className="text-sm font-bold" style={{ color: 'var(--text-muted)' }}>{score} of {cards.length} correct</div>
       </div>
-      <button onClick={onDone} className="btn-primary !px-12">Return to Dashboard</button>
+      <button onClick={onDone} className="btn-primary !px-12">Back to Flashcards</button>
     </div>
   );
 
@@ -75,7 +75,7 @@ export function HardQuiz({ cards, onDone }: HardQuizProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2" style={{ color: 'var(--color-danger, #ef4444)' }}>
            <Brain className="w-4 h-4" />
-           <span className="text-[11px] font-black uppercase tracking-widest">Targeted Assessment</span>
+           <span className="text-[11px] font-black uppercase tracking-widest">Practice Quiz</span>
         </div>
         <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>{idx + 1} / {cards.length}</span>
       </div>
@@ -84,7 +84,7 @@ export function HardQuiz({ cards, onDone }: HardQuizProps) {
           style={{ width: `${((idx + 1) / cards.length) * 100}%`, backgroundColor: 'var(--color-danger, #ef4444)' }} />
       </div>
       <div className="card !p-12 text-center" style={{ borderColor: 'var(--border-primary)' }}>
-        <div className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 opacity-70" style={{ color: 'var(--text-faint)' }}>Knowledge Query</div>
+        <div className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 opacity-70" style={{ color: 'var(--text-faint)' }}>Question</div>
         <p className="font-black text-2xl tracking-tight leading-relaxed" style={{ color: 'var(--text-primary)' }}>{card.question}</p>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -134,7 +134,7 @@ export function HardQuiz({ cards, onDone }: HardQuizProps) {
           <div className="flex items-center gap-2 font-black uppercase tracking-widest text-xs" 
                style={{ color: selected === card.answer ? 'var(--color-success, #22c55e)' : 'var(--color-danger, #ef4444)' }}>
             {selected === card.answer ? <CheckCircle2 className="w-4 h-4" /> : <X className="w-4 h-4" />}
-            {selected === card.answer ? 'Validation Successful' : `Correction: ${card.answer}`}
+            {selected === card.answer ? 'Correct!' : `Answer: ${card.answer}`}
           </div>
         </motion.div>
       )}

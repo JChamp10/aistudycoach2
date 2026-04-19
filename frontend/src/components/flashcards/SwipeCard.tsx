@@ -64,7 +64,7 @@ export function SwipeCard({ card, onSwipe, isTop }: SwipeCardProps) {
             className="absolute top-6 left-6 z-10 px-4 py-2 rounded-xl border-2 font-black text-xs uppercase tracking-widest rotate-[-12deg]"
             style={{ borderColor: 'var(--color-danger, #ef4444)', color: 'var(--color-danger, #ef4444)', opacity: hardOpacity as any }}
           >
-            Review Again
+            Practice More
           </motion.div>
           <motion.div
             className="absolute top-6 right-6 z-10 px-4 py-2 rounded-xl border-2 font-black text-xs uppercase tracking-widest rotate-[12deg]"
@@ -82,11 +82,11 @@ export function SwipeCard({ card, onSwipe, isTop }: SwipeCardProps) {
             style={{ borderColor: 'var(--border-brand)', background: 'var(--gradient-card)' }}>
             <div className="text-[10px] uppercase tracking-[0.3em] font-black" style={{ color: 'var(--text-faint)' }}>Question</div>
             <p className="text-xl font-black px-8 leading-relaxed text-slate-900 dark:text-white" style={{ color: 'var(--text-primary)' }}>{card.question}</p>
-            <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Tap to flip</div>
+            <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Tap to reveal</div>
           </div>
           <div className="flashcard-back card h-full flex flex-col items-center justify-center text-center gap-4"
             style={{ borderColor: 'var(--color-success-alpha, rgba(34,197,94,0.3))', background: 'var(--gradient-card)' }}>
-            <div className="text-[10px] uppercase tracking-[0.3em] font-black" style={{ color: 'var(--color-success, #22c55e)' }}>Solution</div>
+            <div className="text-[10px] uppercase tracking-[0.3em] font-black" style={{ color: 'var(--color-success, #22c55e)' }}>Answer</div>
             <p className="text-xl font-black px-8 leading-relaxed" style={{ color: 'var(--color-success, #22c55e)' }}>{card.answer}</p>
             <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>Rate your recall</div>
           </div>
@@ -96,28 +96,31 @@ export function SwipeCard({ card, onSwipe, isTop }: SwipeCardProps) {
       {isTop && (
         <div className="flex justify-center gap-4 mt-8 px-4">
           <button onClick={() => triggerSwipe('left')}
+            data-swipe-left
             className="px-6 py-4 rounded-2xl border-2 flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg flex-1"
-            style={{ 
-              borderColor: 'var(--color-danger-alpha, rgba(239,68,68,0.2))', 
-              background: 'var(--color-danger-alpha-light, rgba(239,68,68,0.05))', 
-              color: 'var(--color-danger, #ef4444)' 
+            style={{
+              borderColor: 'var(--color-danger-alpha, rgba(239,68,68,0.2))',
+              background: 'var(--color-danger-alpha-light, rgba(239,68,68,0.05))',
+              color: 'var(--color-danger, #ef4444)'
             }}>
             <X className="w-5 h-5" />
-            <span className="text-xs font-black uppercase tracking-widest">Need Review</span>
+            <span className="text-xs font-black uppercase tracking-widest">Need Practice</span>
           </button>
           
           <button onClick={() => { playSfx('flip'); setFlipped(f => !f); }}
+            data-flip-btn
             className="w-14 h-14 shrink-0 rounded-2xl border flex items-center justify-center transition-all hover:scale-105 active:scale-95"
             style={{ backgroundColor: 'var(--bg-elevated)', borderColor: 'var(--border-primary)', color: 'var(--text-faint)' }}>
             <RotateCcw className="w-5 h-5" />
           </button>
 
           <button onClick={() => triggerSwipe('right')}
+            data-swipe-right
             className="px-6 py-4 rounded-2xl border-2 flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg flex-1"
-            style={{ 
-              borderColor: 'var(--color-success-alpha, rgba(34,197,94,0.2))', 
-              background: 'var(--color-success-alpha-light, rgba(34,197,94,0.05))', 
-              color: 'var(--color-success, #22c55e)' 
+            style={{
+              borderColor: 'var(--color-success-alpha, rgba(34,197,94,0.2))',
+              background: 'var(--color-success-alpha-light, rgba(34,197,94,0.05))',
+              color: 'var(--color-success, #22c55e)'
             }}>
             <Check className="w-5 h-5" />
             <span className="text-xs font-black uppercase tracking-widest">Got It</span>
